@@ -1,0 +1,350 @@
+'use client'
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import {
+  MousePointerClick,
+  CalendarCheck,
+  Wallet,
+  ArrowLeft,
+  Copy,
+  TrendingUp,
+  Plus,
+  ExternalLink,
+  Music,
+  Instagram,
+  Youtube,
+  Twitter,
+  Globe,
+} from 'lucide-react'
+import { useState } from 'react'
+import type {
+  CreatorDashboardData,
+  ActivityEvent,
+  LinkPerformance,
+  SocialPlatform,
+} from '@/lib/types'
+import AddPlaceModal from './AddPlaceModal'
+
+function formatPrice(thb: number) {
+  return `฿${thb.toLocaleString()}`
+}
+
+function relativeTime(iso: string): string {
+  const d = new Date(iso)
+  const diffMs = Date.now() - d.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  if (diffMin < 60) return diffMin <= 1 ? 'just now' : `${diffMin}m ago`
+  const diffHr = Math.floor(diffMin / 60)
+  if (diffHr < 24) return `${diffHr}h ago`
+  const diffDay = Math.floor(diffHr / 24)
+  if (diffDay === 1) return 'yesterday'
+  if (diffDay < 7) return `${diffDay}d ago`
+  return `${Math.floor(diffDay / 7)}w ago`
+}
+
+function PlatformIcon({ platform, size = 12 }: { platform: SocialPlatform; size?: number }) {
+  switch (platform) {
+    case 'tiktok': return <Music size={size} />
+    case 'instagram': return <Instagram size={size} />
+    case 'youtube': return <Youtube size={size} />
+    case 'x': return <Twitter size={size} />
+    default: return <Globe size={size} />
+  }
+}
+
+// ── KPI card ──────────────────────────────────────────────────────────────────
+
+function KpiCard({ label, value, icon, hint }: {
+  label: string; value: string; icon: React.ReactNode; hint?: string
+}) {
+  return (
+    <div className="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+      <div className="flex items-center gap-2 text-stone-400 mb-2">
+        {icon}
+        <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
+      </div>
+      <p className="text-2xl font-black text-stone-900 leading-none">{value}</p>
+      {hint && <p className="text-xs text-stone-400 mt-1.5">{hint}</p>}
+    </div>
+  )
+}
+
+// ── Status badge ──────────────────────────────────────────────────────────────
+
+function LinkStatusBadge({ status }: { status: LinkPerformance['status'] }) {
+  const styles: Record<LinkPerformance['status'], string> = {
+    active: 'bg-green-50 text-green-700',
+    pending: 'bg-amber-50 text-amber-700',
+    declined: 'bg-stone-100 text-stone-500',
+  }
+  return (
+    <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${styles[status]}`}>
+      {status}
+    </span>
+  )
+}
+
+// ── Link performance card ────────────────────────────────────────────────────
+
+function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; creatorSlug: string }) {
+  const [from, to] = link.business.coverGradient
+  const linkUrl = `bridge.to/${creatorSlug}/${link.business.slug}`
+  const [copied, setCopied] = useState(false)
+
+  function copy() {
+    navigator.clipboard.writeText(linkUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const conv = link.clicks > 0 ? (link.bookings / link.clicks) * 100 : 0
+  const isActive = link.status === 'active'
+
+  return (
+    <div className={`bg-white rounded-2xl border overflow-hidden shadow-sm ${
+      isActive ? 'border-stone-100' : 'border-stone-200 opacity-90'
+    }`}>
+      {/* Header bar */}
+      <div className="h-2" style={{
+        background: link.business.coverPhotoUrl
+          ? `url(${link.business.coverPhotoUrl}) center/cover`
+          : `linear-gradient(90deg, ${from}, ${to})`,
+      }} />
+
+      <div className="p-4">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 mb-0.5">
+              <Link
+                href={`/${creatorSlug}/${link.business.slug}`}
+                className="font-semibold text-stone-900 text-sm hover:text-rose-600 truncate"
+              >
+                {link.business.name}
+              </Link>
+              <LinkStatusBadge status={link.status} />
+            </div>
+            <p className="font-mono text-stone-400 text-xs truncate">{linkUrl}</p>
+          </div>
+          {isActive && (
+            <button
+              onClick={copy}
+              className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition-colors"
+            >
+              <Copy size={11} />
+              {copied ? 'Copied' : 'Copy'}
+            </button>
+          )}
+        </div>
+
+        {/* Content URL */}
+        {link.contentUrl && (
+          <a
+            href={link.contentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 mb-3 px-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-600 hover:border-rose-300 transition-colors"
+          >
+            {link.platform && <PlatformIcon platform={link.platform} />}
+            <span className="font-mono truncate flex-1">{link.contentUrl}</span>
+            <ExternalLink size={10} className="text-stone-400 flex-shrink-0" />
+          </a>
+        )}
+
+        {/* Stats row — only for active links */}
+        {isActive ? (
+          <>
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-stone-50 rounded-xl py-2">
+                <p className="text-stone-900 font-bold text-sm">{link.clicks.toLocaleString()}</p>
+                <p className="text-stone-400 text-[10px] uppercase tracking-wide mt-0.5">Clicks</p>
+              </div>
+              <div className="bg-stone-50 rounded-xl py-2">
+                <p className="text-stone-900 font-bold text-sm">{link.bookings}</p>
+                <p className="text-stone-400 text-[10px] uppercase tracking-wide mt-0.5">Bookings</p>
+              </div>
+              <div className="bg-rose-50 rounded-xl py-2">
+                <p className="text-rose-600 font-bold text-sm">{formatPrice(link.earnings)}</p>
+                <p className="text-rose-400 text-[10px] uppercase tracking-wide mt-0.5">Earned</p>
+              </div>
+            </div>
+
+            {link.clicks > 0 && (
+              <div className="mt-3 flex items-center justify-center gap-1 text-xs text-stone-400">
+                <TrendingUp size={11} />
+                <span>{conv.toFixed(1)}% conversion</span>
+              </div>
+            )}
+          </>
+        ) : link.status === 'pending' ? (
+          <p className="text-xs text-stone-500 text-center py-3 bg-amber-50/50 rounded-xl">
+            Waiting for {link.business.name} to accept. Tracking starts then.
+          </p>
+        ) : (
+          <p className="text-xs text-stone-500 text-center py-3 bg-stone-50 rounded-xl">
+            This business declined the request.
+          </p>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ── Activity row ──────────────────────────────────────────────────────────────
+
+function ActivityRow({ event }: { event: ActivityEvent }) {
+  const isBooking = event.type === 'booking'
+  return (
+    <div className="flex items-center gap-3 py-3 border-b border-stone-100 last:border-b-0">
+      <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+        isBooking ? 'bg-rose-50 text-rose-600' : 'bg-stone-100 text-stone-500'
+      }`}>
+        {isBooking ? <CalendarCheck size={15} /> : <MousePointerClick size={15} />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm text-stone-900 truncate">{event.label}</p>
+        <p className="text-xs text-stone-400">{relativeTime(event.createdAt)}</p>
+      </div>
+      {isBooking && event.amount !== undefined && (
+        <span className="text-rose-600 font-bold text-sm flex-shrink-0">
+          +{formatPrice(event.amount)}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+
+export default function CreatorDashboard({ data }: { data: CreatorDashboardData }) {
+  const { creator, totals, links, recentActivity } = data
+  const router = useRouter()
+  const [showAddPlace, setShowAddPlace] = useState(false)
+
+  const pendingCount = links.filter((l) => l.status === 'pending').length
+
+  return (
+    <div className="min-h-screen bg-stone-50">
+      <div className="max-w-[480px] mx-auto pb-24">
+        {/* Header */}
+        <div className="px-5 pt-8 pb-12 bg-stone-900 text-white">
+          <Link
+            href={`/${creator.slug}`}
+            className="flex items-center gap-1 text-white/60 text-xs mb-4 hover:text-white"
+          >
+            <ArrowLeft size={12} /> Back to profile
+          </Link>
+
+          <span className="text-[10px] font-black tracking-tight text-white/80 bg-white/10 px-2 py-0.5 rounded-full uppercase">
+            Dashboard
+          </span>
+
+          <div className="flex items-center gap-3 mt-3">
+            <div
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black flex-shrink-0"
+              style={{ backgroundColor: creator.avatarColor }}
+            >
+              {creator.avatarInitials}
+            </div>
+            <div>
+              <h1 className="text-xl font-black leading-tight">{creator.displayName}</h1>
+              <p className="text-rose-300 text-sm font-semibold">{creator.handle}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* KPIs */}
+        <div className="px-4 -mt-7 relative z-10">
+          <div className="grid grid-cols-3 gap-2">
+            <KpiCard label="Clicks" value={totals.totalClicks.toLocaleString()} icon={<MousePointerClick size={13} />} />
+            <KpiCard label="Bookings" value={String(totals.totalBookings)} icon={<CalendarCheck size={13} />} />
+            <KpiCard label="Earned" value={formatPrice(totals.totalEarnings)} icon={<Wallet size={13} />} />
+          </div>
+
+          {totals.pendingPayout > 0 && (
+            <div className="mt-3 bg-rose-600 rounded-2xl p-4 text-white flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-rose-200">
+                  Pending payout
+                </p>
+                <p className="text-2xl font-black mt-1">{formatPrice(totals.pendingPayout)}</p>
+              </div>
+              <p className="text-xs text-rose-200 max-w-[140px] text-right">
+                Paid out monthly. Next: 1st of next month.
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Add a new place */}
+        <div className="px-4 mt-6">
+          <button
+            onClick={() => setShowAddPlace(true)}
+            className="w-full py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
+          >
+            <Plus size={18} /> Add a new place
+          </button>
+        </div>
+
+        {/* Your links */}
+        <div className="px-4 mt-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest">
+              Your Links
+            </h2>
+            {pendingCount > 0 && (
+              <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full uppercase">
+                {pendingCount} pending
+              </span>
+            )}
+          </div>
+
+          {links.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-stone-100 p-6 text-center">
+              <p className="text-stone-500 text-sm mb-3">No links yet.</p>
+              <button
+                onClick={() => setShowAddPlace(true)}
+                className="text-rose-600 font-semibold text-sm hover:underline"
+              >
+                Add your first place →
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {links.map((l) => (
+                <LinkPerformanceCard key={l.linkId} link={l} creatorSlug={creator.slug} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Recent activity */}
+        <div className="px-4 mt-8">
+          <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-3">
+            Recent Activity
+          </h2>
+          {recentActivity.length === 0 ? (
+            <p className="text-stone-400 text-sm text-center py-8">
+              Nothing yet. Activity shows up here as people click and book.
+            </p>
+          ) : (
+            <div className="bg-white rounded-2xl border border-stone-100 px-4 shadow-sm">
+              {recentActivity.map((e) => (
+                <ActivityRow key={e.id} event={e} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add place modal */}
+      {showAddPlace && (
+        <AddPlaceModal
+          creatorSlug={creator.slug}
+          onClose={() => setShowAddPlace(false)}
+          onCreated={() => router.refresh()}
+        />
+      )}
+    </div>
+  )
+}

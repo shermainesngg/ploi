@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+dist/
+build/
+out/
+
+# Environment files (never commit secrets)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Vercel
+.vercel/
+
+# Next.js typegen
+next-env.d.ts
+
+# Misc
+.turbo/
+*.tsbuildinfo

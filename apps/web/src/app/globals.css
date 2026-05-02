@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #fafaf9;
+  --foreground: #1c1917;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Remove default input styles on iOS */
+input,
+textarea,
+select {
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 0;
+}

@@ -806,6 +806,661 @@ function rollupByCreator(bookings: BookingWithCreator[]): CreatorRollup[] {
   return Array.from(map.values()).sort((a, b) => b.revenue - a.revenue)
 }
 
+export interface AgendaBooking {
+  id: string
+  serviceName: string
+  serviceDuration: number
+  customerName: string
+  customerEmail: string | null
+  date: string
+  time: string  // HH:MM
+  endTime: string  // HH:MM
+  status: 'pending' | 'confirmed' | 'declined' | 'cancelled' | 'completed' | 'no_show'
+  isWalkin: boolean
+  price: number
+  creator: { slug: string; handle: string } | null
+  staffId: string | null
+  staffName: string | null
+}
+
+export async function getBookingsForDate(
+  businessSlug: string,
+  dateISO: string,
+): Promise<AgendaBooking[]> {
+  if (!isSupabaseConfigured()) return []
+
+  const db = createServerClient()
+  const { data: bizRow } = await db
+    .from('businesses')
+    .select('id')
+    .eq('slug', businessSlug)
+    .single()
+  if (!bizRow) return []
+
+  const { data: rows } = await db
+    .from('bookings')
+    .select(`
+      id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id,
+      services ( name, price, duration ),
+      links ( creators ( slug, handle ) ),
+      staff ( id, name )
+    `)
+    .eq('business_id', bizRow.id)
+    .eq('booking_date', dateISO)
+    .order('booking_time', { ascending: true })
+
+  return (rows ?? [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((r: any): AgendaBooking => {
+      const svc = Array.isArray(r.services) ? r.services[0] : r.services
+      const link = Array.isArray(r.links) ? r.links[0] : r.links
+      const creatorRow = link ? (Array.isArray(link.creators) ? link.creators[0] : link.creators) : null
+      const staffRow = Array.isArray(r.staff) ? r.staff[0] : r.staff
+
+      const startMin = (() => {
+        const [h, m] = String(r.booking_time).slice(0, 5).split(':').map(Number)
+        return h * 60 + (m || 0)
+      })()
+      const duration = svc?.duration ?? 60
+      const endMin = startMin + duration
+      const fmt = (mins: number) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
+
+      return {
+        id: r.id,
+        serviceName: svc?.name ?? 'Service',
+        serviceDuration: duration,
+        customerName: r.customer_name,
+        customerEmail: r.customer_email,
+        date: r.booking_date,
+        time: String(r.booking_time).slice(0, 5),
+        endTime: fmt(endMin),
+        status: r.status,
+        isWalkin: !!r.is_walkin,
+        price: svc?.price ?? 0,
+        creator: creatorRow ? { slug: creatorRow.slug, handle: creatorRow.handle } : null,
+        staffId: r.staff_id ?? null,
+        staffName: staffRow?.name ?? null,
+      }
+    })
+}
+
+// ── Staff ────────────────────────────────────────────────────────────────────
+
+export interface StaffMember {
+  id: string
+  businessId: string
+  name: string
+  role: string | null
+  photoUrl: string | null
+  isActive: boolean
+  serviceIds: string[]   // services this staff can perform
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToStaff(r: any, serviceIds: string[]): StaffMember {
+  return {
+    id: r.id,
+    businessId: r.business_id,
+    name: r.name,
+    role: r.role ?? null,
+    photoUrl: r.photo_url ?? null,
+    isActive: r.is_active ?? true,
+    serviceIds,
+  }
+}
+
+export async function listStaff(businessSlug: string): Promise<StaffMember[]> {
+  if (!isSupabaseConfigured()) return []
+  const db = createServerClient()
+  const { data: biz } = await db.from('businesses').select('id').eq('slug', businessSlug).single()
+  if (!biz) return []
+
+  const { data: staffRows } = await db
+    .from('staff')
+    .select('*')
+    .eq('business_id', biz.id)
+    .eq('is_active', true)
+    .order('created_at', { ascending: true })
+
+  const staffIds = (staffRows ?? []).map((s: { id: string }) => s.id)
+  const { data: ssRows } = staffIds.length
+    ? await db.from('staff_services').select('staff_id, service_id').in('staff_id', staffIds)
+    : { data: [] }
+
+  const servicesByStaff = new Map<string, string[]>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const ss of (ssRows ?? []) as any[]) {
+    const cur = servicesByStaff.get(ss.staff_id) ?? []
+    cur.push(ss.service_id)
+    servicesByStaff.set(ss.staff_id, cur)
+  }
+
+  return (staffRows ?? []).map((r: { id: string }) =>
+    rowToStaff(r, servicesByStaff.get(r.id) ?? []),
+  )
+}
+
+export async function getStaffForService(
+  businessSlug: string,
+  serviceId: string,
+): Promise<StaffMember[]> {
+  const all = await listStaff(businessSlug)
+  return all.filter((s) => s.serviceIds.includes(serviceId))
+}
+
+export async function createStaffMember(
+  businessSlug: string,
+  data: { name: string; role?: string; photoUrl?: string; serviceIds: string[] },
+): Promise<StaffMember> {
+  if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
+  const db = createServerClient()
+
+  const { data: biz } = await db.from('businesses').select('id').eq('slug', businessSlug).single()
+  if (!biz) throw new Error('Business not found')
+
+  const { data: row, error } = await db
+    .from('staff')
+    .insert({
+      business_id: biz.id,
+      name: data.name,
+      role: data.role ?? null,
+      photo_url: data.photoUrl ?? null,
+    })
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+
+  if (data.serviceIds.length > 0) {
+    const links = data.serviceIds.map((sid) => ({ staff_id: row.id, service_id: sid }))
+    const { error: linkErr } = await db.from('staff_services').insert(links)
+    if (linkErr) throw new Error(linkErr.message)
+  }
+
+  return rowToStaff(row, data.serviceIds)
+}
+
+export async function updateStaffMember(
+  staffId: string,
+  data: { name?: string; role?: string; photoUrl?: string; serviceIds?: string[] },
+) {
+  if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
+  const db = createServerClient()
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const update: Record<string, any> = {}
+  if (data.name !== undefined) update.name = data.name
+  if (data.role !== undefined) update.role = data.role || null
+  if (data.photoUrl !== undefined) update.photo_url = data.photoUrl || null
+  if (Object.keys(update).length > 0) {
+    const { error } = await db.from('staff').update(update).eq('id', staffId)
+    if (error) throw new Error(error.message)
+  }
+
+  if (data.serviceIds) {
+    await db.from('staff_services').delete().eq('staff_id', staffId)
+    if (data.serviceIds.length > 0) {
+      const links = data.serviceIds.map((sid) => ({ staff_id: staffId, service_id: sid }))
+      const { error } = await db.from('staff_services').insert(links)
+      if (error) throw new Error(error.message)
+    }
+  }
+}
+
+export async function deactivateStaffMember(staffId: string) {
+  if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
+  const db = createServerClient()
+  const { error } = await db.from('staff').update({ is_active: false }).eq('id', staffId)
+  if (error) throw new Error(error.message)
+}
+
+// ── Staff schedule (per day-of-week working hours) ──────────────────────────
+
+export interface StaffScheduleEntry {
+  dayOfWeek: number   // 0=Sun, 6=Sat
+  startTime: string   // HH:MM
+  endTime: string     // HH:MM
+  isAvailable: boolean
+}
+
+export async function getStaffSchedule(staffId: string): Promise<StaffScheduleEntry[]> {
+  if (!isSupabaseConfigured()) return []
+  const db = createServerClient()
+  const { data } = await db
+    .from('staff_schedules')
+    .select('day_of_week, start_time, end_time, is_available')
+    .eq('staff_id', staffId)
+    .order('day_of_week', { ascending: true })
+  return (data ?? []).map((r: { day_of_week: number; start_time: string; end_time: string; is_available: boolean }) => ({
+    dayOfWeek: r.day_of_week,
+    startTime: r.start_time.slice(0, 5),
+    endTime: r.end_time.slice(0, 5),
+    isAvailable: r.is_available,
+  }))
+}
+
+export async function setStaffSchedule(
+  staffId: string,
+  schedule: StaffScheduleEntry[],
+): Promise<void> {
+  if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
+  const db = createServerClient()
+  // Wipe + replace (simple, idempotent)
+  await db.from('staff_schedules').delete().eq('staff_id', staffId)
+  if (schedule.length === 0) return
+  const rows = schedule.map((s) => ({
+    staff_id: staffId,
+    day_of_week: s.dayOfWeek,
+    start_time: s.startTime,
+    end_time: s.endTime,
+    is_available: s.isAvailable,
+  }))
+  const { error } = await db.from('staff_schedules').insert(rows)
+  if (error) throw new Error(error.message)
+}
+
+// ── Staff blocked dates (sick days, leave) — stored in time_blocks ──────────
+
+export interface StaffBlock {
+  id: string
+  staffId: string
+  blockDate: string  // YYYY-MM-DD
+  startTime: string
+  endTime: string
+  reason: string | null
+}
+
+export async function listStaffBlocks(staffId: string): Promise<StaffBlock[]> {
+  if (!isSupabaseConfigured()) return []
+  const db = createServerClient()
+  const today = new Date().toISOString().split('T')[0]
+  const { data } = await db
+    .from('time_blocks')
+    .select('id, staff_id, block_date, start_time, end_time, reason')
+    .eq('staff_id', staffId)
+    .gte('block_date', today)
+    .order('block_date', { ascending: true })
+  return (data ?? []).map(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (r: any) => ({
+      id: r.id,
+      staffId: r.staff_id,
+      blockDate: r.block_date,
+      startTime: String(r.start_time).slice(0, 5),
+      endTime: String(r.end_time).slice(0, 5),
+      reason: r.reason ?? null,
+    }),
+  )
+}
+
+export async function createStaffBlock(
+  staffId: string,
+  data: { blockDate: string; startTime?: string; endTime?: string; reason?: string },
+): Promise<StaffBlock> {
+  if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
+  const db = createServerClient()
+  const { data: staff } = await db.from('staff').select('business_id').eq('id', staffId).single()
+  if (!staff) throw new Error('Staff not found')
+
+  const { data: row, error } = await db
+    .from('time_blocks')
+    .insert({
+      business_id: staff.business_id,
+      staff_id: staffId,
+      block_date: data.blockDate,
+      start_time: data.startTime ?? '00:00',
+      end_time: data.endTime ?? '23:59',
+      reason: data.reason ?? null,
+    })
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return {
+    id: row.id,
+    staffId,
+    blockDate: row.block_date,
+    startTime: String(row.start_time).slice(0, 5),
+    endTime: String(row.end_time).slice(0, 5),
+    reason: row.reason,
+  }
+}
+
+export async function deleteStaffBlock(blockId: string): Promise<void> {
+  if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
+  const db = createServerClient()
+  const { error } = await db.from('time_blocks').delete().eq('id', blockId)
+  if (error) throw new Error(error.message)
+}
+
+// ── Get bookings for a single staff on a date (for their schedule view) ─────
+
+export async function getStaffBookingsForDate(
+  staffId: string,
+  dateISO: string,
+): Promise<AgendaBooking[]> {
+  if (!isSupabaseConfigured()) return []
+  const db = createServerClient()
+  const { data: rows } = await db
+    .from('bookings')
+    .select(`
+      id, customer_name, customer_email, booking_date, booking_time, status, is_walkin,
+      services ( name, price, duration ),
+      links ( creators ( slug, handle ) )
+    `)
+    .eq('staff_id', staffId)
+    .eq('booking_date', dateISO)
+    .order('booking_time', { ascending: true })
+
+  return (rows ?? [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((r: any): AgendaBooking => {
+      const svc = Array.isArray(r.services) ? r.services[0] : r.services
+      const link = Array.isArray(r.links) ? r.links[0] : r.links
+      const cre = link ? (Array.isArray(link.creators) ? link.creators[0] : link.creators) : null
+      const startMin = (() => {
+        const [h, m] = String(r.booking_time).slice(0, 5).split(':').map(Number)
+        return h * 60 + (m || 0)
+      })()
+      const duration = svc?.duration ?? 60
+      const fmt = (mins: number) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
+      return {
+        id: r.id,
+        serviceName: svc?.name ?? 'Service',
+        serviceDuration: duration,
+        customerName: r.customer_name,
+        customerEmail: r.customer_email,
+        date: r.booking_date,
+        time: String(r.booking_time).slice(0, 5),
+        endTime: fmt(startMin + duration),
+        status: r.status,
+        isWalkin: !!r.is_walkin,
+        price: svc?.price ?? 0,
+        creator: cre ? { slug: cre.slug, handle: cre.handle } : null,
+        staffId: staffId,
+        staffName: null,  // page already knows the staff
+      }
+    })
+}
+
+export async function getStaffById(staffId: string): Promise<StaffMember | null> {
+  if (!isSupabaseConfigured()) return null
+  const db = createServerClient()
+  const { data: row } = await db.from('staff').select('*').eq('id', staffId).single()
+  if (!row) return null
+  const { data: ssRows } = await db.from('staff_services').select('service_id').eq('staff_id', staffId)
+  return rowToStaff(row, (ssRows ?? []).map((r: { service_id: string }) => r.service_id))
+}
+
+// ── Auto-assign: pick the best staff for a booking ──────────────────────────
+
+export async function pickEligibleStaff(opts: {
+  businessId: string
+  serviceId: string
+  bookingDate: string
+  bookingTime: string  // HH:MM
+}): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null
+  const db = createServerClient()
+
+  // Service info
+  const { data: svc } = await db
+    .from('services')
+    .select('duration, buffer_minutes')
+    .eq('id', opts.serviceId)
+    .single()
+  const duration = (svc?.duration ?? 60) + (svc?.buffer_minutes ?? 0)
+
+  // Eligible staff: active + can do the service
+  const { data: staffRows } = await db
+    .from('staff')
+    .select('id')
+    .eq('business_id', opts.businessId)
+    .eq('is_active', true)
+  const allStaffIds = (staffRows ?? []).map((s: { id: string }) => s.id)
+  if (allStaffIds.length === 0) return null
+
+  const { data: ssRows } = await db
+    .from('staff_services')
+    .select('staff_id')
+    .eq('service_id', opts.serviceId)
+    .in('staff_id', allStaffIds)
+  const eligibleIds = (ssRows ?? []).map((r: { staff_id: string }) => r.staff_id)
+  if (eligibleIds.length === 0) return null
+
+  // Existing bookings for this date for these staff
+  const { data: bookings } = await db
+    .from('bookings')
+    .select('staff_id, booking_time, services(duration, buffer_minutes)')
+    .in('staff_id', eligibleIds)
+    .eq('booking_date', opts.bookingDate)
+    .in('status', ['pending', 'confirmed'])
+
+  // Schedule + blocks per staff
+  const { data: schedules } = await db
+    .from('staff_schedules')
+    .select('staff_id, day_of_week, start_time, end_time, is_available')
+    .in('staff_id', eligibleIds)
+
+  const { data: blocks } = await db
+    .from('time_blocks')
+    .select('staff_id, block_date, recurring_dow, start_time, end_time')
+    .in('staff_id', eligibleIds)
+
+  const date = new Date(`${opts.bookingDate}T00:00:00`)
+  const dow = date.getDay()
+  const [bh, bm] = opts.bookingTime.split(':').map(Number)
+  const startMin = bh * 60 + (bm || 0)
+  const endMin = startMin + duration
+
+  function timeToMin(t: string) {
+    const [h, m] = String(t).slice(0, 5).split(':').map(Number)
+    return h * 60 + (m || 0)
+  }
+
+  // Find first eligible staff who is free
+  for (const staffId of eligibleIds) {
+    // Check schedule (if defined)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const todays = (schedules ?? []).filter((s: any) => s.staff_id === staffId && s.day_of_week === dow)
+    if (todays.length > 0) {
+      const sched = todays[0]
+      if (!sched.is_available) continue
+      if (startMin < timeToMin(sched.start_time) || endMin > timeToMin(sched.end_time)) continue
+    }
+    // If no schedule row, fall through (assume business hours; the slot was already validated by availability engine)
+
+    // Conflicts with existing bookings
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const myBookings = (bookings ?? []).filter((b: any) => b.staff_id === staffId)
+    const hasConflict = myBookings.some(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (b: any) => {
+        const sv = Array.isArray(b.services) ? b.services[0] : b.services
+        const bStart = timeToMin(b.booking_time)
+        const bEnd = bStart + (sv?.duration ?? 60) + (sv?.buffer_minutes ?? 0)
+        return startMin < bEnd && bStart < endMin
+      },
+    )
+    if (hasConflict) continue
+
+    // Blocks
+    const myBlocks = (blocks ?? []).filter(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (b: any) => b.staff_id === staffId &&
+        (b.block_date === opts.bookingDate || b.recurring_dow === dow),
+    )
+    const hasBlock = myBlocks.some(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (b: any) => {
+        const bStart = timeToMin(b.start_time)
+        const bEnd = timeToMin(b.end_time)
+        return startMin < bEnd && bStart < endMin
+      },
+    )
+    if (hasBlock) continue
+
+    return staffId
+  }
+
+  return null
+}
+
+// ── Walk-in bookings ────────────────────────────────────────────────────────
+
+export async function createWalkinBooking(data: {
+  businessSlug: string
+  serviceId: string
+  staffId?: string
+  customerName: string
+  bookingDate: string
+  bookingTime: string
+}) {
+  if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
+  const db = createServerClient()
+
+  const { data: biz } = await db.from('businesses').select('id').eq('slug', data.businessSlug).single()
+  if (!biz) throw new Error('Business not found')
+
+  const { data: row, error } = await db
+    .from('bookings')
+    .insert({
+      business_id: biz.id,
+      service_id: data.serviceId,
+      staff_id: data.staffId ?? null,
+      customer_name: data.customerName || 'Walk-in',
+      customer_contact: 'walk-in',  // legacy required field
+      booking_date: data.bookingDate,
+      booking_time: data.bookingTime,
+      status: 'confirmed',
+      payment_status: null,
+      is_walkin: true,
+    })
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  return row
+}
+
+// ── Recent bookings for the Bookings tab (with optional status filter) ─────
+
+export async function listBusinessBookings(
+  businessSlug: string,
+  opts?: { status?: AgendaBooking['status']; limit?: number },
+): Promise<AgendaBooking[]> {
+  if (!isSupabaseConfigured()) return []
+  const db = createServerClient()
+  const { data: bizRow } = await db.from('businesses').select('id').eq('slug', businessSlug).single()
+  if (!bizRow) return []
+
+  let query = db
+    .from('bookings')
+    .select(`
+      id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id, created_at,
+      services ( name, price, duration ),
+      links ( creators ( slug, handle ) ),
+      staff ( id, name )
+    `)
+    .eq('business_id', bizRow.id)
+    .order('booking_date', { ascending: false })
+    .order('booking_time', { ascending: false })
+    .limit(opts?.limit ?? 100)
+
+  if (opts?.status) query = query.eq('status', opts.status)
+
+  const { data: rows } = await query
+
+  return (rows ?? [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((r: any): AgendaBooking => {
+      const svc = Array.isArray(r.services) ? r.services[0] : r.services
+      const link = Array.isArray(r.links) ? r.links[0] : r.links
+      const cre = link ? (Array.isArray(link.creators) ? link.creators[0] : link.creators) : null
+      const staffRow = Array.isArray(r.staff) ? r.staff[0] : r.staff
+      const startMin = (() => {
+        const [h, m] = String(r.booking_time).slice(0, 5).split(':').map(Number)
+        return h * 60 + (m || 0)
+      })()
+      const duration = svc?.duration ?? 60
+      const fmt = (mins: number) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
+      return {
+        id: r.id,
+        serviceName: svc?.name ?? 'Service',
+        serviceDuration: duration,
+        customerName: r.customer_name,
+        customerEmail: r.customer_email,
+        date: r.booking_date,
+        time: String(r.booking_time).slice(0, 5),
+        endTime: fmt(startMin + duration),
+        status: r.status,
+        isWalkin: !!r.is_walkin,
+        price: svc?.price ?? 0,
+        creator: cre ? { slug: cre.slug, handle: cre.handle } : null,
+        staffId: r.staff_id ?? null,
+        staffName: staffRow?.name ?? null,
+      }
+    })
+}
+
+// ── Bookings range query (for week/month views) ─────────────────────────────
+
+export async function getBookingsForRange(
+  businessSlug: string,
+  startDate: string,
+  endDate: string,
+): Promise<AgendaBooking[]> {
+  if (!isSupabaseConfigured()) return []
+
+  const db = createServerClient()
+  const { data: bizRow } = await db.from('businesses').select('id').eq('slug', businessSlug).single()
+  if (!bizRow) return []
+
+  const { data: rows } = await db
+    .from('bookings')
+    .select(`
+      id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id,
+      services ( name, price, duration ),
+      links ( creators ( slug, handle ) ),
+      staff ( id, name )
+    `)
+    .eq('business_id', bizRow.id)
+    .gte('booking_date', startDate)
+    .lte('booking_date', endDate)
+    .order('booking_date', { ascending: true })
+    .order('booking_time', { ascending: true })
+
+  return (rows ?? [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((r: any): AgendaBooking => {
+      const svc = Array.isArray(r.services) ? r.services[0] : r.services
+      const link = Array.isArray(r.links) ? r.links[0] : r.links
+      const creatorRow = link
+        ? Array.isArray(link.creators) ? link.creators[0] : link.creators
+        : null
+      const staffRow = Array.isArray(r.staff) ? r.staff[0] : r.staff
+      const startMin = (() => {
+        const [h, m] = String(r.booking_time).slice(0, 5).split(':').map(Number)
+        return h * 60 + (m || 0)
+      })()
+      const duration = svc?.duration ?? 60
+      const fmt = (mins: number) => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`
+      return {
+        id: r.id,
+        serviceName: svc?.name ?? 'Service',
+        serviceDuration: duration,
+        customerName: r.customer_name,
+        customerEmail: r.customer_email,
+        date: r.booking_date,
+        time: String(r.booking_time).slice(0, 5),
+        endTime: fmt(startMin + duration),
+        status: r.status,
+        isWalkin: !!r.is_walkin,
+        price: svc?.price ?? 0,
+        creator: creatorRow ? { slug: creatorRow.slug, handle: creatorRow.handle } : null,
+        staffId: r.staff_id ?? null,
+        staffName: staffRow?.name ?? null,
+      }
+    })
+}
+
 export async function getBusinessStripeStatus(businessSlug: string): Promise<{
   hasAccount: boolean
   accountId: string | null

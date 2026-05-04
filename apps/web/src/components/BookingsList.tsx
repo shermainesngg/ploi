@@ -1,0 +1,143 @@
+'use client'
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { Calendar, Clock, MapPin, Repeat, X } from 'lucide-react'
+import RescheduleModal from './RescheduleModal'
+
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RawBooking = any
+
+export default function BookingsList({ bookings, userEmail }: { bookings: RawBooking[]; userEmail: string }) {
+  const today = new Date().toISOString().split('T')[0]
+  const upcoming = bookings.filter((b) => b.booking_date >= today)
+  const past = bookings.filter((b) => b.booking_date < today)
+
+  return (
+    <div className="max-w-[480px] mx-auto px-4 py-8 pb-24">
+      <h1 className="text-2xl font-black text-stone-900 px-1">My bookings</h1>
+      <p className="text-stone-500 text-sm mt-1 px-1">Booked under {userEmail}</p>
+
+      {bookings.length === 0 ? (
+        <div className="bg-white rounded-2xl border border-stone-100 p-8 mt-6 text-center">
+          <p className="text-stone-500 text-sm mb-4">No bookings yet.</p>
+          <Link href="/" className="text-rose-600 font-semibold text-sm hover:underline">Browse places →</Link>
+        </div>
+      ) : (
+        <>
+          {upcoming.length > 0 && (
+            <section className="mt-6">
+              <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-3 px-1">Upcoming</h2>
+              <div className="space-y-3">
+                {upcoming.map((b) => <BookingRow key={b.id} booking={b} canChange />)}
+              </div>
+            </section>
+          )}
+          {past.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-3 px-1">Past</h2>
+              <div className="space-y-2">
+                {past.map((b) => <BookingRow key={b.id} booking={b} canChange={false} />)}
+              </div>
+            </section>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function BookingRow({ booking, canChange }: { booking: RawBooking; canChange: boolean }) {
+  const router = useRouter()
+  const svc = Array.isArray(booking.services) ? booking.services[0] : booking.services
+  const biz = Array.isArray(booking.businesses) ? booking.businesses[0] : booking.businesses
+  const date = new Date(booking.booking_date)
+  const time = (booking.booking_time as string)?.slice(0, 5)
+
+  const status = booking.status as string
+  const paid = booking.payment_status === 'paid'
+  const isCancellable = canChange && status !== 'cancelled' && status !== 'declined' && status !== 'completed' && status !== 'no_show'
+
+  const [reschedOpen, setReschedOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  async function cancel() {
+    if (!confirm('Cancel this booking? The slot will open back up.')) return
+    setBusy(true)
+    try {
+      await fetch(`/api/bookings/${booking.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'cancelled' }),
+      })
+      router.refresh()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+        <Link href={`/booking-confirmed/${booking.id}`} className="block p-4 hover:bg-stone-50/50 transition-colors">
+          <div className="flex items-start justify-between gap-3 mb-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-0.5">
+                <p className="font-semibold text-stone-900 text-sm truncate">{svc?.name ?? 'Service'}</p>
+                {paid && <span className="text-[10px] font-bold uppercase bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Paid</span>}
+                <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
+                  status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                  status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                  status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                  'bg-stone-100 text-stone-500'
+                }`}>{status}</span>
+              </div>
+              <p className="text-stone-500 text-xs truncate">{biz?.name}</p>
+            </div>
+            <span className="font-bold text-stone-900 text-sm flex-shrink-0">฿{(svc?.price ?? 0).toLocaleString()}</span>
+          </div>
+          <div className="flex items-center gap-3 text-xs text-stone-400">
+            <span className="flex items-center gap-1"><Calendar size={11} />{DAY_NAMES[date.getDay()]} {date.getDate()} {MONTH_NAMES[date.getMonth()]}</span>
+            <span className="flex items-center gap-1"><Clock size={11} />{time}</span>
+            {biz?.location && <span className="flex items-center gap-1 truncate"><MapPin size={11} />{biz.location}</span>}
+          </div>
+        </Link>
+
+        {isCancellable && (
+          <div className="border-t border-stone-100 flex divide-x divide-stone-100">
+            <button
+              onClick={() => setReschedOpen(true)}
+              disabled={busy}
+              className="flex-1 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <Repeat size={12} /> Reschedule
+            </button>
+            <button
+              onClick={cancel}
+              disabled={busy}
+              className="flex-1 py-2.5 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <X size={12} /> Cancel
+            </button>
+          </div>
+        )}
+      </div>
+
+      {reschedOpen && (
+        <RescheduleModal
+          bookingId={booking.id}
+          businessSlug={biz?.slug ?? ''}
+          serviceId={booking.service_id}
+          serviceName={svc?.name ?? 'Service'}
+          currentDate={booking.booking_date}
+          currentTime={time}
+          onClose={() => setReschedOpen(false)}
+        />
+      )}
+    </>
+  )
+}

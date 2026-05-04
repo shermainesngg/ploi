@@ -33,7 +33,14 @@ import type {
   SocialPlatform,
   DayKey,
 } from '@/lib/types'
-import { generateTimeSlots, getUpcomingDates } from '@/lib/seed-data'
+import { getUpcomingDates } from '@/lib/seed-data'
+
+interface AvailabilityResult {
+  date: string
+  closed: boolean
+  hours: string | null
+  groups: Array<{ label: string; slots: Array<{ time: string; available: boolean; reason?: string }> }>
+}
 
 interface Props {
   business: Business
@@ -44,6 +51,13 @@ interface Props {
 }
 
 type Step = 'services' | 'date' | 'time' | 'details' | 'confirmed'
+
+interface BookingStaff {
+  id: string
+  name: string
+  role: string | null
+  photoUrl: string | null
+}
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -746,6 +760,10 @@ function BookingModal({
   linkId?: string
   onClose: () => void
 }) {
+  const [staffOptions, setStaffOptions] = useState<BookingStaff[]>([])
+  const [staffLoaded, setStaffLoaded] = useState(false)
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
+  // initial step depends on whether staff exist for this service — set after fetch
   const [step, setStep] = useState<Step>('date')
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
@@ -755,8 +773,44 @@ function BookingModal({
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
-  const dates = getUpcomingDates(7)
-  const timeSessions = generateTimeSlots(service.duration)
+  const dates = getUpcomingDates(14)
+  const [availability, setAvailability] = useState<AvailabilityResult | null>(null)
+  const [loadingSlots, setLoadingSlots] = useState(false)
+
+  // Fetch staff for this service on mount; show staff step if any exist
+  useEffect(() => {
+    fetch(`/api/businesses/${business.slug}/staff`)
+      .then((r) => r.json())
+      .then((all) => {
+        if (!Array.isArray(all)) { setStaffLoaded(true); return }
+        const eligible = all
+          .filter((s) => Array.isArray(s.serviceIds) && s.serviceIds.includes(service.id))
+          .map((s) => ({ id: s.id, name: s.name, role: s.role, photoUrl: s.photoUrl }))
+        setStaffOptions(eligible)
+        // Staff dropdown will appear inline on time step — no separate step needed
+      })
+      .catch(() => {})
+      .finally(() => setStaffLoaded(true))
+  }, [business.slug, service.id])
+
+  // Fetch real availability when a date is picked
+  useEffect(() => {
+    if (!selectedDate) return
+    const dateStr = selectedDate.toISOString().split('T')[0]
+    setLoadingSlots(true)
+    setAvailability(null)
+    setSelectedTime(null)
+    const staffParam = selectedStaffId ? `&staffId=${selectedStaffId}` : ''
+    fetch(`/api/businesses/${business.slug}/availability?date=${dateStr}&serviceId=${service.id}${staffParam}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data && !data.error) setAvailability(data)
+      })
+      .catch(() => {})
+      .finally(() => setLoadingSlots(false))
+  }, [selectedDate, business.slug, service.id, selectedStaffId])
+
+  const timeSessions = availability?.groups ?? []
 
   async function handleConfirm() {
     if (!selectedDate || !selectedTime) return
@@ -771,6 +825,7 @@ function BookingModal({
           serviceId: service.id,
           businessId: business.id,
           linkId,
+          staffId: selectedStaffId,
           customerName: name,
           customerEmail: email,
           customerPhone: phone,
@@ -874,10 +929,72 @@ function BookingModal({
                   <div>
                     <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-4">
                       Select Time · {selectedDate && `${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} ${MONTH_NAMES[selectedDate.getMonth()]}`}
+                      {availability?.hours && (
+                        <span className="ml-2 normal-case text-stone-300 font-normal lowercase">
+                          (open {availability.hours.replace('-', '–')})
+                        </span>
+                      )}
                     </p>
-                    {timeSessions.map(({ label, slots }) => (
+
+                    {/* Preferred therapist (inline, optional) */}
+                    {staffOptions.length > 0 && (
+                      <div className="mb-5 bg-stone-50 rounded-2xl p-3 border border-stone-200">
+                        <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                          Preferred therapist <span className="text-stone-400 font-normal">(optional)</span>
+                        </label>
+                        <select
+                          value={selectedStaffId ?? ''}
+                          onChange={(e) => setSelectedStaffId(e.target.value || null)}
+                          className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent appearance-none"
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 0.75rem center',
+                            backgroundSize: '14px',
+                            paddingRight: '2.25rem',
+                          }}
+                        >
+                          <option value="">Any available</option>
+                          {staffOptions.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}{s.role ? ` · ${s.role}` : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-[10px] text-stone-400 mt-1.5">
+                          {selectedStaffId
+                            ? "Showing only this therapist's available times."
+                            : "We'll auto-assign the best available therapist."}
+                        </p>
+                      </div>
+                    )}
+
+                    {loadingSlots && (
+                      <p className="text-stone-400 text-sm py-8 text-center">Checking availability…</p>
+                    )}
+
+                    {!loadingSlots && availability?.closed && (
+                      <div className="text-center py-8 text-stone-500 text-sm">
+                        {business.name} is closed this day. Pick another date.
+                      </div>
+                    )}
+
+                    {!loadingSlots && availability && !availability.closed && timeSessions.length === 0 && (
+                      <div className="text-center py-8 text-stone-500 text-sm">
+                        No slots available — try another date.
+                      </div>
+                    )}
+
+                    {!loadingSlots && timeSessions.map(({ label, slots }) => {
+                      const anyAvailable = slots.some((s) => s.available)
+                      return (
                       <div key={label} className="mb-5">
-                        <p className="text-xs font-medium text-stone-400 mb-2">{label}</p>
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-xs font-medium text-stone-400">{label}</p>
+                          {!anyAvailable && (
+                            <p className="text-[10px] text-stone-300 uppercase tracking-wide">Fully booked</p>
+                          )}
+                        </div>
                         <div className="flex flex-wrap gap-2">
                           {slots.map(({ time, available }) => {
                             const isSelected = selectedTime === time
@@ -897,8 +1014,8 @@ function BookingModal({
                             )
                           })}
                         </div>
-                      </div>
-                    ))}
+                      </div>)
+                    })}
                     <button
                       disabled={!selectedTime}
                       onClick={() => setStep('details')}

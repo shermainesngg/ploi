@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
 import { getStripe, isStripeConfigured, calculatePlatformFee } from '@/lib/stripe'
-import { createBooking } from '@/lib/db'
+import { createBooking, pickEligibleStaff } from '@/lib/db'
 
 /**
  * Body: { serviceId, businessId, linkId?, customerName, customerEmail, customerPhone,
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const {
-      serviceId, businessId, linkId,
+      serviceId, businessId, linkId, staffId,
       customerName, customerEmail, customerPhone,
       bookingDate, bookingTime,
     } = body
@@ -45,6 +45,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Service or business not found' }, { status: 404 })
     }
 
+    // Auto-assign staff if customer didn't pick one
+    let resolvedStaffId: string | null = staffId ?? null
+    if (!resolvedStaffId) {
+      resolvedStaffId = await pickEligibleStaff({
+        businessId: business.id,
+        serviceId,
+        bookingDate,
+        bookingTime,
+      })
+    }
+
     // ── Stripe path ──
     if (isStripeConfigured()) {
       const origin = req.headers.get('origin') ?? process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
@@ -57,6 +68,7 @@ export async function POST(req: NextRequest) {
           service_id: serviceId,
           business_id: businessId,
           link_id: linkId ?? null,
+          staff_id: resolvedStaffId,
           customer_name: customerName,
           customer_contact: customerEmail,
           customer_email: customerEmail,

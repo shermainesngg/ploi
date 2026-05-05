@@ -1,6 +1,6 @@
 'use client'
 
-import { TrendingUp, Wallet, Users, AlertCircle, Sparkles } from 'lucide-react'
+import { TrendingUp, Wallet, Users, AlertCircle, Sparkles, Repeat } from 'lucide-react'
 import Link from 'next/link'
 import type { BusinessDashboardData } from '@/lib/types'
 import type { AgendaBooking } from '@/lib/db'
@@ -46,6 +46,29 @@ export default function OverviewTab({
           hint={`${formatPrice(data.stats.totalRevenue)} all time`}
         />
       </div>
+
+      {/* Returning customer insight (if any repeat bookings exist) */}
+      {(() => {
+        const total = data.bookings.filter((b) => b.status !== 'cancelled').length
+        const repeats = data.bookings.filter((b) => b.isRepeat && b.status !== 'cancelled').length
+        if (total === 0) return null
+        const pct = Math.round((repeats / total) * 100)
+        return (
+          <div className="mt-3 bg-purple-50 border border-purple-200 rounded-2xl p-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center text-purple-700 flex-shrink-0">
+              <Repeat size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-purple-900 text-sm">
+                {repeats} returning customer{repeats !== 1 ? 's' : ''}
+              </p>
+              <p className="text-purple-700 text-xs leading-relaxed">
+                {pct}% of bookings are repeats — these came from creator-acquired customers coming back.
+              </p>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Next appointment hero */}
       {next && (

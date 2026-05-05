@@ -134,10 +134,18 @@ export default function BookingActionCard({
                 {booking.isWalkin && (
                   <span className="text-[9px] font-bold uppercase bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">Walk-in</span>
                 )}
+                {booking.isRepeat && (
+                  <span className="text-[9px] font-bold uppercase bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">Repeat</span>
+                )}
                 <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${statusStyles(booking.status)}`}>
                   {booking.status === 'no_show' ? 'No-show' : booking.status}
                 </span>
               </div>
+              {booking.isRepeat && booking.acquiredBy && (
+                <p className="text-[10px] text-purple-600 mt-0.5">
+                  Returning customer · originally via {booking.acquiredBy.handle}
+                </p>
+              )}
               <p className="text-stone-500 text-xs truncate mt-0.5">{booking.serviceName}</p>
               <div className="flex items-center gap-2 text-[11px] text-stone-400 mt-1 flex-wrap">
                 <span>{formatPrice(booking.price)}</span>

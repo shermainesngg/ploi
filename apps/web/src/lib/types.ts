@@ -59,6 +59,7 @@ export interface Link {
   contentThumbnailUrl: string | null
   status: LinkStatus
   clickCount: number
+  featuredServiceId: string | null
 }
 
 export interface Booking {
@@ -97,6 +98,10 @@ export interface BookingWithCreator {
     handle: string
     displayName: string
   } | null
+  isRepeat: boolean
+  commissionRate: number | null
+  /** If this is a repeat booking, the original creator who acquired the customer. */
+  acquiredBy: { handle: string; slug: string } | null
 }
 
 export interface CreatorRollup {
@@ -134,6 +139,10 @@ export interface LinkPerformance {
   clicks: number
   bookings: number
   earnings: number
+  /** Customers acquired through this specific link */
+  customersAcquired: number
+  /** Acquired customers who have come back at least once */
+  customersRebooked: number
 }
 
 export interface ActivityEvent {
@@ -151,6 +160,16 @@ export interface CreatorDashboardData {
     totalBookings: number
     totalEarnings: number
     pendingPayout: number
+    /** Earnings from first-time bookings (10% rate) */
+    firstBookingEarnings: number
+    /** Earnings from repeat bookings (5% residual) */
+    repeatEarnings: number
+    /** Distinct customers acquired by this creator */
+    customersAcquired: number
+    /** Customers still in the 6-month attribution window */
+    customersInWindow: number
+    /** Total revenue (gross THB) attributed to this creator's customers (first + repeats) */
+    lifetimeValue: number
   }
   links: LinkPerformance[]
   recentActivity: ActivityEvent[]

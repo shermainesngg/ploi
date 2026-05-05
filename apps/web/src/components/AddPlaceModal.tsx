@@ -44,9 +44,20 @@ export default function AddPlaceModal({
   const [contentUrl, setContentUrl] = useState('')
   const [platform, setPlatform] = useState<SocialPlatform>('tiktok')
   const [thumbnailUrl, setThumbnailUrl] = useState('')
+  const [featuredServiceId, setFeaturedServiceId] = useState<string>('')
+  const [businessServices, setBusinessServices] = useState<Array<{ id: string; name: string; price: number; duration: number }>>([])
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // When the user picks a business, fetch its services for the featured-service dropdown
+  useEffect(() => {
+    if (!selectedBusiness) { setBusinessServices([]); setFeaturedServiceId(''); return }
+    fetch(`/api/businesses/${selectedBusiness.slug}/services`)
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => { if (Array.isArray(data)) setBusinessServices(data) })
+      .catch(() => {})
+  }, [selectedBusiness])
 
   // Debounced search
   useEffect(() => {
@@ -93,6 +104,7 @@ export default function AddPlaceModal({
           contentUrl: contentUrl.trim(),
           platform,
           contentThumbnailUrl: thumbnailUrl.trim() || undefined,
+          featuredServiceId: featuredServiceId || undefined,
         }),
       })
       const data = await res.json()
@@ -258,6 +270,37 @@ export default function AddPlaceModal({
                     ))}
                   </div>
                 </div>
+
+                {/* Featured service */}
+                {businessServices.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-semibold text-stone-700 mb-1.5">
+                      Which service did you feature? <span className="text-stone-400 font-normal">(optional)</span>
+                    </label>
+                    <select
+                      value={featuredServiceId}
+                      onChange={(e) => setFeaturedServiceId(e.target.value)}
+                      className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm appearance-none"
+                      style={{
+                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 0.75rem center',
+                        backgroundSize: '14px',
+                        paddingRight: '2.25rem',
+                      }}
+                    >
+                      <option value="">No specific service</option>
+                      {businessServices.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} · ฿{s.price.toLocaleString()}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-stone-400 mt-1.5">
+                      Customers landing from your link will see this service front-and-centre.
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-semibold text-stone-700 mb-1.5">

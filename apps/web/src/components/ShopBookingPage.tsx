@@ -749,6 +749,92 @@ function ServiceCard({
   )
 }
 
+// ── Featured service card (content-first hero) ──────────────────────────────
+
+function FeaturedServiceCard({
+  service, business, creator, link, onBook,
+}: {
+  service: Service
+  business: Business
+  creator: Creator
+  link: LinkRecord | null
+  onBook: (service: Service) => void
+}) {
+  const thumbnail = link?.contentThumbnailUrl
+  return (
+    <div className="px-4 mt-5">
+      <p className="text-[11px] font-bold text-rose-600 uppercase tracking-widest mb-2 px-1">
+        ✨ {creator.handle} recommends this for you
+      </p>
+
+      <div className="relative bg-white rounded-3xl shadow-lg border-2 border-rose-300 overflow-hidden">
+        {/* Content thumbnail header */}
+        {thumbnail && link?.contentUrl && (
+          <a
+            href={link.contentUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block relative aspect-video group"
+          >
+            <img src={thumbnail} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Play size={20} className="text-rose-600 fill-rose-600 ml-0.5" />
+              </div>
+            </div>
+            <div className="absolute bottom-3 left-3 bg-white/20 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 rounded-full">
+              Watch {creator.handle}&apos;s review
+            </div>
+          </a>
+        )}
+
+        {/* Service card body */}
+        <div className="p-5">
+          <div className="flex items-start gap-3 mb-3">
+            <div
+              className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-black ring-4 ring-rose-100"
+              style={{ backgroundColor: creator.avatarColor }}
+            >
+              {creator.avatarInitials}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-stone-500">
+                {creator.displayName} got the
+              </p>
+              <h3 className="font-black text-stone-900 text-lg leading-tight mt-0.5">
+                {service.name}
+              </h3>
+            </div>
+          </div>
+
+          <p className="text-stone-600 text-sm leading-relaxed mb-4">{service.description}</p>
+
+          <div className="flex items-center gap-3 mb-4 text-xs">
+            <span className="flex items-center gap-1 text-stone-500">
+              <Clock size={12} />
+              {formatDuration(service.duration)}
+            </span>
+            <span className="text-stone-300">·</span>
+            <span className="font-bold text-stone-900 text-base">{formatPrice(service.price)}</span>
+          </div>
+
+          <button
+            onClick={() => onBook(service)}
+            className="w-full py-4 rounded-2xl bg-rose-600 text-white font-bold text-base hover:bg-rose-700 active:scale-[0.98] transition-all shadow-md"
+          >
+            Book this treatment
+          </button>
+
+          <p className="text-center text-[11px] text-stone-400 mt-2.5">
+            This is what {creator.displayName.split(' ')[0]} experienced — book the exact same thing.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Booking modal (unchanged from previous) ──────────────────────────────────
 
 function BookingModal({
@@ -850,7 +936,7 @@ function BookingModal({
     }
   }
 
-  const canProceedFromDetails = name.trim().length > 0 && email.trim().length > 0
+  const canProceedFromDetails = name.trim().length > 0 && email.trim().length > 0 && phone.trim().length > 0
 
   return (
     <>
@@ -1054,7 +1140,7 @@ function BookingModal({
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-stone-700 mb-1.5">Phone <span className="text-stone-400 font-normal text-xs">(optional)</span></label>
+                        <label className="block text-sm font-medium text-stone-700 mb-1.5">Phone</label>
                         <input
                           type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
                           placeholder="+66…"
@@ -1160,6 +1246,14 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
     fetch(`/api/links/${encodeURIComponent(link.shortCode)}/click`, { method: 'POST' }).catch(() => {})
   }, [creator, link])
 
+  // Content-first: featured service hero (if link has one + creator is present)
+  const featuredService =
+    creator && link?.featuredServiceId
+      ? business.services.find((s) => s.id === link.featuredServiceId)
+      : null
+  const otherServices = featuredService
+    ? business.services.filter((s) => s.id !== featuredService.id)
+    : business.services
   const hasServices = business.services.length > 0
   const photos = business.photos.length > 0 ? business.photos : business.coverPhotoUrl ? [business.coverPhotoUrl] : []
 
@@ -1192,13 +1286,26 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
         {/* About section */}
         <AboutSection business={business} />
 
+        {/* Featured service (content-first hero) */}
+        {featuredService && creator && (
+          <FeaturedServiceCard
+            service={featuredService}
+            business={business}
+            creator={creator}
+            link={link}
+            onBook={setActiveService}
+          />
+        )}
+
         {/* Services */}
         <div className="px-4 mt-6 pb-2" ref={servicesRef}>
           {hasServices ? (
             <>
-              <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-4">Our Services</h2>
+              <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-4">
+                {featuredService ? 'Or explore other services' : 'Our Services'}
+              </h2>
               <div className="space-y-3">
-                {business.services.map((service) => (
+                {otherServices.map((service) => (
                   <ServiceCard key={service.id} service={service} onBook={setActiveService} />
                 ))}
               </div>

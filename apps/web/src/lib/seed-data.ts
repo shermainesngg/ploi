@@ -104,6 +104,7 @@ export const links: Link[] = [
     contentThumbnailUrl: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400',
     status: 'active',
     clickCount: 1247,
+    featuredServiceId: 'svc_001',
   },
 ]
 

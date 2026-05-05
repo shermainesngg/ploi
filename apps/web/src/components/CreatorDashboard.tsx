@@ -16,6 +16,7 @@ import {
   Youtube,
   Twitter,
   Globe,
+  Users,
 } from 'lucide-react'
 import { useState } from 'react'
 import type {
@@ -175,6 +176,15 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
                 <span>{conv.toFixed(1)}% conversion</span>
               </div>
             )}
+
+            {link.customersAcquired > 0 && (
+              <div className="mt-2 text-center text-[11px] text-purple-600 font-medium">
+                Acquired {link.customersAcquired} customer{link.customersAcquired !== 1 ? 's' : ''}
+                {link.customersRebooked > 0 && (
+                  <> · <span className="font-bold">{link.customersRebooked}</span> rebooked</>
+                )}
+              </div>
+            )}
           </>
         ) : link.status === 'pending' ? (
           <p className="text-xs text-stone-500 text-center py-3 bg-amber-50/50 rounded-xl">
@@ -271,6 +281,55 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
               </div>
               <p className="text-xs text-rose-200 max-w-[140px] text-right">
                 Paid out monthly. Next: 1st of next month.
+              </p>
+            </div>
+          )}
+
+          {/* Earnings split */}
+          {(totals.firstBookingEarnings > 0 || totals.repeatEarnings > 0) && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <div className="bg-white rounded-2xl border border-stone-100 p-3 shadow-sm">
+                <p className="text-[10px] uppercase tracking-wide font-bold text-stone-400">First bookings</p>
+                <p className="text-lg font-black text-stone-900 mt-1 leading-none">
+                  {formatPrice(totals.firstBookingEarnings)}
+                </p>
+                <p className="text-[10px] text-stone-400 mt-1">10% rate</p>
+              </div>
+              <div className="bg-white rounded-2xl border border-purple-200 bg-purple-50/30 p-3 shadow-sm">
+                <p className="text-[10px] uppercase tracking-wide font-bold text-purple-700">Repeat earnings</p>
+                <p className="text-lg font-black text-purple-900 mt-1 leading-none">
+                  {formatPrice(totals.repeatEarnings)}
+                </p>
+                <p className="text-[10px] text-purple-600 mt-1">5% residual</p>
+              </div>
+            </div>
+          )}
+
+          {/* Customer acquisition stats */}
+          {totals.customersAcquired > 0 && (
+            <div className="mt-3 bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Users size={14} className="text-rose-600" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Customers you acquired
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div>
+                  <p className="text-xl font-black text-stone-900 leading-none">{totals.customersAcquired}</p>
+                  <p className="text-[10px] text-stone-400 mt-1">Total</p>
+                </div>
+                <div>
+                  <p className="text-xl font-black text-stone-900 leading-none">{totals.customersInWindow}</p>
+                  <p className="text-[10px] text-stone-400 mt-1">In window</p>
+                </div>
+                <div>
+                  <p className="text-xl font-black text-stone-900 leading-none">{formatPrice(totals.lifetimeValue)}</p>
+                  <p className="text-[10px] text-stone-400 mt-1">Spent</p>
+                </div>
+              </div>
+              <p className="text-[10px] text-stone-400 mt-2 text-center">
+                Repeat bookings within 6 months earn you 5% residual.
               </p>
             </div>
           )}

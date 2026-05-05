@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
 import { getStripe, isStripeConfigured, calculatePlatformFee } from '@/lib/stripe'
-import { createBooking, pickEligibleStaff } from '@/lib/db'
+import { createBooking, pickEligibleStaff, resolveAttribution, createAcquisition } from '@/lib/db'
 
 /**
  * Body: { serviceId, businessId, linkId?, customerName, customerEmail, customerPhone,
@@ -61,13 +61,30 @@ export async function POST(req: NextRequest) {
       const origin = req.headers.get('origin') ?? process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
       const stripe = getStripe()
 
+      // Resolve attribution before insert (repeat-booking residual + first-booking acquisition)
+      const attribution = await resolveAttribution({
+        customerPhone: customerPhone ?? null,
+        businessId,
+        linkId: linkId ?? null,
+      })
+
+      let creatorIdForAcq: string | null = null
+      if (attribution.effectiveLinkId) {
+        const { data: linkRow } = await db
+          .from('links')
+          .select('creator_id')
+          .eq('id', attribution.effectiveLinkId)
+          .maybeSingle()
+        creatorIdForAcq = linkRow?.creator_id ?? null
+      }
+
       // Pre-create the booking so we can attach the session id
       const { data: booking, error: bookErr } = await db
         .from('bookings')
         .insert({
           service_id: serviceId,
           business_id: businessId,
-          link_id: linkId ?? null,
+          link_id: attribution.effectiveLinkId,
           staff_id: resolvedStaffId,
           customer_name: customerName,
           customer_contact: customerEmail,
@@ -77,10 +94,26 @@ export async function POST(req: NextRequest) {
           booking_time: bookingTime,
           status: 'pending',
           payment_status: 'pending',
+          acquisition_id: attribution.acquisitionId,
+          is_repeat: attribution.isRepeat,
+          commission_rate: attribution.commissionRate,
         })
         .select()
         .single()
       if (bookErr) throw new Error(bookErr.message)
+
+      // First booking via creator link → register acquisition
+      if (attribution.shouldCreateAcquisition && linkId && creatorIdForAcq && customerPhone) {
+        await createAcquisition({
+          customerPhone,
+          customerEmail,
+          customerName,
+          businessId,
+          creatorId: creatorIdForAcq,
+          linkId,
+          firstBookingId: booking.id,
+        })
+      }
 
       const amountCents = service.price * 100  // THB → satang
       const lineItems = [

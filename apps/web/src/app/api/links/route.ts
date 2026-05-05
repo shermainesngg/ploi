@@ -6,7 +6,7 @@ import type { SocialPlatform } from '@/lib/types'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { creatorSlug, businessSlug, contentUrl, platform, contentThumbnailUrl } = body
+    const { creatorSlug, businessSlug, contentUrl, platform, contentThumbnailUrl, featuredServiceId } = body
 
     if (!creatorSlug || !businessSlug) {
       return NextResponse.json({ error: 'creatorSlug and businessSlug are required' }, { status: 400 })
@@ -25,6 +25,18 @@ export async function POST(req: NextRequest) {
     const cleanPlatform: SocialPlatform | undefined =
       platform && validPlatforms.includes(platform) ? (platform as SocialPlatform) : undefined
 
+    // Validate featured service belongs to this business if provided
+    let validFeatured: string | null = null
+    if (typeof featuredServiceId === 'string' && featuredServiceId.length > 0) {
+      const { data: svc } = await db
+        .from('services')
+        .select('id')
+        .eq('id', featuredServiceId)
+        .eq('business_id', business.id)
+        .maybeSingle()
+      if (svc) validFeatured = svc.id
+    }
+
     const link = await createLink({
       creatorId: creator.id,
       businessId: business.id,
@@ -32,6 +44,7 @@ export async function POST(req: NextRequest) {
       contentUrl,
       platform: cleanPlatform,
       contentThumbnailUrl,
+      featuredServiceId: validFeatured,
     })
 
     return NextResponse.json(

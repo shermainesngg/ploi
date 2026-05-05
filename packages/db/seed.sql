@@ -1,5 +1,6 @@
 -- BRIDGE MVP — Seed Data
--- Run after schema.sql (and any migrations)
+-- Idempotent: safe to re-run on existing data. Never deletes rows that have FK references.
+-- Run after schema.sql (and any migrations).
 
 -- ── Business: Glow Studio Bangkok ────────────────────────────────────────────
 insert into businesses (
@@ -37,48 +38,69 @@ values (
   127
 )
 on conflict (id) do update set
+  slug = excluded.slug,
+  name = excluded.name,
+  category = excluded.category,
+  location = excluded.location,
+  description = excluded.description,
   cover_photo_url = excluded.cover_photo_url,
   photos = excluded.photos,
   opening_hours = excluded.opening_hours,
   contact_phone = excluded.contact_phone,
   contact_whatsapp = excluded.contact_whatsapp,
-  contact_line = excluded.contact_line;
+  contact_line = excluded.contact_line,
+  rating = excluded.rating,
+  review_count = excluded.review_count;
 
--- ── Services ──────────────────────────────────────────────────────────────────
--- Wipe existing services for this business so re-running this file is idempotent.
-delete from services where business_id = 'a1b2c3d4-0000-0000-0000-000000000001';
+-- ── Services ────────────────────────────────────────────────────────────────
+-- Update-or-insert by (business_id, name) without deleting rows that have FK references.
+-- Step 1: update any existing rows with canonical values.
+update services s set
+  description = c.description,
+  duration    = c.duration,
+  price       = c.price,
+  sort_order  = c.sort_order,
+  is_active   = true
+from (values
+  ('Signature Glow Facial',     'Our hero treatment. Deep cleanse, extraction, customised serum, LED therapy. The full glow package.',                  60, 1800, 1),
+  ('Deep Cleanse Facial',       'Thorough pore cleanse with steam, enzyme exfoliation, and calming mask. Perfect for congested skin.',                  45, 1200, 2),
+  ('Hydra Boost Treatment',     'Intensive hydration therapy with hyaluronic acid infusion and barrier-repair mask. Dewy skin guaranteed.',             75, 2500, 3),
+  ('Express Glow-Up',           'Quick-fix radiance boost. Brightening peel + vitamin C serum. Perfect before a night out.',                            30, 800,  4),
+  ('LED Light Therapy Add-On',  'Red & near-infrared light therapy to boost collagen and calm inflammation. Add to any facial.',                       20, 500,  5)
+) as c(name, description, duration, price, sort_order)
+where s.business_id = 'a1b2c3d4-0000-0000-0000-000000000001'
+  and s.name = c.name;
 
-insert into services (business_id, name, description, duration, price, sort_order) values
-(
+-- Step 2: insert any missing services.
+insert into services (business_id, name, description, duration, price, sort_order)
+select
   'a1b2c3d4-0000-0000-0000-000000000001',
-  'Signature Glow Facial',
-  'Our hero treatment. Deep cleanse, extraction, customised serum, LED therapy. The full glow package.',
-  60, 1800, 1
-),
-(
-  'a1b2c3d4-0000-0000-0000-000000000001',
-  'Deep Cleanse Facial',
-  'Thorough pore cleanse with steam, enzyme exfoliation, and calming mask. Perfect for congested skin.',
-  45, 1200, 2
-),
-(
-  'a1b2c3d4-0000-0000-0000-000000000001',
-  'Hydra Boost Treatment',
-  'Intensive hydration therapy with hyaluronic acid infusion and barrier-repair mask. Dewy skin guaranteed.',
-  75, 2500, 3
-),
-(
-  'a1b2c3d4-0000-0000-0000-000000000001',
-  'Express Glow-Up',
-  'Quick-fix radiance boost. Brightening peel + vitamin C serum. Perfect before a night out.',
-  30, 800, 4
-),
-(
-  'a1b2c3d4-0000-0000-0000-000000000001',
-  'LED Light Therapy Add-On',
-  'Red & near-infrared light therapy to boost collagen and calm inflammation. Add to any facial.',
-  20, 500, 5
+  c.name, c.description, c.duration, c.price, c.sort_order
+from (values
+  ('Signature Glow Facial',     'Our hero treatment. Deep cleanse, extraction, customised serum, LED therapy. The full glow package.',                  60, 1800, 1),
+  ('Deep Cleanse Facial',       'Thorough pore cleanse with steam, enzyme exfoliation, and calming mask. Perfect for congested skin.',                  45, 1200, 2),
+  ('Hydra Boost Treatment',     'Intensive hydration therapy with hyaluronic acid infusion and barrier-repair mask. Dewy skin guaranteed.',             75, 2500, 3),
+  ('Express Glow-Up',           'Quick-fix radiance boost. Brightening peel + vitamin C serum. Perfect before a night out.',                            30, 800,  4),
+  ('LED Light Therapy Add-On',  'Red & near-infrared light therapy to boost collagen and calm inflammation. Add to any facial.',                       20, 500,  5)
+) as c(name, description, duration, price, sort_order)
+where not exists (
+  select 1 from services existing
+  where existing.business_id = 'a1b2c3d4-0000-0000-0000-000000000001'
+    and existing.name = c.name
 );
+
+-- Step 3: dedupe — keep one row per (business_id, name); only delete duplicates that have NO bookings.
+-- This makes re-running idempotent without breaking referential integrity.
+with keepers as (
+  select distinct on (name) id
+  from services
+  where business_id = 'a1b2c3d4-0000-0000-0000-000000000001'
+  order by name, created_at asc, id asc
+)
+delete from services s
+where s.business_id = 'a1b2c3d4-0000-0000-0000-000000000001'
+  and s.id not in (select id from keepers)
+  and not exists (select 1 from bookings b where b.service_id = s.id);
 
 -- ── Creator: @glowwithsara ────────────────────────────────────────────────────
 insert into creators (id, slug, handle, display_name, bio, socials)
@@ -94,10 +116,20 @@ values (
   ]'::jsonb
 )
 on conflict (id) do update set
+  slug = excluded.slug,
+  handle = excluded.handle,
+  display_name = excluded.display_name,
+  bio = excluded.bio,
   socials = excluded.socials;
 
--- ── Link with content URL + active status ────────────────────────────────────
-insert into links (creator_id, business_id, short_code, content_url, platform, content_thumbnail_url, status)
+-- ── Link: Sara → Glow Studio (with featured service) ─────────────────────────
+-- featured_service_id resolved at insert time by name lookup. Falls back to NULL
+-- if the column doesn't exist yet (migration_005 hasn't been run).
+insert into links (
+  creator_id, business_id, short_code,
+  content_url, platform, content_thumbnail_url, status,
+  featured_service_id
+)
 values (
   'b1b2c3d4-0000-0000-0000-000000000001',
   'a1b2c3d4-0000-0000-0000-000000000001',
@@ -105,10 +137,32 @@ values (
   'https://www.tiktok.com/@glowwithsara/video/7298765432109876543',
   'tiktok',
   'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400',
-  'active'
+  'active',
+  (
+    select id from services
+    where business_id = 'a1b2c3d4-0000-0000-0000-000000000001'
+      and name = 'Signature Glow Facial'
+    order by created_at asc, id asc
+    limit 1
+  )
 )
 on conflict (creator_id, business_id) do update set
-  content_url = excluded.content_url,
-  platform = excluded.platform,
+  short_code            = excluded.short_code,
+  content_url           = excluded.content_url,
+  platform              = excluded.platform,
   content_thumbnail_url = excluded.content_thumbnail_url,
-  status = excluded.status;
+  status                = excluded.status,
+  featured_service_id   = excluded.featured_service_id;
+
+-- Belt-and-braces: ensure featured_service_id is set even if the row already
+-- existed before the column was added or before this seed featured anything.
+update links
+set featured_service_id = (
+  select id from services
+  where business_id = 'a1b2c3d4-0000-0000-0000-000000000001'
+    and name = 'Signature Glow Facial'
+  order by created_at asc, id asc
+  limit 1
+)
+where short_code = 'glowwithsara/glowstudio'
+  and featured_service_id is null;

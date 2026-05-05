@@ -27,6 +27,7 @@ import type {
   ActivityEvent,
 } from './types'
 import { calculateCreatorEarnings, calculatePlatformFee } from './constants'
+import { normalizePhone } from './phone'
 
 // ── Category → gradient ───────────────────────────────────────────────────────
 
@@ -146,6 +147,7 @@ function rowToLink(r: any, creatorSlug: string, businessSlug: string): Link {
     contentThumbnailUrl: r.content_thumbnail_url ?? null,
     status: (r.status ?? 'pending') as LinkStatus,
     clickCount: r.click_count ?? 0,
+    featuredServiceId: r.featured_service_id ?? null,
   }
 }
 
@@ -372,6 +374,7 @@ export async function createLink(opts: {
   contentUrl?: string
   platform?: SocialPlatform
   contentThumbnailUrl?: string
+  featuredServiceId?: string | null
 }) {
   if (!isSupabaseConfigured()) {
     throw new Error('Supabase not configured.')
@@ -386,6 +389,7 @@ export async function createLink(opts: {
       content_url: opts.contentUrl ?? null,
       platform: opts.platform ?? null,
       content_thumbnail_url: opts.contentThumbnailUrl ?? null,
+      featured_service_id: opts.featuredServiceId ?? null,
       status: 'pending',
     })
     .select()
@@ -682,42 +686,236 @@ export async function getRecentBookingCount(businessSlug: string): Promise<numbe
   return count ?? 0
 }
 
+// ── Repeat-attribution / customer acquisitions ──────────────────────────────
+
+export interface ActiveAcquisition {
+  id: string
+  creatorId: string
+  linkId: string | null
+  customerPhone: string
+  acquiredAt: string
+  expiresAt: string
+}
+
+/**
+ * Find an active, non-expired acquisition for this phone+business.
+ * Side-effect: marks any expired-but-still-active row inactive.
+ */
+export async function findActiveAcquisition(
+  customerPhone: string,
+  businessId: string,
+): Promise<ActiveAcquisition | null> {
+  if (!isSupabaseConfigured()) return null
+  const phone = normalizePhone(customerPhone)
+  if (!phone) return null
+
+  const db = createServerClient()
+  const { data: row } = await db
+    .from('customer_acquisitions')
+    .select('id, creator_id, link_id, customer_phone, acquired_at, expires_at, is_active')
+    .eq('customer_phone', phone)
+    .eq('business_id', businessId)
+    .eq('is_active', true)
+    .maybeSingle()
+  if (!row) return null
+
+  const now = new Date()
+  if (new Date(row.expires_at) < now) {
+    // Window expired — mark inactive
+    await db.from('customer_acquisitions').update({ is_active: false }).eq('id', row.id)
+    return null
+  }
+
+  return {
+    id: row.id,
+    creatorId: row.creator_id,
+    linkId: row.link_id,
+    customerPhone: row.customer_phone,
+    acquiredAt: row.acquired_at,
+    expiresAt: row.expires_at,
+  }
+}
+
+/**
+ * Run attribution for a new booking. Returns:
+ *   - attribution to apply (acquisition_id, link_id override, is_repeat, commission_rate)
+ *   - whether this is a new acquisition (caller should create it after the booking is inserted)
+ */
+export async function resolveAttribution(opts: {
+  customerPhone: string | null
+  businessId: string
+  linkId: string | null
+}): Promise<{
+  acquisitionId: string | null
+  effectiveLinkId: string | null
+  isRepeat: boolean
+  commissionRate: number | null
+  shouldCreateAcquisition: boolean
+}> {
+  // No phone → no attribution
+  const phone = normalizePhone(opts.customerPhone ?? '')
+  if (!phone) {
+    return {
+      acquisitionId: null,
+      effectiveLinkId: opts.linkId ?? null,
+      isRepeat: false,
+      commissionRate: opts.linkId ? 0.10 : null,
+      shouldCreateAcquisition: false,
+    }
+  }
+
+  // Existing active acquisition → repeat
+  const existing = await findActiveAcquisition(phone, opts.businessId)
+  if (existing) {
+    return {
+      acquisitionId: existing.id,
+      effectiveLinkId: existing.linkId,  // original creator wins
+      isRepeat: true,
+      commissionRate: 0.05,
+      shouldCreateAcquisition: false,
+    }
+  }
+
+  // First booking via a creator link → create acquisition (after insert)
+  if (opts.linkId) {
+    return {
+      acquisitionId: null,  // will be set after creation
+      effectiveLinkId: opts.linkId,
+      isRepeat: false,
+      commissionRate: 0.10,
+      shouldCreateAcquisition: true,
+    }
+  }
+
+  // No link, no existing → unattributed
+  return {
+    acquisitionId: null,
+    effectiveLinkId: null,
+    isRepeat: false,
+    commissionRate: null,
+    shouldCreateAcquisition: false,
+  }
+}
+
+export async function createAcquisition(opts: {
+  customerPhone: string
+  customerEmail?: string | null
+  customerName: string
+  businessId: string
+  creatorId: string
+  linkId: string
+  firstBookingId: string
+}): Promise<string | null> {
+  if (!isSupabaseConfigured()) return null
+  const phone = normalizePhone(opts.customerPhone)
+  if (!phone) return null
+
+  const db = createServerClient()
+  const expiresAt = new Date()
+  expiresAt.setMonth(expiresAt.getMonth() + 6)
+
+  const { data, error } = await db
+    .from('customer_acquisitions')
+    .insert({
+      customer_phone: phone,
+      customer_email: opts.customerEmail ?? null,
+      customer_name: opts.customerName,
+      business_id: opts.businessId,
+      creator_id: opts.creatorId,
+      link_id: opts.linkId,
+      first_booking_id: opts.firstBookingId,
+      expires_at: expiresAt.toISOString(),
+    })
+    .select('id')
+    .single()
+  if (error) {
+    // Race or duplicate (unique constraint on phone+business). Re-look-up the existing.
+    const { data: existing } = await db
+      .from('customer_acquisitions')
+      .select('id')
+      .eq('customer_phone', phone)
+      .eq('business_id', opts.businessId)
+      .maybeSingle()
+    return existing?.id ?? null
+  }
+  // Backfill the first booking with the new acquisition id
+  await db.from('bookings').update({ acquisition_id: data.id }).eq('id', opts.firstBookingId)
+  return data.id
+}
+
 export async function createBooking(data: {
   serviceId: string
   businessId: string
   linkId?: string
   customerName: string
   customerContact: string
+  customerEmail?: string
+  customerPhone?: string
   bookingDate: string
   bookingTime: string
 }) {
   if (!isSupabaseConfigured()) {
-    // Return a mock confirmation for the demo
     return { id: `demo_${Date.now()}`, status: 'pending' }
   }
 
   const db = createServerClient()
+
+  // Resolve attribution before insert
+  const attribution = await resolveAttribution({
+    customerPhone: data.customerPhone ?? data.customerContact ?? null,
+    businessId: data.businessId,
+    linkId: data.linkId ?? null,
+  })
+
+  // Look up creator id if we have an effectiveLinkId
+  let creatorId: string | null = null
+  if (attribution.effectiveLinkId) {
+    const { data: link } = await db
+      .from('links')
+      .select('creator_id')
+      .eq('id', attribution.effectiveLinkId)
+      .maybeSingle()
+    creatorId = link?.creator_id ?? null
+  }
 
   const { data: booking, error } = await db
     .from('bookings')
     .insert({
       service_id: data.serviceId,
       business_id: data.businessId,
-      link_id: data.linkId ?? null,
+      link_id: attribution.effectiveLinkId,
       customer_name: data.customerName,
       customer_contact: data.customerContact,
+      customer_email: data.customerEmail ?? null,
+      customer_phone: data.customerPhone ?? null,
       booking_date: data.bookingDate,
       booking_time: data.bookingTime,
+      acquisition_id: attribution.acquisitionId,
+      is_repeat: attribution.isRepeat,
+      commission_rate: attribution.commissionRate,
     })
     .select()
     .single()
 
   if (error) throw new Error(error.message)
 
-  // Record attribution event
-  if (data.linkId) {
+  // First booking via creator link → create acquisition record
+  if (attribution.shouldCreateAcquisition && data.linkId && creatorId && data.customerPhone) {
+    await createAcquisition({
+      customerPhone: data.customerPhone,
+      customerEmail: data.customerEmail ?? null,
+      customerName: data.customerName,
+      businessId: data.businessId,
+      creatorId,
+      linkId: data.linkId,
+      firstBookingId: booking.id,
+    })
+  }
+
+  // Record attribution event for any link-attributed booking
+  if (attribution.effectiveLinkId) {
     await db.from('attribution_events').insert({
-      link_id: data.linkId,
+      link_id: attribution.effectiveLinkId,
       booking_id: booking.id,
       event_type: 'booking_confirmed',
     })
@@ -760,6 +958,9 @@ function generateMockBookings(business: Business): BookingWithCreator[] {
       status: i === 0 ? 'pending' : 'confirmed',
       createdAt: created.toISOString(),
       creator: attributed ? sara : null,
+      isRepeat: false,
+      commissionRate: attributed ? 0.10 : null,
+      acquiredBy: null,
     })
   }
   return bookings
@@ -821,6 +1022,8 @@ export interface AgendaBooking {
   creator: { slug: string; handle: string } | null
   staffId: string | null
   staffName: string | null
+  isRepeat: boolean
+  acquiredBy: { slug: string; handle: string } | null
 }
 
 export async function getBookingsForDate(
@@ -840,10 +1043,11 @@ export async function getBookingsForDate(
   const { data: rows } = await db
     .from('bookings')
     .select(`
-      id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id,
+      id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id, is_repeat,
       services ( name, price, duration ),
       links ( creators ( slug, handle ) ),
-      staff ( id, name )
+      staff ( id, name ),
+      customer_acquisitions ( creators ( slug, handle ) )
     `)
     .eq('business_id', bizRow.id)
     .eq('booking_date', dateISO)
@@ -856,6 +1060,8 @@ export async function getBookingsForDate(
       const link = Array.isArray(r.links) ? r.links[0] : r.links
       const creatorRow = link ? (Array.isArray(link.creators) ? link.creators[0] : link.creators) : null
       const staffRow = Array.isArray(r.staff) ? r.staff[0] : r.staff
+      const acq = Array.isArray(r.customer_acquisitions) ? r.customer_acquisitions[0] : r.customer_acquisitions
+      const acqCre = acq ? (Array.isArray(acq.creators) ? acq.creators[0] : acq.creators) : null
 
       const startMin = (() => {
         const [h, m] = String(r.booking_time).slice(0, 5).split(':').map(Number)
@@ -880,6 +1086,8 @@ export async function getBookingsForDate(
         creator: creatorRow ? { slug: creatorRow.slug, handle: creatorRow.handle } : null,
         staffId: r.staff_id ?? null,
         staffName: staffRow?.name ?? null,
+        isRepeat: !!r.is_repeat,
+        acquiredBy: acqCre ? { slug: acqCre.slug, handle: acqCre.handle } : null,
       }
     })
 }
@@ -1177,6 +1385,8 @@ export async function getStaffBookingsForDate(
         creator: cre ? { slug: cre.slug, handle: cre.handle } : null,
         staffId: staffId,
         staffName: null,  // page already knows the staff
+        isRepeat: false,
+        acquiredBy: null,
       }
     })
 }
@@ -1354,10 +1564,11 @@ export async function listBusinessBookings(
   let query = db
     .from('bookings')
     .select(`
-      id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id, created_at,
+      id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id, created_at, is_repeat,
       services ( name, price, duration ),
       links ( creators ( slug, handle ) ),
-      staff ( id, name )
+      staff ( id, name ),
+      customer_acquisitions ( creators ( slug, handle ) )
     `)
     .eq('business_id', bizRow.id)
     .order('booking_date', { ascending: false })
@@ -1375,6 +1586,8 @@ export async function listBusinessBookings(
       const link = Array.isArray(r.links) ? r.links[0] : r.links
       const cre = link ? (Array.isArray(link.creators) ? link.creators[0] : link.creators) : null
       const staffRow = Array.isArray(r.staff) ? r.staff[0] : r.staff
+      const acq = Array.isArray(r.customer_acquisitions) ? r.customer_acquisitions[0] : r.customer_acquisitions
+      const acqCre = acq ? (Array.isArray(acq.creators) ? acq.creators[0] : acq.creators) : null
       const startMin = (() => {
         const [h, m] = String(r.booking_time).slice(0, 5).split(':').map(Number)
         return h * 60 + (m || 0)
@@ -1396,6 +1609,8 @@ export async function listBusinessBookings(
         creator: cre ? { slug: cre.slug, handle: cre.handle } : null,
         staffId: r.staff_id ?? null,
         staffName: staffRow?.name ?? null,
+        isRepeat: !!r.is_repeat,
+        acquiredBy: acqCre ? { slug: acqCre.slug, handle: acqCre.handle } : null,
       }
     })
 }
@@ -1457,6 +1672,8 @@ export async function getBookingsForRange(
         creator: creatorRow ? { slug: creatorRow.slug, handle: creatorRow.handle } : null,
         staffId: r.staff_id ?? null,
         staffName: staffRow?.name ?? null,
+        isRepeat: false,
+        acquiredBy: null,
       }
     })
 }
@@ -1506,33 +1723,43 @@ export async function getBusinessDashboard(
   const { data: bookingRows } = await db
     .from('bookings')
     .select(`
-      id, customer_name, booking_date, booking_time, status, created_at,
+      id, customer_name, booking_date, booking_time, status, created_at, is_repeat, commission_rate,
       services ( name, price ),
       links (
         creators ( slug, handle, display_name )
+      ),
+      customer_acquisitions (
+        creators ( slug, handle )
       )
     `)
     .eq('business_id', bizRow.id)
     .order('created_at', { ascending: false })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const bookings: BookingWithCreator[] = (bookingRows ?? []).map((r: any) => ({
-    id: r.id,
-    serviceName: r.services?.name ?? 'Unknown',
-    price: r.services?.price ?? 0,
-    customerName: r.customer_name,
-    date: r.booking_date,
-    time: r.booking_time,
-    status: r.status,
-    createdAt: r.created_at,
-    creator: r.links?.creators
-      ? {
-          slug: r.links.creators.slug,
-          handle: r.links.creators.handle,
-          displayName: r.links.creators.display_name,
-        }
-      : null,
-  }))
+  const bookings: BookingWithCreator[] = (bookingRows ?? []).map((r: any) => {
+    const acq = Array.isArray(r.customer_acquisitions) ? r.customer_acquisitions[0] : r.customer_acquisitions
+    const acqCre = acq ? (Array.isArray(acq.creators) ? acq.creators[0] : acq.creators) : null
+    return {
+      id: r.id,
+      serviceName: r.services?.name ?? 'Unknown',
+      price: r.services?.price ?? 0,
+      customerName: r.customer_name,
+      date: r.booking_date,
+      time: r.booking_time,
+      status: r.status,
+      createdAt: r.created_at,
+      creator: r.links?.creators
+        ? {
+            slug: r.links.creators.slug,
+            handle: r.links.creators.handle,
+            displayName: r.links.creators.display_name,
+          }
+        : null,
+      isRepeat: !!r.is_repeat,
+      commissionRate: r.commission_rate ?? null,
+      acquiredBy: acqCre ? { slug: acqCre.slug, handle: acqCre.handle } : null,
+    }
+  })
 
   return {
     business,
@@ -1571,9 +1798,11 @@ export async function getCreatorDashboard(
         status: seedLink?.status ?? 'active',
         contentUrl: seedLink?.contentUrl ?? null,
         platform: seedLink?.platform ?? null,
-        clicks: 1247 - idx * 100,   // mock
+        clicks: 1247 - idx * 100,
         bookings: bookings.length,
         earnings,
+        customersAcquired: 0,
+        customersRebooked: 0,
       }
     })
 
@@ -1613,6 +1842,11 @@ export async function getCreatorDashboard(
         totalBookings,
         totalEarnings,
         pendingPayout: totalEarnings,
+        firstBookingEarnings: totalEarnings,
+        repeatEarnings: 0,
+        customersAcquired: 0,
+        customersInWindow: 0,
+        lifetimeValue: 0,
       },
       links,
       recentActivity,
@@ -1644,22 +1878,60 @@ export async function getCreatorDashboard(
   const { data: bookingRows } = linkIds.length
     ? await db
         .from('bookings')
-        .select('id, link_id, created_at, status, services ( name, price )')
+        .select('id, link_id, created_at, status, is_repeat, commission_rate, customer_phone, services ( name, price )')
         .in('link_id', linkIds)
         .neq('status', 'cancelled')
         .neq('status', 'declined')
     : { data: [] }
+
+  // Acquisitions for this creator → customers acquired + still in window
+  const { data: acqRows } = await db
+    .from('customer_acquisitions')
+    .select('id, link_id, customer_phone, expires_at, is_active')
+    .eq('creator_id', creatorRow.id)
+
+  const now = new Date()
+
+  // Per-link aggregates
+  const acquiredByLink = new Map<string, Set<string>>()
+  const rebookedByLink = new Map<string, Set<string>>()
+
+  for (const lid of linkIds) {
+    acquiredByLink.set(lid, new Set())
+    rebookedByLink.set(lid, new Set())
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const a of (acqRows ?? []) as any[]) {
+    if (!a.link_id) continue
+    const set = acquiredByLink.get(a.link_id)
+    if (set) set.add(a.customer_phone)
+  }
+
+  // Determine which acquired phones came back (have a repeat booking)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const repeatBookingPhones = new Set<string>()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const b of (bookingRows ?? []) as any[]) {
+    if (b.is_repeat && b.customer_phone) repeatBookingPhones.add(b.customer_phone)
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const a of (acqRows ?? []) as any[]) {
+    if (a.link_id && repeatBookingPhones.has(a.customer_phone)) {
+      const set = rebookedByLink.get(a.link_id)
+      if (set) set.add(a.customer_phone)
+    }
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const links: LinkPerformance[] = (linkRows ?? []).map((l: any) => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const linkBookings = (bookingRows ?? []).filter((b: any) => b.link_id === l.id)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const earnings = linkBookings.reduce(
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (s: number, b: any) => s + calculateCreatorEarnings(b.services?.price ?? 0),
-      0,
-    )
+    const earnings = linkBookings.reduce((s: number, b: any) => {
+      const price = b.services?.price ?? 0
+      const rate = b.commission_rate ?? 0.10  // backstop for legacy bookings
+      return s + Math.round(price * rate)
+    }, 0)
     return {
       linkId: l.id,
       business: {
@@ -1674,12 +1946,33 @@ export async function getCreatorDashboard(
       clicks: l.click_count ?? 0,
       bookings: linkBookings.length,
       earnings,
+      customersAcquired: acquiredByLink.get(l.id)?.size ?? 0,
+      customersRebooked: rebookedByLink.get(l.id)?.size ?? 0,
     }
   })
 
   const totalClicks = links.reduce((s, l) => s + l.clicks, 0)
   const totalBookings = links.reduce((s, l) => s + l.bookings, 0)
   const totalEarnings = links.reduce((s, l) => s + l.earnings, 0)
+
+  // Split first vs repeat earnings using booking rates
+  let firstBookingEarnings = 0
+  let repeatEarnings = 0
+  let lifetimeValue = 0
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const b of (bookingRows ?? []) as any[]) {
+    const price = b.services?.price ?? 0
+    const earned = Math.round(price * (b.commission_rate ?? 0.10))
+    if (b.is_repeat) repeatEarnings += earned
+    else firstBookingEarnings += earned
+    lifetimeValue += price
+  }
+
+  const customersAcquired = (acqRows ?? []).length
+  const customersInWindow = (acqRows ?? []).filter(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (a: any) => a.is_active && new Date(a.expires_at) > now,
+  ).length
 
   // Recent activity = recent bookings + recent attribution clicks
   const { data: activityRows } = linkIds.length
@@ -1723,6 +2016,11 @@ export async function getCreatorDashboard(
       totalBookings,
       totalEarnings,
       pendingPayout: totalEarnings,
+      firstBookingEarnings,
+      repeatEarnings,
+      customersAcquired,
+      customersInWindow,
+      lifetimeValue,
     },
     links,
     recentActivity,

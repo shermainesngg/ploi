@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getStaffSchedule, setStaffSchedule } from '@/lib/db'
+import { StaffService } from '@/services/staff.service'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const schedule = await getStaffSchedule(id)
+  const schedule = await StaffService.getSchedule(id)
   return NextResponse.json(schedule)
 }
 
@@ -30,7 +30,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         isAvailable: !!e.isAvailable,
       }
     })
-    await setStaffSchedule(id, entries)
+    await StaffService.setSchedule(id, entries)
     return NextResponse.json({ id, ok: true })
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown' }, { status: 500 })

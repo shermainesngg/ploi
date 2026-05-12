@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { deleteStaffBlock } from '@/lib/db'
+import { StaffService } from '@/services/staff.service'
 
 export async function DELETE(
   _req: NextRequest,
@@ -7,7 +7,7 @@ export async function DELETE(
 ) {
   try {
     const { blockId } = await params
-    await deleteStaffBlock(blockId)
+    await StaffService.deleteBlock(blockId)
     return NextResponse.json({ blockId, deleted: true })
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown' }, { status: 500 })

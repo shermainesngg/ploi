@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import type { AgendaBooking } from '@/lib/db'
+import type { AgendaBooking } from '@/services/dashboard.service'
 
 interface Props {
   bookings: AgendaBooking[]
@@ -81,31 +81,31 @@ export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Pr
 
   function densityClass(count: number) {
     if (count === 0) return ''
-    if (count === 1) return 'after:bg-rose-300'
-    if (count <= 3) return 'after:bg-rose-500'
-    return 'after:bg-rose-600'
+    if (count === 1) return 'after:bg-bridge-accent-light'
+    if (count <= 3) return 'after:bg-bridge-accent'
+    return 'after:bg-bridge-accent-dark'
   }
 
   return (
     <>
       {/* Month navigator */}
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden mb-3">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-3">
           <button
             onClick={() => nav(shiftMonth(monthStart, -1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronLeft size={18} />
           </button>
           <div className="text-center">
-            <p className="font-bold text-stone-900 text-sm">{MONTH_NAMES[month]} {year}</p>
-            <p className="text-stone-400 text-[11px] mt-0.5">
+            <p className="font-bold text-bridge-heading text-body">{MONTH_NAMES[month]} {year}</p>
+            <p className="text-bridge-muted text-[11px] mt-0.5">
               {activeBookings.length} bookings · ฿{totalRevenue.toLocaleString()}
             </p>
           </div>
           <button
             onClick={() => nav(shiftMonth(monthStart, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronRight size={18} />
           </button>
@@ -113,10 +113,10 @@ export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Pr
       </div>
 
       {/* Calendar grid */}
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-3 mb-3">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-3 mb-3">
         <div className="grid grid-cols-7 gap-1 mb-1.5">
           {DAY_LABELS.map((d, i) => (
-            <div key={i} className="text-center text-[10px] font-bold text-stone-400 uppercase">{d}</div>
+            <div key={i} className="text-center text-micro font-bold text-bridge-muted uppercase">{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-1">
@@ -129,8 +129,8 @@ export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Pr
               <button
                 key={idx}
                 onClick={() => goToDay(cell.date!)}
-                className={`aspect-square relative rounded-lg flex flex-col items-center justify-center text-xs font-medium transition-colors hover:bg-stone-100 ${
-                  cell.isToday ? 'bg-rose-50 text-rose-700 font-bold' : 'text-stone-700'
+                className={`aspect-square relative rounded-lg flex flex-col items-center justify-center text-caption font-medium transition-colors hover:bg-bridge-surface ${
+                  cell.isToday ? 'bg-bridge-accent-wash text-bridge-accent font-bold' : 'text-bridge-text'
                 } ${
                   // Bottom dot via after-pseudo. Tailwind doesn't do dynamic pseudo bg via interpolation,
                   // so we keep a known set of classes:
@@ -141,7 +141,7 @@ export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Pr
               >
                 <span>{day}</span>
                 {cell.count > 1 && (
-                  <span className="text-[9px] text-stone-400 mt-0.5">{cell.count}</span>
+                  <span className="text-[9px] text-bridge-muted mt-0.5">{cell.count}</span>
                 )}
               </button>
             )
@@ -151,14 +151,14 @@ export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Pr
 
       {/* Stats */}
       {activeBookings.length > 0 && (
-        <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-2 text-sm">
-          <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-2">Summary</p>
-          <div className="flex justify-between"><span className="text-stone-500">Total bookings</span><span className="font-semibold text-stone-900">{activeBookings.length}</span></div>
-          <div className="flex justify-between"><span className="text-stone-500">Total revenue</span><span className="font-semibold text-stone-900">฿{totalRevenue.toLocaleString()}</span></div>
+        <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-4 space-y-2 text-body">
+          <p className="text-caption font-semibold text-bridge-muted uppercase tracking-widest mb-2">Summary</p>
+          <div className="flex justify-between"><span className="text-bridge-muted">Total bookings</span><span className="font-semibold text-bridge-heading">{activeBookings.length}</span></div>
+          <div className="flex justify-between"><span className="text-bridge-muted">Total revenue</span><span className="font-semibold text-bridge-heading">฿{totalRevenue.toLocaleString()}</span></div>
           {busiestDay && (
             <div className="flex justify-between">
-              <span className="text-stone-500">Busiest day</span>
-              <button onClick={() => goToDay(busiestDay!)} className="font-semibold text-rose-600 hover:underline">
+              <span className="text-bridge-muted">Busiest day</span>
+              <button onClick={() => goToDay(busiestDay!)} className="font-semibold text-bridge-accent hover:underline">
                 {new Date(`${busiestDay}T00:00:00`).getDate()} {MONTH_NAMES[month]} ({busiestCount})
               </button>
             </div>

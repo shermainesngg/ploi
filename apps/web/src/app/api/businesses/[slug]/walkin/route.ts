@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createWalkinBooking } from '@/lib/db'
+import { DashboardService } from '@/services/dashboard.service'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     if (!serviceId || !bookingDate || !bookingTime) {
       return NextResponse.json({ error: 'serviceId, bookingDate, bookingTime required' }, { status: 400 })
     }
-    const row = await createWalkinBooking({
+    const row = await DashboardService.createWalkinBooking({
       businessSlug: slug,
       serviceId,
       staffId: typeof staffId === 'string' ? staffId : undefined,

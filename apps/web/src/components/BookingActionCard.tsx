@@ -6,7 +6,7 @@ import {
   Check, X, MoreHorizontal, CalendarCheck, UserX, Repeat, User as UserIcon,
   Calendar, Clock,
 } from 'lucide-react'
-import type { AgendaBooking } from '@/lib/db'
+import type { AgendaBooking } from '@/services/dashboard.service'
 import RescheduleModal from './RescheduleModal'
 
 export interface StaffSummary {
@@ -24,7 +24,7 @@ const STAFF_COLORS = [
   { bg: 'bg-pink-500', soft: 'bg-pink-100', text: 'text-pink-700' },
   { bg: 'bg-cyan-500', soft: 'bg-cyan-100', text: 'text-cyan-700' },
 ]
-const UNASSIGNED_COLOR = { bg: 'bg-stone-400', soft: 'bg-stone-100', text: 'text-stone-700' }
+const UNASSIGNED_COLOR = { bg: 'bg-bridge-muted', soft: 'bg-bridge-surface', text: 'text-bridge-secondary' }
 
 export function colorForStaff(staffId: string | null, allStaff: StaffSummary[]) {
   if (!staffId) return UNASSIGNED_COLOR
@@ -39,7 +39,7 @@ export function statusStyles(status: AgendaBooking['status']) {
     case 'pending':    return 'text-amber-700 bg-amber-50'
     case 'completed':  return 'text-blue-700 bg-blue-50'
     case 'cancelled':
-    case 'declined':   return 'text-stone-500 bg-stone-100'
+    case 'declined':   return 'text-bridge-muted bg-bridge-surface'
     case 'no_show':    return 'text-rose-600 bg-rose-50'
   }
 }
@@ -67,7 +67,6 @@ export default function BookingActionCard({
   businessSlug: string
   expanded?: boolean
   onToggle?: () => void
-  /** Show the full date alongside the time (for non-daily contexts) */
   showDate?: boolean
 }) {
   const router = useRouter()
@@ -81,8 +80,7 @@ export default function BookingActionCard({
   const col = colorForStaff(booking.staffId, staff)
   const isFinal = ['completed', 'cancelled', 'declined', 'no_show'].includes(booking.status)
 
-  // Suggest the best staff for this booking
-  const eligibleStaff = staff  // dashboard owner can override even with non-eligible staff
+  const eligibleStaff = staff
 
   async function setStatus(status: AgendaBooking['status']) {
     setBusy(true)
@@ -114,23 +112,23 @@ export default function BookingActionCard({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-card overflow-hidden">
         <button
           onClick={toggle}
-          className="w-full text-left flex items-stretch gap-3 p-3 hover:bg-stone-50/50 transition-colors"
+          className="w-full text-left flex items-stretch gap-3 p-3 hover:bg-bridge-surface/50 transition-colors"
         >
           {/* Color rail */}
           <div className={`w-1 self-stretch rounded-full ${col.bg} flex-shrink-0`} />
 
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <div className="text-right flex-shrink-0">
-              <p className="font-bold text-stone-900 text-sm leading-none">{booking.time}</p>
-              <p className="text-[10px] text-stone-400 mt-0.5">{booking.endTime}</p>
+              <p className="font-bold text-bridge-heading text-body leading-none">{booking.time}</p>
+              <p className="text-micro text-bridge-muted mt-0.5">{booking.endTime}</p>
             </div>
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <p className="font-semibold text-stone-900 text-sm truncate">{booking.customerName}</p>
+                <p className="font-semibold text-bridge-heading text-body truncate">{booking.customerName}</p>
                 {booking.isWalkin && (
                   <span className="text-[9px] font-bold uppercase bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">Walk-in</span>
                 )}
@@ -142,12 +140,12 @@ export default function BookingActionCard({
                 </span>
               </div>
               {booking.isRepeat && booking.acquiredBy && (
-                <p className="text-[10px] text-purple-600 mt-0.5">
+                <p className="text-micro text-purple-600 mt-0.5">
                   Returning customer · originally via {booking.acquiredBy.handle}
                 </p>
               )}
-              <p className="text-stone-500 text-xs truncate mt-0.5">{booking.serviceName}</p>
-              <div className="flex items-center gap-2 text-[11px] text-stone-400 mt-1 flex-wrap">
+              <p className="text-bridge-muted text-caption truncate mt-0.5">{booking.serviceName}</p>
+              <div className="flex items-center gap-2 text-micro text-bridge-muted mt-1 flex-wrap">
                 <span>{formatPrice(booking.price)}</span>
                 <span>·</span>
                 {showDate && (
@@ -159,33 +157,32 @@ export default function BookingActionCard({
                 {booking.staffName ? (
                   <span className={`font-medium ${col.text}`}>{booking.staffName}</span>
                 ) : (
-                  <span className="italic text-stone-400">Unassigned</span>
+                  <span className="italic text-bridge-muted">Unassigned</span>
                 )}
                 {booking.creator && (
                   <>
                     <span>·</span>
-                    <span className="text-rose-500 font-medium truncate">via {booking.creator.handle}</span>
+                    <span className="text-bridge-accent font-medium truncate">via {booking.creator.handle}</span>
                   </>
                 )}
               </div>
             </div>
 
-            <MoreHorizontal size={16} className={`text-stone-300 flex-shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`} />
+            <MoreHorizontal size={16} className={`text-bridge-border-strong flex-shrink-0 transition-transform ${expanded ? 'rotate-90' : ''}`} />
           </div>
         </button>
 
         {expanded && (
-          <div className="border-t border-stone-100 bg-stone-50/50 p-3 space-y-3">
+          <div className="border-t border-bridge-border/40 bg-bridge-surface/50 p-3 space-y-3">
             {booking.customerEmail && (
-              <p className="text-stone-500 text-xs px-1">
-                <span className="text-stone-400">Email:</span> {booking.customerEmail}
+              <p className="text-bridge-muted text-caption px-1">
+                <span className="text-bridge-muted/70">Email:</span> {booking.customerEmail}
               </p>
             )}
 
-            {/* Reassign — always available unless final */}
             {staff.length > 0 && !isFinal && (
               <div>
-                <p className="text-[10px] uppercase tracking-wide text-stone-400 font-bold mb-1.5 px-1">
+                <p className="text-micro uppercase tracking-wide text-bridge-muted font-bold mb-1.5 px-1">
                   Assign therapist
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -198,7 +195,7 @@ export default function BookingActionCard({
                   />
                   {eligibleStaff.map((s) => {
                     const c = colorForStaff(s.id, staff)
-                    const canDoService = s.serviceIds.length === 0 || true  // we don't yet have serviceId here; show all
+                    const canDoService = s.serviceIds.length === 0 || true
                     return (
                       <ReassignChip
                         key={s.id}
@@ -215,7 +212,6 @@ export default function BookingActionCard({
               </div>
             )}
 
-            {/* Status actions */}
             {!isFinal && (
               <div className="grid grid-cols-2 gap-2">
                 {booking.status === 'pending' && (
@@ -259,7 +255,7 @@ export default function BookingActionCard({
         <RescheduleModal
           bookingId={booking.id}
           businessSlug={businessSlug}
-          serviceId={null}  // we don't carry this here; modal uses business default
+          serviceId={null}
           serviceName={booking.serviceName}
           currentDate={booking.date}
           currentTime={booking.time}
@@ -285,12 +281,12 @@ function ReassignChip({
     <button
       onClick={onClick}
       disabled={busy}
-      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold border transition-colors disabled:opacity-50 ${
+      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-button text-micro font-semibold border transition-colors disabled:opacity-50 ${
         active
-          ? 'bg-stone-900 text-white border-stone-900'
+          ? 'bg-bridge-heading text-white border-bridge-heading'
           : dim
-            ? 'bg-white border-stone-200 text-stone-400 hover:border-stone-300'
-            : 'bg-white border-stone-200 text-stone-700 hover:border-stone-400'
+            ? 'bg-white border-bridge-border text-bridge-muted hover:border-bridge-border-strong'
+            : 'bg-white border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
       }`}
     >
       {dotClass && <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />}
@@ -310,16 +306,16 @@ function Btn({
   variant?: 'primary' | 'success' | 'ghost' | 'danger'
 }) {
   const styles = {
-    primary: 'bg-rose-600 text-white hover:bg-rose-700',
+    primary: 'bg-bridge-accent text-white hover:bg-bridge-accent-dark',
     success: 'bg-green-600 text-white hover:bg-green-700',
-    ghost: 'border border-stone-200 text-stone-600 hover:bg-white',
+    ghost: 'border border-bridge-border text-bridge-secondary hover:bg-white',
     danger: 'border border-red-200 text-red-600 hover:bg-red-50',
   }[variant]
   return (
     <button
       onClick={onClick}
       disabled={busy}
-      className={`py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1 disabled:opacity-50 transition-all ${styles}`}
+      className={`py-2 rounded-button text-caption font-semibold flex items-center justify-center gap-1 disabled:opacity-50 transition-all ${styles}`}
     >
       {icon} {label}
     </button>

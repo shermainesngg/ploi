@@ -47,17 +47,17 @@ function StepBar({ step }: { step: Step }) {
         <div key={i} className="flex items-center gap-2">
           <div
             className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              i < idx ? 'bg-rose-600 text-white' : i === idx ? 'bg-rose-600 text-white' : 'bg-stone-200 text-stone-400'
+              i < idx ? 'bg-bridge-accent text-white' : i === idx ? 'bg-bridge-accent text-white' : 'bg-bridge-border text-bridge-muted'
             }`}
           >
             {i < idx ? <Check size={13} strokeWidth={3} /> : i + 1}
           </div>
           {i < 2 && (
-            <div className={`h-0.5 w-6 rounded-full ${i < idx ? 'bg-rose-600' : 'bg-stone-200'}`} />
+            <div className={`h-0.5 w-6 rounded-full ${i < idx ? 'bg-bridge-accent' : 'bg-bridge-border'}`} />
           )}
         </div>
       ))}
-      <span className="ml-2 text-sm text-stone-400">{labels[idx] ?? ''}</span>
+      <span className="ml-2 text-sm text-bridge-muted">{labels[idx] ?? ''}</span>
     </div>
   )
 }
@@ -89,8 +89,8 @@ function ProfileStep({
   return (
     <div className="space-y-5">
       <div>
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Creator handle <span className="text-rose-500">*</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Creator handle <span className="text-bridge-accent">*</span>
         </label>
         <input
           type="text"
@@ -99,31 +99,31 @@ function ProfileStep({
           placeholder="@yourhandle"
           autoCapitalize="none"
           autoCorrect="off"
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base font-mono"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base font-mono"
         />
         {slug && (
-          <p className="text-xs text-stone-400 mt-1.5">
-            Profile: <span className="font-medium text-stone-600">bridge.to/{slug}</span>
+          <p className="text-xs text-bridge-muted mt-1.5">
+            Profile: <span className="font-medium text-bridge-secondary">bridge.to/{slug}</span>
           </p>
         )}
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Display name <span className="text-rose-500">*</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Display name <span className="text-bridge-accent">*</span>
         </label>
         <input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
           placeholder="e.g. Sara Chen"
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Email <span className="text-rose-500">*</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Email <span className="text-bridge-accent">*</span>
         </label>
         <input
           type="email"
@@ -131,36 +131,36 @@ function ProfileStep({
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@example.com"
           autoCapitalize="none" autoCorrect="off"
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
         />
-        <p className="text-xs text-stone-400 mt-1.5">For payouts and login.</p>
+        <p className="text-xs text-bridge-muted mt-1.5">For payouts and login.</p>
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">Bio</label>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">Bio</label>
         <textarea
           value={bio}
           onChange={(e) => setBio(e.target.value)}
           placeholder="What do you create content about? Where are you based?"
           rows={3}
           maxLength={200}
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base resize-none"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base resize-none"
         />
-        <p className="text-xs text-stone-400 mt-1 text-right">{bio.length}/200</p>
+        <p className="text-xs text-bridge-muted mt-1 text-right">{bio.length}/200</p>
       </div>
 
       {/* Earnings explainer */}
-      <div className="bg-rose-50 rounded-2xl p-4 border border-rose-100">
-        <p className="text-sm font-semibold text-stone-800 mb-1">How earnings work</p>
-        <p className="text-sm text-stone-500 leading-relaxed">
-          You earn <span className="font-semibold text-rose-600">10%</span> on every booking driven through your BRIDGE link. No minimums. Paid monthly.
+      <div className="bg-bridge-accent-wash rounded-2xl p-4 border border-bridge-accent-wash">
+        <p className="text-sm font-semibold text-bridge-text mb-1">How earnings work</p>
+        <p className="text-sm text-bridge-muted leading-relaxed">
+          You earn <span className="font-semibold text-bridge-accent">10%</span> on every booking driven through your BRIDGE link. No minimums. Paid monthly.
         </p>
       </div>
 
       <button
         disabled={!canContinue}
         onClick={onNext}
-        className="w-full py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-bridge-accent-dark active:scale-[0.98] transition-all flex items-center justify-center gap-2"
       >
         Continue <ChevronRight size={18} />
       </button>
@@ -199,22 +199,22 @@ function SocialsStep({
     <div>
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-stone-400 text-sm mb-6 hover:text-stone-600"
+        className="flex items-center gap-1 text-bridge-muted text-sm mb-6 hover:text-bridge-secondary"
       >
         <ArrowLeft size={14} /> Back
       </button>
 
-      <p className="text-stone-500 text-sm mb-5">
+      <p className="text-bridge-muted text-sm mb-5">
         Add your social profiles so visitors can follow you. (Optional, but recommended.)
       </p>
 
       <div className="space-y-3 mb-3">
         {socials.map((s) => (
-          <div key={s.id} className="bg-stone-50 rounded-2xl p-3 border border-stone-200 flex items-center gap-2">
+          <div key={s.id} className="bg-bridge-bg rounded-2xl p-3 border border-bridge-border flex items-center gap-2">
             <select
               value={s.platform}
               onChange={(e) => updateSocial(s.id, 'platform', e.target.value)}
-              className="bg-white border border-stone-200 rounded-lg px-2 py-2 text-sm font-medium text-stone-700 focus:outline-none focus:ring-2 focus:ring-rose-500 flex-shrink-0"
+              className="bg-white border border-bridge-border rounded-lg px-2 py-2 text-sm font-medium text-bridge-text focus:outline-none focus:ring-2 focus:ring-bridge-accent flex-shrink-0"
             >
               {PLATFORMS.map((p) => (
                 <option key={p.value} value={p.value}>
@@ -229,12 +229,12 @@ function SocialsStep({
               placeholder="https://..."
               autoCapitalize="none"
               autoCorrect="off"
-              className="flex-1 min-w-0 bg-white border border-stone-200 rounded-lg px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500"
+              className="flex-1 min-w-0 bg-white border border-bridge-border rounded-lg px-3 py-2 text-sm text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent"
             />
             {socials.length > 1 && (
               <button
                 onClick={() => removeSocial(s.id)}
-                className="text-stone-300 hover:text-rose-500 transition-colors flex-shrink-0 px-1"
+                className="text-bridge-border-strong hover:text-bridge-accent transition-colors flex-shrink-0 px-1"
               >
                 <Trash2 size={15} />
               </button>
@@ -245,21 +245,21 @@ function SocialsStep({
 
       <button
         onClick={addSocial}
-        className="w-full py-3 rounded-2xl border-2 border-dashed border-stone-200 text-stone-400 text-sm font-medium hover:border-rose-300 hover:text-rose-500 transition-colors flex items-center justify-center gap-2 mb-6"
+        className="w-full py-3 rounded-2xl border-2 border-dashed border-bridge-border text-bridge-muted text-sm font-medium hover:border-bridge-accent-light hover:text-bridge-accent transition-colors flex items-center justify-center gap-2 mb-6"
       >
         <Plus size={16} /> Add another platform
       </button>
 
       <button
         onClick={onNext}
-        className="w-full py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base hover:bg-bridge-accent-dark active:scale-[0.98] transition-all flex items-center justify-center gap-2"
       >
         Continue <ChevronRight size={18} />
       </button>
 
       <button
         onClick={onNext}
-        className="w-full mt-2 text-stone-400 text-xs hover:text-stone-600 py-2"
+        className="w-full mt-2 text-bridge-muted text-xs hover:text-bridge-secondary py-2"
       >
         Skip for now
       </button>
@@ -332,23 +332,23 @@ function PickBusinessStep({
     <div>
       <button
         onClick={onBack}
-        className="flex items-center gap-1 text-stone-400 text-sm mb-6 hover:text-stone-600"
+        className="flex items-center gap-1 text-bridge-muted text-sm mb-6 hover:text-bridge-secondary"
       >
         <ArrowLeft size={14} /> Back
       </button>
 
-      <p className="text-stone-500 text-sm mb-5">
+      <p className="text-bridge-muted text-sm mb-5">
         Pick a place you&apos;ve made content about. Your link goes live as soon as the business accepts.
       </p>
 
       {/* Business search / picker */}
       <div className="mb-5">
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Business <span className="text-rose-500">*</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Business <span className="text-bridge-accent">*</span>
         </label>
 
         {selectedBusiness ? (
-          <div className="bg-white rounded-2xl border border-stone-200 p-3 flex items-center gap-3">
+          <div className="bg-white rounded-2xl border border-bridge-border p-3 flex items-center gap-3">
             <div
               className="w-12 h-12 rounded-xl flex-shrink-0"
               style={{
@@ -358,15 +358,15 @@ function PickBusinessStep({
               }}
             />
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-stone-900 text-sm truncate">{selectedBusiness.name}</p>
-              <p className="text-stone-400 text-xs truncate">{selectedBusiness.category} · {selectedBusiness.location}</p>
+              <p className="font-semibold text-bridge-heading text-sm truncate">{selectedBusiness.name}</p>
+              <p className="text-bridge-muted text-xs truncate">{selectedBusiness.category} · {selectedBusiness.location}</p>
             </div>
             <button
               onClick={() => {
                 setSelectedBusiness(null)
                 setQuery('')
               }}
-              className="text-stone-400 hover:text-rose-500 text-xs font-semibold"
+              className="text-bridge-muted hover:text-bridge-accent text-xs font-semibold"
             >
               Change
             </button>
@@ -374,26 +374,26 @@ function PickBusinessStep({
         ) : (
           <>
             <div className="relative">
-              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
+              <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-bridge-muted" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search for a business…"
-                className="w-full border border-stone-200 rounded-xl pl-10 pr-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base"
+                className="w-full border border-bridge-border rounded-xl pl-10 pr-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
               />
             </div>
 
             {query.length > 0 && (
-              <div className="mt-2 bg-white border border-stone-200 rounded-xl overflow-hidden max-h-72 overflow-y-auto">
+              <div className="mt-2 bg-white border border-bridge-border rounded-xl overflow-hidden max-h-72 overflow-y-auto">
                 {searching ? (
-                  <p className="text-stone-400 text-sm p-4 flex items-center gap-2">
+                  <p className="text-bridge-muted text-sm p-4 flex items-center gap-2">
                     <Clock size={13} /> Searching…
                   </p>
                 ) : results.length === 0 ? (
                   <div className="p-4 text-center">
-                    <p className="text-stone-400 text-sm">No matches.</p>
-                    <Link href="/onboard/business" className="text-rose-600 text-xs font-semibold hover:underline mt-1 inline-block">
+                    <p className="text-bridge-muted text-sm">No matches.</p>
+                    <Link href="/onboard/business" className="text-bridge-accent text-xs font-semibold hover:underline mt-1 inline-block">
                       List a new business →
                     </Link>
                   </div>
@@ -402,7 +402,7 @@ function PickBusinessStep({
                     <button
                       key={r.slug}
                       onClick={() => setSelectedBusiness(r)}
-                      className="w-full text-left flex items-center gap-3 px-3 py-2.5 hover:bg-stone-50 transition-colors border-b border-stone-100 last:border-b-0"
+                      className="w-full text-left flex items-center gap-3 px-3 py-2.5 hover:bg-bridge-bg transition-colors border-b border-bridge-border/60 last:border-b-0"
                     >
                       <div
                         className="w-10 h-10 rounded-lg flex-shrink-0"
@@ -413,8 +413,8 @@ function PickBusinessStep({
                         }}
                       />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-stone-900 truncate">{r.name}</p>
-                        <p className="text-xs text-stone-400 truncate">{r.category} · {r.location}</p>
+                        <p className="text-sm font-semibold text-bridge-heading truncate">{r.name}</p>
+                        <p className="text-xs text-bridge-muted truncate">{r.category} · {r.location}</p>
                       </div>
                     </button>
                   ))
@@ -427,8 +427,8 @@ function PickBusinessStep({
 
       {/* Content URL */}
       <div className="mb-4">
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Your content URL <span className="text-rose-500">*</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Your content URL <span className="text-bridge-accent">*</span>
         </label>
         <input
           type="url"
@@ -437,14 +437,14 @@ function PickBusinessStep({
           placeholder="https://www.tiktok.com/@you/video/..."
           autoCapitalize="none"
           autoCorrect="off"
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base font-mono text-sm"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base font-mono text-sm"
         />
-        <p className="text-stone-400 text-xs mt-1">The TikTok / Reel / post that recommends this place.</p>
+        <p className="text-bridge-muted text-xs mt-1">The TikTok / Reel / post that recommends this place.</p>
       </div>
 
       {/* Platform */}
       <div className="mb-4">
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">Platform</label>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">Platform</label>
         <div className="flex flex-wrap gap-2">
           {PLATFORMS.map((p) => (
             <button
@@ -452,8 +452,8 @@ function PickBusinessStep({
               onClick={() => setContentPlatform(p.value)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
                 contentPlatform === p.value
-                  ? 'border-rose-600 bg-rose-600 text-white'
-                  : 'border-stone-200 text-stone-600 bg-white hover:border-rose-300'
+                  ? 'border-bridge-accent bg-bridge-accent text-white'
+                  : 'border-bridge-border text-bridge-secondary bg-white hover:border-bridge-accent-light'
               }`}
             >
               {p.icon}
@@ -465,8 +465,8 @@ function PickBusinessStep({
 
       {/* Thumbnail URL (optional) */}
       <div className="mb-5">
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Thumbnail URL <span className="text-stone-400 font-normal">(optional)</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Thumbnail URL <span className="text-bridge-muted font-normal">(optional)</span>
         </label>
         <input
           type="url"
@@ -475,9 +475,9 @@ function PickBusinessStep({
           placeholder="https://..."
           autoCapitalize="none"
           autoCorrect="off"
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base font-mono text-sm"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base font-mono text-sm"
         />
-        <p className="text-stone-400 text-xs mt-1">Image to show on your profile grid. Falls back to the business cover.</p>
+        <p className="text-bridge-muted text-xs mt-1">Image to show on your profile grid. Falls back to the business cover.</p>
       </div>
 
       {error && (
@@ -487,7 +487,7 @@ function PickBusinessStep({
       <button
         onClick={onSubmit}
         disabled={!canSubmit || loading}
-        className="w-full py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-rose-700 active:scale-[0.98] transition-all"
+        className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-bridge-accent-dark active:scale-[0.98] transition-all"
       >
         {loading ? 'Creating profile & link…' : 'Create profile & generate link'}
       </button>
@@ -519,26 +519,26 @@ function DoneScreen({
 
   return (
     <div className="flex flex-col items-center text-center py-6">
-      <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center mb-6">
-        <Check size={36} className="text-rose-600" strokeWidth={3} />
+      <div className="w-20 h-20 rounded-full bg-bridge-accent-wash flex items-center justify-center mb-6">
+        <Check size={36} className="text-bridge-accent" strokeWidth={3} />
       </div>
-      <h2 className="text-2xl font-black text-stone-900 mb-2">You&apos;re in!</h2>
-      <p className="text-stone-500 text-sm mb-8 max-w-xs">
+      <h2 className="text-2xl font-display font-bold text-bridge-heading mb-2">You&apos;re in!</h2>
+      <p className="text-bridge-muted text-sm mb-8 max-w-xs">
         Your BRIDGE profile is live. {linkStatus === 'pending' ? 'Your first link is pending business approval.' : 'Share your link to start earning.'}
       </p>
 
       <div className="w-full space-y-3 mb-8">
-        <div className="bg-stone-50 rounded-2xl p-4 text-left">
-          <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-1.5">Your profile</p>
-          <Link href={`/${slug}`} className="flex items-center gap-2 text-rose-600 font-semibold text-sm hover:underline">
+        <div className="bg-bridge-bg rounded-2xl p-4 text-left">
+          <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-1.5">Your profile</p>
+          <Link href={`/${slug}`} className="flex items-center gap-2 text-bridge-accent font-semibold text-sm hover:underline">
             {profileUrl} <ExternalLink size={13} />
           </Link>
         </div>
 
         {linkUrl && (
-          <div className="bg-stone-50 rounded-2xl p-4 text-left">
+          <div className="bg-bridge-bg rounded-2xl p-4 text-left">
             <div className="flex items-center justify-between mb-1.5">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest">Your booking link</p>
+              <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest">Your booking link</p>
               {linkStatus === 'pending' && (
                 <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full uppercase">
                   Pending
@@ -551,16 +551,16 @@ function DoneScreen({
               )}
             </div>
             <div className="flex items-center justify-between gap-2">
-              <span className="text-stone-700 font-mono text-sm truncate">{linkUrl}</span>
+              <span className="text-bridge-text font-mono text-sm truncate">{linkUrl}</span>
               <button
                 onClick={copyLink}
-                className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold text-rose-600 bg-rose-50 px-3 py-1.5 rounded-lg hover:bg-rose-100 transition-colors"
+                className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold text-bridge-accent bg-bridge-accent-wash px-3 py-1.5 rounded-lg hover:bg-bridge-accent-wash transition-colors"
               >
                 <Copy size={12} />
                 {copied ? 'Copied!' : 'Copy'}
               </button>
             </div>
-            <p className="text-xs text-stone-400 mt-2">
+            <p className="text-xs text-bridge-muted mt-2">
               {linkStatus === 'pending'
                 ? "We'll notify you when the business accepts. Tracking starts then."
                 : 'Drop this in your bio, stories, or captions.'}
@@ -571,12 +571,12 @@ function DoneScreen({
 
       <Link
         href={`/dashboard/creator/${slug}`}
-        className="w-full py-4 rounded-2xl bg-stone-900 text-white font-semibold text-base hover:bg-stone-800 transition-all flex items-center justify-center gap-2"
+        className="w-full py-4 rounded-2xl bg-bridge-heading text-white font-semibold text-base hover:bg-bridge-heading/90 transition-all flex items-center justify-center gap-2"
       >
         Go to my dashboard →
       </Link>
 
-      <Link href={`/${slug}`} className="mt-4 text-sm text-stone-400 hover:text-stone-600">
+      <Link href={`/${slug}`} className="mt-4 text-sm text-bridge-muted hover:text-bridge-secondary">
         View my profile
       </Link>
     </div>
@@ -651,15 +651,15 @@ export default function CreatorOnboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-[480px] mx-auto px-5 py-10">
+    <div className="min-h-screen bg-bridge-bg">
+      <div className="max-w-2xl mx-auto px-5 py-10">
         <div className="mb-8">
-          <Link href="/" className="text-xs font-black text-rose-600 tracking-tight">BRIDGE</Link>
-          <h1 className="text-2xl font-black text-stone-900 mt-4 leading-tight">
+          <Link href="/" className="text-xs font-display font-bold text-bridge-accent tracking-tight">BRIDGE</Link>
+          <h1 className="text-2xl font-display font-bold text-bridge-heading mt-4 leading-tight">
             {step === 'done' ? 'Welcome to BRIDGE' : 'Share spots you love. Earn when people book.'}
           </h1>
           {step !== 'done' && (
-            <p className="text-stone-500 text-sm mt-1">
+            <p className="text-bridge-muted text-sm mt-1">
               Set up your profile, link your first place, and you&apos;re live.
             </p>
           )}

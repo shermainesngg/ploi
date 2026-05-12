@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   ChevronLeft, ChevronRight, Clock, AlertCircle, Sparkles,
 } from 'lucide-react'
-import type { StaffMember, StaffScheduleEntry, StaffBlock } from '@/lib/db'
+import type { StaffMember, StaffScheduleEntry, StaffBlock } from '@/services/staff.service'
 
 type ScheduleView = 'week' | 'month' | 'day'
 
@@ -60,17 +60,17 @@ export default function StaffSchedulePage({
   weekCount, nextAppointment,
 }: Props) {
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-[480px] mx-auto pb-16">
+    <div className="min-h-screen bg-bridge-bg">
+      <div className="max-w-2xl mx-auto pb-16">
 
         {/* Header */}
         <Header staff={staff} businessName={businessName} />
 
         {/* Pro upsell */}
-        <div className="mx-4 mt-3 bg-stone-100 border border-stone-200 rounded-2xl p-3 text-center">
-          <p className="text-stone-500 text-xs">
-            <span className="font-semibold text-stone-700">Want separate staff logins?</span>{' '}
-            Coming soon in <span className="font-bold text-rose-600">BRIDGE Pro</span>.
+        <div className="mx-4 mt-3 bg-bridge-surface border border-bridge-border rounded-2xl p-3 text-center">
+          <p className="text-bridge-muted text-xs">
+            <span className="font-semibold text-bridge-text">Want separate staff logins?</span>{' '}
+            Coming soon in <span className="font-bold text-bridge-accent">BRIDGE Pro</span>.
           </p>
         </div>
 
@@ -79,14 +79,14 @@ export default function StaffSchedulePage({
 
         {/* View switcher */}
         <div className="px-4 mt-4">
-          <div className="flex items-center gap-1 bg-stone-100 p-1 rounded-xl">
+          <div className="flex items-center gap-1 bg-bridge-surface p-1 rounded-xl">
             {(['week', 'month', 'day'] as ScheduleView[]).map((v) => (
               <Link
                 key={v}
                 href={`/staff/${staff.id}/schedule?view=${v}&date=${baseDate}`}
                 scroll={false}
                 className={`flex-1 text-center py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors ${
-                  view === v ? 'bg-white text-stone-900 shadow-sm' : 'text-stone-500 hover:text-stone-800'
+                  view === v ? 'bg-white text-bridge-heading shadow-sm' : 'text-bridge-muted hover:text-bridge-text'
                 }`}
               >
                 {v}
@@ -124,7 +124,7 @@ export default function StaffSchedulePage({
           )}
         </div>
 
-        <p className="mt-8 text-center text-xs text-stone-400 px-6">
+        <p className="mt-8 text-center text-xs text-bridge-muted px-6">
           This is your personal schedule link. Bookmark it.
         </p>
       </div>
@@ -136,21 +136,21 @@ export default function StaffSchedulePage({
 
 function Header({ staff, businessName }: { staff: StaffMember; businessName: string | null }) {
   return (
-    <div className="px-5 pt-8 pb-6 bg-white border-b border-stone-100">
-      <span className="text-xs font-black tracking-tight text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full">BRIDGE</span>
+    <div className="px-5 pt-8 pb-6 bg-white border-b border-bridge-border/60">
+      <span className="text-xs font-bold tracking-tight text-bridge-accent bg-bridge-accent-wash px-2.5 py-1 rounded-full">BRIDGE</span>
       <div className="flex items-start gap-3 mt-4">
-        <div className="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden bg-stone-100 flex items-center justify-center">
+        <div className="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden bg-bridge-surface flex items-center justify-center">
           {staff.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={staff.photoUrl} alt="" className="w-full h-full object-cover" />
           ) : (
-            <span className="text-lg font-black text-stone-400">{staff.name.charAt(0).toUpperCase()}</span>
+            <span className="text-lg font-bold text-bridge-muted">{staff.name.charAt(0).toUpperCase()}</span>
           )}
         </div>
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl font-black text-stone-900 leading-tight">{staff.name}</h1>
-          {staff.role && <p className="text-stone-500 text-sm">{staff.role}</p>}
-          {businessName && <p className="text-stone-400 text-xs mt-0.5">{businessName}</p>}
+          <h1 className="text-xl font-bold text-bridge-heading leading-tight">{staff.name}</h1>
+          {staff.role && <p className="text-bridge-muted text-sm">{staff.role}</p>}
+          {businessName && <p className="text-bridge-muted text-xs mt-0.5">{businessName}</p>}
         </div>
       </div>
     </div>
@@ -167,25 +167,25 @@ function Stats({
 }) {
   return (
     <div className="px-4 mt-4 grid grid-cols-2 gap-3">
-      <div className="bg-white rounded-2xl border border-stone-100 p-3 shadow-sm">
-        <p className="text-[10px] uppercase tracking-wide font-bold text-stone-400">This week</p>
-        <p className="text-2xl font-black text-stone-900 leading-none mt-1">{weekCount}</p>
-        <p className="text-stone-500 text-[11px] mt-1">appointment{weekCount !== 1 ? 's' : ''}</p>
+      <div className="bg-white rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
+        <p className="text-[10px] uppercase tracking-wide font-bold text-bridge-muted">This week</p>
+        <p className="text-2xl font-bold text-bridge-heading leading-none mt-1">{weekCount}</p>
+        <p className="text-bridge-muted text-[11px] mt-1">appointment{weekCount !== 1 ? 's' : ''}</p>
       </div>
-      <div className="bg-white rounded-2xl border border-stone-100 p-3 shadow-sm">
-        <p className="text-[10px] uppercase tracking-wide font-bold text-stone-400">Next up</p>
+      <div className="bg-white rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
+        <p className="text-[10px] uppercase tracking-wide font-bold text-bridge-muted">Next up</p>
         {nextAppointment ? (
           <>
-            <p className="text-sm font-bold text-stone-900 leading-tight mt-1 truncate">
+            <p className="text-sm font-bold text-bridge-heading leading-tight mt-1 truncate">
               {nextAppointment.date === new Date().toISOString().split('T')[0] ? 'Today' : (() => {
                 const d = new Date(`${nextAppointment.date}T00:00:00`)
                 return `${DAY_SHORT[d.getDay()]} ${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`
               })()} {nextAppointment.time}
             </p>
-            <p className="text-stone-500 text-[11px] truncate">{nextAppointment.serviceName}</p>
+            <p className="text-bridge-muted text-[11px] truncate">{nextAppointment.serviceName}</p>
           </>
         ) : (
-          <p className="text-stone-400 text-sm mt-1">Nothing scheduled</p>
+          <p className="text-bridge-muted text-sm mt-1">Nothing scheduled</p>
         )}
       </div>
     </div>
@@ -239,20 +239,20 @@ function WeekView({
   return (
     <>
       {/* Week strip */}
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden mb-3">
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-stone-100">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-bridge-border/60">
           <button
             onClick={() => navWeek(-1)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronLeft size={16} />
           </button>
-          <p className="font-bold text-stone-900 text-sm">
+          <p className="font-bold text-bridge-heading text-sm">
             {ws.getDate()} {MONTH_SHORT[ws.getMonth()]} – {we.getDate()} {MONTH_SHORT[we.getMonth()]}
           </p>
           <button
             onClick={() => navWeek(1)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronRight size={16} />
           </button>
@@ -272,26 +272,26 @@ function WeekView({
                 key={day.date}
                 onClick={() => setSelectedDate(day.date)}
                 className={`flex flex-col items-center justify-center py-2.5 transition-colors ${
-                  isSelected ? 'bg-rose-50' : 'hover:bg-stone-50'
-                } ${isToday && !isSelected ? 'bg-stone-50/50' : ''}`}
+                  isSelected ? 'bg-bridge-accent-wash' : 'hover:bg-bridge-surface'
+                } ${isToday && !isSelected ? 'bg-bridge-surface/50' : ''}`}
               >
                 <span className={`text-[10px] uppercase tracking-wide font-semibold ${
-                  isSelected ? 'text-rose-600' : isToday ? 'text-stone-700' : 'text-stone-400'
+                  isSelected ? 'text-bridge-accent' : isToday ? 'text-bridge-text' : 'text-bridge-muted'
                 }`}>
                   {DAY_LETTERS[d.getDay()]}
                 </span>
-                <span className={`text-base font-black mt-0.5 ${
-                  isSelected ? 'text-rose-600' : isToday ? 'text-stone-900' : 'text-stone-700'
+                <span className={`text-base font-bold mt-0.5 ${
+                  isSelected ? 'text-bridge-accent' : isToday ? 'text-bridge-heading' : 'text-bridge-text'
                 }`}>
                   {d.getDate()}
                 </span>
                 <div className="h-1.5 mt-0.5 flex items-center">
                   {count > 0 ? (
-                    <span className={`text-[10px] font-bold ${isSelected ? 'text-rose-600' : 'text-stone-400'}`}>
+                    <span className={`text-[10px] font-bold ${isSelected ? 'text-bridge-accent' : 'text-bridge-muted'}`}>
                       {count}
                     </span>
                   ) : inactive ? (
-                    <span className="w-1 h-1 rounded-full bg-stone-300" />
+                    <span className="w-1 h-1 rounded-full bg-bridge-border-strong" />
                   ) : (
                     <span className="w-1 h-1" />
                   )}
@@ -357,35 +357,35 @@ function MonthView({
 
   function densityClass(count: number) {
     if (count === 0) return ''
-    if (count === 1) return 'after:bg-rose-300'
-    if (count <= 3) return 'after:bg-rose-500'
-    return 'after:bg-rose-600'
+    if (count === 1) return 'after:bg-bridge-accent-light'
+    if (count <= 3) return 'after:bg-bridge-accent'
+    return 'after:bg-bridge-accent'
   }
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden mb-3">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-2.5">
           <button
             onClick={() => navMonth(-1)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronLeft size={16} />
           </button>
-          <p className="font-bold text-stone-900 text-sm">{MONTH_NAMES[month]} {year}</p>
+          <p className="font-bold text-bridge-heading text-sm">{MONTH_NAMES[month]} {year}</p>
           <button
             onClick={() => navMonth(1)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronRight size={16} />
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-3">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-3">
         <div className="grid grid-cols-7 gap-1 mb-1.5">
           {DAY_LETTERS.map((d, i) => (
-            <div key={i} className="text-center text-[10px] font-bold text-stone-400 uppercase">{d}</div>
+            <div key={i} className="text-center text-[10px] font-bold text-bridge-muted uppercase">{d}</div>
           ))}
         </div>
         <div className="grid grid-cols-7 gap-1">
@@ -397,8 +397,8 @@ function MonthView({
               <button
                 key={idx}
                 onClick={() => goToDay(cell.date!)}
-                className={`aspect-square relative rounded-lg flex flex-col items-center justify-center text-xs font-medium transition-colors hover:bg-stone-100 ${
-                  isToday ? 'bg-rose-50 text-rose-700 font-bold' : 'text-stone-700'
+                className={`aspect-square relative rounded-lg flex flex-col items-center justify-center text-xs font-medium transition-colors hover:bg-bridge-surface ${
+                  isToday ? 'bg-bridge-accent-wash text-bridge-accent font-bold' : 'text-bridge-text'
                 } ${
                   cell.count > 0
                     ? `after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:rounded-full after:w-1.5 after:h-1.5 ${densityClass(cell.count)}`
@@ -407,7 +407,7 @@ function MonthView({
               >
                 <span>{day}</span>
                 {cell.count > 1 && (
-                  <span className="text-[9px] text-stone-400 mt-0.5">{cell.count}</span>
+                  <span className="text-[9px] text-bridge-muted mt-0.5">{cell.count}</span>
                 )}
               </button>
             )
@@ -443,16 +443,16 @@ function DayView({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden mb-3">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-2.5">
           <button
             onClick={() => nav(-1)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronLeft size={16} />
           </button>
           <div className="text-center">
-            <p className="font-bold text-stone-900 text-sm">
+            <p className="font-bold text-bridge-heading text-sm">
               {(() => {
                 const d = new Date(`${baseDate}T00:00:00`)
                 return `${DAY_FULL[d.getDay()]}, ${d.getDate()} ${MONTH_SHORT[d.getMonth()]}`
@@ -461,7 +461,7 @@ function DayView({
           </div>
           <button
             onClick={() => nav(1)}
-            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronRight size={16} />
           </button>
@@ -500,14 +500,14 @@ function DayDetail({
       {/* Header row */}
       <div className="flex items-center justify-between mb-3 px-1">
         <div>
-          <p className="text-sm font-bold text-stone-900">
+          <p className="text-sm font-bold text-bridge-heading">
             {isToday ? 'Today' : DAY_FULL[d.getDay()]}{' '}
-            <span className="text-stone-400 font-normal">·</span>{' '}
-            <span className="text-stone-500 font-normal">{d.getDate()} {MONTH_SHORT[d.getMonth()]}</span>
+            <span className="text-bridge-muted font-normal">·</span>{' '}
+            <span className="text-bridge-muted font-normal">{d.getDate()} {MONTH_SHORT[d.getMonth()]}</span>
           </p>
-          {hours && <p className="text-stone-400 text-xs mt-0.5"><Clock size={10} className="inline-block mr-1" />Shift {hours}</p>}
+          {hours && <p className="text-bridge-muted text-xs mt-0.5"><Clock size={10} className="inline-block mr-1" />Shift {hours}</p>}
         </div>
-        <span className="text-xs text-stone-400">
+        <span className="text-xs text-bridge-muted">
           {bookings.length} appointment{bookings.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -525,31 +525,31 @@ function DayDetail({
       )}
 
       {bookings.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-stone-100 p-8 text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-stone-50 mb-3">
-            <Sparkles size={20} className="text-stone-400" />
+        <div className="bg-white rounded-2xl border border-bridge-border/60 p-8 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-bg mb-3">
+            <Sparkles size={20} className="text-bridge-muted" />
           </div>
-          <p className="text-stone-500 text-sm">No appointments.</p>
+          <p className="text-bridge-muted text-sm">No appointments.</p>
         </div>
       ) : (
         <div className="space-y-2">
           {bookings.map((b) => (
-            <div key={b.id} className="bg-white rounded-2xl border border-stone-100 shadow-sm p-3">
+            <div key={b.id} className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-3">
               <div className="flex items-start gap-3">
                 <div className="text-right flex-shrink-0 w-14">
-                  <p className="font-bold text-stone-900 text-sm leading-none">{b.time}</p>
-                  <p className="text-[10px] text-stone-400 mt-0.5">{b.endTime}</p>
+                  <p className="font-bold text-bridge-heading text-sm leading-none">{b.time}</p>
+                  <p className="text-[10px] text-bridge-muted mt-0.5">{b.endTime}</p>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="font-semibold text-stone-900 text-sm truncate">{b.customerName}</p>
+                    <p className="font-semibold text-bridge-heading text-sm truncate">{b.customerName}</p>
                     {b.isWalkin && (
                       <span className="text-[9px] font-bold uppercase bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">Walk-in</span>
                     )}
                   </div>
-                  <p className="text-stone-500 text-xs truncate mt-0.5">{b.serviceName}</p>
+                  <p className="text-bridge-muted text-xs truncate mt-0.5">{b.serviceName}</p>
                   <div className="flex items-center gap-2 mt-1.5 text-[11px]">
-                    <span className="flex items-center gap-1 text-stone-400">
+                    <span className="flex items-center gap-1 text-bridge-muted">
                       <Clock size={10} />
                       {b.serviceDuration} min
                     </span>

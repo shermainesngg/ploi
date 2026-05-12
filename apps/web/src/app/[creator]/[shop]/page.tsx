@@ -1,4 +1,4 @@
-import { getPageData, getBusinessAffiliations, getRecentBookingCount } from '@/lib/db'
+import { BusinessService } from '@/services/business.service'
 import ShopBookingPage from '@/components/ShopBookingPage'
 import { notFound } from 'next/navigation'
 
@@ -10,9 +10,9 @@ export default async function Page({ params }: PageProps) {
   const { creator, shop } = await params
   const [{ business, creator: creatorData, link }, affiliations, recentBookings] =
     await Promise.all([
-      getPageData(creator, shop),
-      getBusinessAffiliations(shop),
-      getRecentBookingCount(shop),
+      BusinessService.getPageData(creator, shop),
+      BusinessService.getAffiliations(shop),
+      BusinessService.getRecentBookingCount(shop),
     ])
 
   if (!business) return notFound()
@@ -30,7 +30,7 @@ export default async function Page({ params }: PageProps) {
 
 export async function generateMetadata({ params }: PageProps) {
   const { creator, shop } = await params
-  const { business, creator: creatorData } = await getPageData(creator, shop)
+  const { business, creator: creatorData } = await BusinessService.getPageData(creator, shop)
   if (!business) return {}
   return {
     title: `${business.name} — Book via BRIDGE`,

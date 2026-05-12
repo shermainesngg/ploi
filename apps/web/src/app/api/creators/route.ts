@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@/lib/supabase'
-import { createCreator as dbCreateCreator } from '@/lib/db'
+import { CreatorService } from '@/services/creator.service'
 import type { Social, SocialPlatform } from '@/lib/types'
 
 export async function POST(req: NextRequest) {
@@ -25,7 +24,7 @@ export async function POST(req: NextRequest) {
           .map((s) => ({ platform: s.platform as SocialPlatform, url: s.url as string }))
       : []
 
-    const creator = await dbCreateCreator({
+    const creator = await CreatorService.create({
       slug,
       handle: cleanHandle,
       displayName,

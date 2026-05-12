@@ -7,7 +7,7 @@ import {
   Check, X, ExternalLink, ChevronRight, Music, Instagram, Youtube, Twitter, Globe, Inbox,
 } from 'lucide-react'
 import type { CreatorRollup, SocialPlatform } from '@/lib/types'
-import type { PendingLinkRequest, MyCreatorEntry } from '@/lib/db'
+import type { PendingLinkRequest, MyCreatorEntry } from '@/services/link.service'
 
 function formatPrice(thb: number) { return `฿${thb.toLocaleString()}` }
 
@@ -34,12 +34,12 @@ interface Props {
 export default function CreatorsTab({ pendingRequests, myCreators, creatorRollups }: Props) {
   if (pendingRequests.length === 0 && myCreators.length === 0 && creatorRollups.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-stone-100 p-12 text-center">
-        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-stone-50 mb-3">
-          <Inbox size={20} className="text-stone-400" />
+      <div className="bg-white rounded-2xl border border-bridge-border/60 p-12 text-center">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-surface mb-3">
+          <Inbox size={20} className="text-bridge-muted" />
         </div>
-        <p className="text-stone-500 text-sm">No creator activity yet.</p>
-        <p className="text-stone-400 text-xs mt-1">When creators link to your business, they appear here.</p>
+        <p className="text-bridge-muted text-body">No creator activity yet.</p>
+        <p className="text-bridge-muted/70 text-caption mt-1">When creators link to your business, they appear here.</p>
       </div>
     )
   }
@@ -89,12 +89,12 @@ function Section({
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
-        <h2 className={`text-sm font-semibold uppercase tracking-widest ${
-          tone === 'amber' ? 'text-amber-700' : 'text-stone-400'
+        <h2 className={`text-label uppercase tracking-widest ${
+          tone === 'amber' ? 'text-amber-700' : 'text-bridge-muted'
         }`}>{title}</h2>
         {badge !== undefined && (
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase ${
-            tone === 'amber' ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-600'
+          <span className={`text-micro px-2 py-0.5 rounded-full uppercase ${
+            tone === 'amber' ? 'bg-amber-100 text-amber-800' : 'bg-bridge-surface text-bridge-secondary'
           }`}>{badge}</span>
         )}
       </div>
@@ -122,20 +122,20 @@ function PendingRequestCard({ request }: { request: PendingLinkRequest }) {
   }
 
   return (
-    <div className="bg-amber-50/30 rounded-2xl border border-amber-200 p-4 shadow-sm">
+    <div className="bg-amber-50/30 rounded-2xl border border-amber-200 p-4 shadow-card">
       <div className="flex items-start gap-3 mb-3">
         <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-black flex-shrink-0"
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
           style={{ backgroundColor: request.creator.avatarColor }}
         >
           {request.creator.avatarInitials}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="font-semibold text-stone-900 text-sm truncate">{request.creator.handle}</p>
-            <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Pending</span>
+            <p className="font-semibold text-bridge-heading text-body truncate">{request.creator.handle}</p>
+            <span className="text-micro font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">Pending</span>
           </div>
-          <p className="text-stone-500 text-xs leading-relaxed mt-0.5 line-clamp-2">{request.creator.bio}</p>
+          <p className="text-bridge-muted text-caption leading-relaxed mt-0.5 line-clamp-2">{request.creator.bio}</p>
         </div>
       </div>
 
@@ -144,11 +144,11 @@ function PendingRequestCard({ request }: { request: PendingLinkRequest }) {
           href={request.link.contentUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 mb-3 px-3 py-2 bg-white border border-stone-200 rounded-lg text-xs text-stone-600 hover:border-rose-300"
+          className="flex items-center gap-2 mb-3 px-3 py-2 bg-white border border-bridge-border rounded-button text-caption text-bridge-secondary hover:border-bridge-accent-light transition-colors"
         >
           {request.link.platform && <PlatformIcon platform={request.link.platform} />}
           <span className="font-mono truncate flex-1">{request.link.contentUrl}</span>
-          <ExternalLink size={11} className="text-stone-400 flex-shrink-0" />
+          <ExternalLink size={11} className="text-bridge-muted flex-shrink-0" />
         </a>
       )}
 
@@ -156,14 +156,14 @@ function PendingRequestCard({ request }: { request: PendingLinkRequest }) {
         <button
           onClick={() => decide('declined')}
           disabled={busy}
-          className="flex-1 py-2.5 rounded-xl border border-stone-200 text-stone-600 text-sm font-semibold hover:bg-stone-50 disabled:opacity-50 flex items-center justify-center gap-1"
+          className="flex-1 py-2.5 rounded-button border border-bridge-border text-bridge-secondary text-label hover:bg-bridge-surface disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
         >
           <X size={14} /> Decline
         </button>
         <button
           onClick={() => decide('active')}
           disabled={busy}
-          className="flex-1 py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 disabled:opacity-50 flex items-center justify-center gap-1"
+          className="flex-1 py-2.5 rounded-button bg-bridge-accent text-white text-label hover:bg-bridge-accent-dark disabled:opacity-50 flex items-center justify-center gap-1 transition-colors"
         >
           <Check size={14} /> Accept
         </button>
@@ -175,27 +175,27 @@ function PendingRequestCard({ request }: { request: PendingLinkRequest }) {
 function MyCreatorCard({ entry }: { entry: MyCreatorEntry }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-card overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full p-4 flex items-center gap-3 text-left active:bg-stone-50 transition-colors"
+        className="w-full p-4 flex items-center gap-3 text-left active:bg-bridge-surface transition-colors"
       >
         <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-black flex-shrink-0"
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
           style={{ backgroundColor: entry.creator.avatarColor }}
         >
           {entry.creator.avatarInitials}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-stone-900 text-sm truncate">{entry.creator.handle}</p>
-          <p className="text-stone-400 text-xs truncate">{entry.creator.displayName}</p>
-          <div className="flex items-center gap-3 mt-1 text-[10px] text-stone-500">
+          <p className="font-semibold text-bridge-heading text-body truncate">{entry.creator.handle}</p>
+          <p className="text-bridge-muted text-caption truncate">{entry.creator.displayName}</p>
+          <div className="flex items-center gap-3 mt-1 text-micro text-bridge-muted">
             <span>{entry.bookingCount} booking{entry.bookingCount !== 1 ? 's' : ''}</span>
             <span>·</span>
             <span>{formatPrice(entry.revenue)} driven</span>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-stone-400 flex-shrink-0">
+        <div className="flex items-center gap-1 text-bridge-muted flex-shrink-0">
           {entry.creator.socials.slice(0, 3).map((s) => (
             <PlatformIcon key={s.platform + s.url} platform={s.platform} />
           ))}
@@ -203,18 +203,18 @@ function MyCreatorCard({ entry }: { entry: MyCreatorEntry }) {
       </button>
 
       {open && (
-        <div className="border-t border-stone-100 p-4 bg-stone-50/50 space-y-3">
-          {entry.creator.bio && <p className="text-stone-600 text-sm leading-relaxed">{entry.creator.bio}</p>}
+        <div className="border-t border-bridge-border/40 p-4 bg-bridge-surface/50 space-y-3">
+          {entry.creator.bio && <p className="text-bridge-secondary text-body leading-relaxed">{entry.creator.bio}</p>}
           {entry.link.contentUrl && (
             <a
               href={entry.link.contentUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-stone-200 rounded-lg text-xs text-stone-600 hover:border-rose-300"
+              className="flex items-center gap-2 px-3 py-2 bg-white border border-bridge-border rounded-button text-caption text-bridge-secondary hover:border-bridge-accent-light transition-colors"
             >
               {entry.link.platform && <PlatformIcon platform={entry.link.platform} />}
               <span className="font-mono truncate flex-1">View their content</span>
-              <ExternalLink size={11} className="text-stone-400 flex-shrink-0" />
+              <ExternalLink size={11} className="text-bridge-muted flex-shrink-0" />
             </a>
           )}
           {entry.creator.socials.length > 0 && (
@@ -225,7 +225,7 @@ function MyCreatorCard({ entry }: { entry: MyCreatorEntry }) {
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-white border border-stone-200 hover:border-rose-300 px-2.5 py-1.5 rounded-full text-xs font-medium text-stone-600"
+                  className="flex items-center gap-1.5 bg-white border border-bridge-border hover:border-bridge-accent-light px-2.5 py-1.5 rounded-full text-caption font-medium text-bridge-secondary transition-colors"
                 >
                   <PlatformIcon platform={s.platform} />
                   {platformLabel(s.platform)}
@@ -235,7 +235,7 @@ function MyCreatorCard({ entry }: { entry: MyCreatorEntry }) {
           )}
           <Link
             href={`/${entry.creator.slug}`}
-            className="block text-center w-full py-2.5 rounded-xl border border-stone-200 text-stone-700 text-sm font-semibold hover:bg-white"
+            className="block text-center w-full py-2.5 rounded-button border border-bridge-border text-bridge-text text-label hover:bg-white transition-colors"
           >
             View full profile →
           </Link>
@@ -249,20 +249,20 @@ function RollupRow({ rollup }: { rollup: CreatorRollup }) {
   return (
     <Link
       href={`/dashboard/creator/${rollup.slug}`}
-      className="flex items-center justify-between bg-white rounded-2xl border border-stone-100 p-4 shadow-sm hover:shadow-md transition-shadow group"
+      className="flex items-center justify-between bg-white rounded-2xl border border-bridge-border/60 p-4 shadow-card hover:shadow-card-hover transition-shadow group"
     >
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-stone-900 text-sm">{rollup.handle}</p>
-        <p className="text-stone-400 text-xs mt-0.5">
+        <p className="font-semibold text-bridge-heading text-body">{rollup.handle}</p>
+        <p className="text-bridge-muted text-caption mt-0.5">
           {rollup.bookingCount} booking{rollup.bookingCount !== 1 ? 's' : ''} · {formatPrice(rollup.revenue)} driven
         </p>
       </div>
       <div className="flex items-center gap-2">
         <div className="text-right">
-          <p className="text-stone-400 text-[10px] uppercase tracking-wide">Paid out</p>
-          <p className="text-rose-600 font-bold text-sm">{formatPrice(rollup.earnings)}</p>
+          <p className="text-bridge-muted text-micro uppercase tracking-wide">Paid out</p>
+          <p className="text-bridge-accent font-bold text-body">{formatPrice(rollup.earnings)}</p>
         </div>
-        <ChevronRight size={16} className="text-stone-300 group-hover:text-rose-600 transition-colors" />
+        <ChevronRight size={16} className="text-bridge-border-strong group-hover:text-bridge-accent transition-colors" />
       </div>
     </Link>
   )

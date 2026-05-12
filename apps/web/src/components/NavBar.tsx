@@ -11,7 +11,6 @@ export default function NavBar({ user }: { user: AppUser | null }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
 
-  // Hide on auth/booking-flow pages where the nav would be visual noise
   const HIDE_ON = ['/login', '/signup', '/auth/callback']
   if (HIDE_ON.some((p) => pathname?.startsWith(p))) return null
 
@@ -29,16 +28,16 @@ export default function NavBar({ user }: { user: AppUser | null }) {
 
   return (
     <>
-      <nav className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-stone-100">
-        <div className="max-w-[480px] mx-auto px-4 py-3 flex items-center justify-between">
+      <nav className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-bridge-border/40">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="text-base font-black tracking-tight text-rose-600">BRIDGE</span>
+            <span className="font-display text-lg font-bold tracking-tight text-bridge-accent">BRIDGE</span>
           </Link>
 
           <div className="flex items-center gap-1">
             <button
               type="button"
-              className="w-9 h-9 flex items-center justify-center text-stone-400 hover:text-stone-700"
+              className="w-9 h-9 flex items-center justify-center text-bridge-muted hover:text-bridge-text transition-colors rounded-full hover:bg-bridge-surface"
               aria-label="Search"
               onClick={() => router.push('/')}
             >
@@ -48,36 +47,36 @@ export default function NavBar({ user }: { user: AppUser | null }) {
             {user ? (
               <button
                 onClick={() => setOpen(true)}
-                className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-stone-100"
+                className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-full hover:bg-bridge-surface transition-colors"
               >
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-black flex-shrink-0"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
                   style={{ backgroundColor: user.avatarColor }}
                 >
                   {user.avatarInitials}
                 </div>
               </button>
             ) : (
-              <>
+              <div className="hidden sm:flex items-center gap-1">
                 <Link
                   href="/login"
-                  className="text-sm font-semibold text-stone-700 hover:text-stone-900 px-3 py-1.5"
+                  className="text-label text-bridge-secondary hover:text-bridge-text px-3 py-1.5 transition-colors rounded-button hover:bg-bridge-surface"
                 >
                   Log in
                 </Link>
                 <Link
                   href="/signup"
-                  className="text-sm font-semibold text-white bg-rose-600 hover:bg-rose-700 px-3 py-1.5 rounded-lg"
+                  className="text-label text-white bg-bridge-accent hover:bg-bridge-accent-dark px-3.5 py-1.5 rounded-button transition-colors"
                 >
                   Sign up
                 </Link>
-              </>
+              </div>
             )}
 
             <button
               type="button"
               onClick={() => setOpen(true)}
-              className="ml-1 w-9 h-9 flex items-center justify-center text-stone-500 hover:text-stone-900"
+              className="ml-0.5 w-9 h-9 flex items-center justify-center text-bridge-muted hover:text-bridge-text transition-colors rounded-full hover:bg-bridge-surface"
               aria-label="Menu"
             >
               <Menu size={18} />
@@ -86,33 +85,32 @@ export default function NavBar({ user }: { user: AppUser | null }) {
         </div>
       </nav>
 
-      {/* Mobile menu sheet */}
       {open && (
         <>
-          <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={() => setOpen(false)} />
-          <div className="fixed top-0 right-0 bottom-0 w-72 max-w-[85vw] bg-white z-50 shadow-2xl flex flex-col animate-slide-up">
-            <div className="flex items-center justify-between p-4 border-b border-stone-100">
-              <span className="text-base font-black tracking-tight text-rose-600">BRIDGE</span>
+          <div className="fixed inset-0 bg-bridge-heading/40 z-40 animate-fade-in" onClick={() => setOpen(false)} />
+          <div className="fixed top-0 right-0 bottom-0 w-72 max-w-[85vw] bg-white z-50 shadow-2xl flex flex-col animate-slide-in-right">
+            <div className="flex items-center justify-between p-4 border-b border-bridge-border/50">
+              <span className="font-display text-lg font-bold tracking-tight text-bridge-accent">BRIDGE</span>
               <button
                 onClick={() => setOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200"
+                className="w-8 h-8 flex items-center justify-center rounded-full bg-bridge-surface hover:bg-bridge-border transition-colors"
               >
-                <X size={16} className="text-stone-600" />
+                <X size={16} className="text-bridge-secondary" />
               </button>
             </div>
 
             {user && (
-              <div className="px-4 py-4 border-b border-stone-100 flex items-center gap-3">
+              <div className="px-4 py-4 border-b border-bridge-border/50 flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-base font-black flex-shrink-0"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-base font-bold flex-shrink-0"
                   style={{ backgroundColor: user.avatarColor }}
                 >
                   {user.avatarInitials}
                 </div>
                 <div className="min-w-0">
-                  <p className="font-semibold text-stone-900 text-sm truncate">{user.displayName}</p>
-                  <p className="text-stone-400 text-xs truncate">{user.email}</p>
-                  <p className="text-[10px] font-bold text-rose-600 uppercase tracking-wide mt-0.5">{user.role}</p>
+                  <p className="font-semibold text-bridge-heading text-label truncate">{user.displayName}</p>
+                  <p className="text-bridge-muted text-caption truncate">{user.email}</p>
+                  <p className="text-micro text-bridge-accent uppercase tracking-wide mt-0.5">{user.role}</p>
                 </div>
               </div>
             )}
@@ -145,17 +143,17 @@ export default function NavBar({ user }: { user: AppUser | null }) {
                 </>
               )}
 
-              <div className="my-2 border-t border-stone-100" />
+              <div className="my-2 border-t border-bridge-border/40" />
 
               <NavLink href="/onboard/creator" label="Join as creator" onClick={() => setOpen(false)} />
               <NavLink href="/onboard/business" label="List your business" onClick={() => setOpen(false)} />
             </div>
 
             {user && (
-              <div className="p-4 border-t border-stone-100">
+              <div className="p-4 border-t border-bridge-border/50">
                 <button
                   onClick={signOut}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-sm font-semibold"
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-button bg-bridge-surface hover:bg-bridge-border transition-colors text-bridge-secondary text-label"
                 >
                   <LogOut size={14} /> Sign out
                 </button>
@@ -180,9 +178,9 @@ function NavLink({
     <Link
       href={href}
       onClick={onClick}
-      className="flex items-center gap-2 px-3 py-2.5 rounded-xl hover:bg-stone-50 text-stone-700 text-sm font-medium"
+      className="flex items-center gap-2.5 px-3 py-2.5 rounded-button hover:bg-bridge-surface text-bridge-secondary hover:text-bridge-text text-label transition-colors"
     >
-      {icon && <span className="text-stone-400">{icon}</span>}
+      {icon && <span className="text-bridge-muted">{icon}</span>}
       <span>{label}</span>
     </Link>
   )

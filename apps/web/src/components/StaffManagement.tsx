@@ -7,7 +7,7 @@ import {
   ArrowLeft, Plus, Trash2, Image as ImageIcon, Save, X, Pencil, User as UserIcon,
   Copy, ExternalLink, Calendar, Check,
 } from 'lucide-react'
-import type { StaffMember } from '@/lib/db'
+import type { StaffMember } from '@/services/staff.service'
 
 interface ServiceOption {
   id: string
@@ -96,23 +96,23 @@ export default function StaffManagement({
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-[480px] mx-auto pb-24">
-        <div className="px-5 pt-8 pb-6 bg-white border-b border-stone-100">
+    <div className="min-h-screen bg-bridge-bg">
+      <div className="max-w-2xl mx-auto pb-24">
+        <div className="px-5 pt-8 pb-6 bg-white border-b border-bridge-border/60">
           <Link
             href={`/dashboard/business/${businessSlug}`}
-            className="flex items-center gap-1 text-stone-400 text-xs mb-3 hover:text-stone-600"
+            className="flex items-center gap-1 text-bridge-muted text-xs mb-3 hover:text-bridge-secondary"
           >
             <ArrowLeft size={12} /> Back to dashboard
           </Link>
-          <h1 className="text-2xl font-black text-stone-900 leading-tight">Staff</h1>
-          <p className="text-stone-500 text-sm mt-1">Manage who works at {businessName}.</p>
+          <h1 className="text-2xl font-bold text-bridge-heading leading-tight">Staff</h1>
+          <p className="text-bridge-muted text-sm mt-1">Manage who works at {businessName}.</p>
         </div>
 
         <div className="px-4 mt-6">
           <button
             onClick={() => setEditing('new')}
-            className="w-full py-3 rounded-2xl bg-rose-600 text-white font-semibold text-sm hover:bg-rose-700 active:scale-[0.99] transition-all flex items-center justify-center gap-2 mb-4"
+            className="w-full py-3 rounded-2xl bg-bridge-accent text-white font-semibold text-sm hover:bg-bridge-accent-dark active:scale-[0.99] transition-all flex items-center justify-center gap-2 mb-4"
           >
             <Plus size={16} /> Add staff member
           </button>
@@ -128,7 +128,7 @@ export default function StaffManagement({
           ))}
 
           {staff.length === 0 && (
-            <div className="text-center py-12 text-stone-400 text-sm">
+            <div className="text-center py-12 text-bridge-muted text-sm">
               No staff yet. Adding staff lets customers pick a preferred therapist or stylist when they book.
             </div>
           )}
@@ -158,41 +158,41 @@ function StaffCard({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 mb-3">
+    <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-4 mb-3">
       <button onClick={onEdit} className="w-full text-left">
         <div className="flex items-start gap-3">
-          <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden bg-stone-100 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden bg-bridge-surface flex items-center justify-center">
             {staff.photoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={staff.photoUrl} alt="" className="w-full h-full object-cover" />
             ) : (
-              <UserIcon size={20} className="text-stone-400" />
+              <UserIcon size={20} className="text-bridge-muted" />
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-stone-900 text-sm truncate">{staff.name}</p>
-            {staff.role && <p className="text-stone-500 text-xs">{staff.role}</p>}
-            <p className="text-stone-400 text-[11px] mt-1 truncate">
+            <p className="font-semibold text-bridge-heading text-sm truncate">{staff.name}</p>
+            {staff.role && <p className="text-bridge-muted text-xs">{staff.role}</p>}
+            <p className="text-bridge-muted text-[11px] mt-1 truncate">
               {assigned.length > 0
                 ? `${assigned.length} service${assigned.length !== 1 ? 's' : ''} · ${assigned.slice(0, 2).map((s) => s.name).join(', ')}${assigned.length > 2 ? '…' : ''}`
                 : 'No services assigned yet'}
             </p>
           </div>
-          <Pencil size={14} className="text-stone-300 flex-shrink-0 mt-1" />
+          <Pencil size={14} className="text-bridge-border-strong flex-shrink-0 mt-1" />
         </div>
       </button>
 
       {/* Footer: schedule link */}
-      <div className="border-t border-stone-100 mt-3 pt-3 flex items-center gap-2">
+      <div className="border-t border-bridge-border/60 mt-3 pt-3 flex items-center gap-2">
         <Link
           href={`/staff/${staff.id}/schedule`}
-          className="flex-1 text-xs font-semibold text-stone-700 hover:bg-stone-50 rounded-lg py-1.5 px-2 flex items-center justify-center gap-1.5"
+          className="flex-1 text-xs font-semibold text-bridge-text hover:bg-bridge-surface rounded-lg py-1.5 px-2 flex items-center justify-center gap-1.5"
         >
           <Calendar size={11} /> View schedule
         </Link>
         <button
           onClick={copyLink}
-          className="flex-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg py-1.5 px-2 flex items-center justify-center gap-1.5"
+          className="flex-1 text-xs font-semibold text-bridge-accent hover:bg-bridge-accent-wash rounded-lg py-1.5 px-2 flex items-center justify-center gap-1.5"
         >
           <Copy size={11} /> {copied ? 'Copied' : 'Copy private link'}
         </button>
@@ -359,16 +359,16 @@ function StaffEditor({
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-[480px] mx-auto pb-32">
-        <div className="px-5 pt-8 pb-6 bg-white border-b border-stone-100">
+    <div className="min-h-screen bg-bridge-bg">
+      <div className="max-w-2xl mx-auto pb-32">
+        <div className="px-5 pt-8 pb-6 bg-white border-b border-bridge-border/60">
           <button
             onClick={onClose}
-            className="flex items-center gap-1 text-stone-400 text-xs mb-3 hover:text-stone-600"
+            className="flex items-center gap-1 text-bridge-muted text-xs mb-3 hover:text-bridge-secondary"
           >
             <ArrowLeft size={12} /> Back to staff list
           </button>
-          <h1 className="text-2xl font-black text-stone-900 leading-tight">
+          <h1 className="text-2xl font-bold text-bridge-heading leading-tight">
             {isNew ? 'New staff member' : staff!.name}
           </h1>
         </div>
@@ -379,24 +379,24 @@ function StaffEditor({
             <input
               type="text" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Pim"
-              className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+              className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm"
             />
           </Field>
           <Field label="Role">
             <input
               type="text" value={role} onChange={(e) => setRole(e.target.value)}
               placeholder="e.g. Senior therapist"
-              className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+              className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm"
             />
           </Field>
           <Field label="Photo URL">
             <div className="relative">
-              <ImageIcon size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+              <ImageIcon size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-bridge-muted" />
               <input
                 type="url" value={photoUrl} onChange={(e) => setPhotoUrl(e.target.value)}
                 placeholder="https://…"
                 autoCapitalize="none" autoCorrect="off"
-                className="w-full border border-stone-200 rounded-xl pl-9 pr-3 py-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-xs font-mono"
+                className="w-full border border-bridge-border rounded-xl pl-9 pr-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-xs font-mono"
               />
             </div>
           </Field>
@@ -404,9 +404,9 @@ function StaffEditor({
 
         {/* Services — interactive button toggles */}
         <Section title="Services">
-          <p className="text-stone-500 text-xs mb-3">Tap the services this person can perform.</p>
+          <p className="text-bridge-muted text-xs mb-3">Tap the services this person can perform.</p>
           {services.length === 0 ? (
-            <p className="text-stone-400 text-xs">Add services to your business first.</p>
+            <p className="text-bridge-muted text-xs">Add services to your business first.</p>
           ) : (
             <div className="space-y-2">
               {services.map((s) => {
@@ -418,20 +418,20 @@ function StaffEditor({
                     onClick={() => toggleService(s.id)}
                     className={`w-full text-left flex items-center gap-3 p-3 rounded-2xl border-2 transition-all active:scale-[0.99] ${
                       on
-                        ? 'border-rose-600 bg-rose-50'
-                        : 'border-stone-200 bg-white hover:border-rose-300'
+                        ? 'border-bridge-accent bg-bridge-accent-wash'
+                        : 'border-bridge-border bg-white hover:border-bridge-accent-light'
                     }`}
                   >
                     <div
                       className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center ${
-                        on ? 'bg-rose-600' : 'border-2 border-stone-300 bg-white'
+                        on ? 'bg-bridge-accent' : 'border-2 border-bridge-border-strong bg-white'
                       }`}
                     >
                       {on && <Check size={13} className="text-white" strokeWidth={3} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`font-semibold text-sm ${on ? 'text-rose-700' : 'text-stone-900'}`}>{s.name}</p>
-                      <p className="text-xs text-stone-500">{s.duration} min · ฿{s.price.toLocaleString()}</p>
+                      <p className={`font-semibold text-sm ${on ? 'text-bridge-accent' : 'text-bridge-heading'}`}>{s.name}</p>
+                      <p className="text-xs text-bridge-muted">{s.duration} min · ฿{s.price.toLocaleString()}</p>
                     </div>
                   </button>
                 )
@@ -446,24 +446,24 @@ function StaffEditor({
           action={
             <button
               onClick={copyToAllDays}
-              className="text-xs font-semibold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-md flex items-center gap-1"
+              className="text-xs font-semibold text-bridge-accent hover:bg-bridge-accent-wash px-2 py-1 rounded-md flex items-center gap-1"
             >
               <Copy size={11} /> Mon → all days
             </button>
           }
         >
           {!scheduleLoaded ? (
-            <p className="text-stone-400 text-xs py-4">Loading…</p>
+            <p className="text-bridge-muted text-xs py-4">Loading...</p>
           ) : (
-            <div className="bg-stone-50 rounded-2xl border border-stone-200 divide-y divide-stone-200">
+            <div className="bg-bridge-bg rounded-2xl border border-bridge-border divide-y divide-bridge-border">
               {[1, 2, 3, 4, 5, 6, 0].map((dow) => (
                 <div key={dow} className="flex items-center gap-2 px-3 py-2.5">
-                  <span className="text-sm font-semibold text-stone-700 w-10">{DAY_LABELS[dow]}</span>
+                  <span className="text-sm font-semibold text-bridge-text w-10">{DAY_LABELS[dow]}</span>
                   <button
                     type="button"
                     onClick={() => setDay(dow, { open: !hours[dow].open })}
                     className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${
-                      hours[dow].open ? 'bg-green-100 text-green-700' : 'bg-stone-200 text-stone-500'
+                      hours[dow].open ? 'bg-green-100 text-green-700' : 'bg-bridge-border text-bridge-muted'
                     }`}
                   >
                     {hours[dow].open ? 'On' : 'Off'}
@@ -474,14 +474,14 @@ function StaffEditor({
                         type="time"
                         value={hours[dow].start}
                         onChange={(e) => setDay(dow, { start: e.target.value })}
-                        className="border border-stone-200 rounded-md px-1.5 py-1 text-xs bg-white"
+                        className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-white"
                       />
-                      <span className="text-stone-400 text-xs">–</span>
+                      <span className="text-bridge-muted text-xs">--</span>
                       <input
                         type="time"
                         value={hours[dow].end}
                         onChange={(e) => setDay(dow, { end: e.target.value })}
-                        className="border border-stone-200 rounded-md px-1.5 py-1 text-xs bg-white"
+                        className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-white"
                       />
                     </div>
                   )}
@@ -494,19 +494,19 @@ function StaffEditor({
         {/* Blocked dates — only for existing staff */}
         {!isNew && (
           <Section title="Blocked dates">
-            <p className="text-stone-500 text-xs mb-3">Sick days, leave, or any date this person is fully unavailable.</p>
+            <p className="text-bridge-muted text-xs mb-3">Sick days, leave, or any date this person is fully unavailable.</p>
 
             <div className="space-y-2 mb-3">
               {blocks.map((b) => (
-                <div key={b.id ?? b.blockDate} className="bg-stone-50 rounded-xl border border-stone-200 p-3 flex items-center justify-between">
+                <div key={b.id ?? b.blockDate} className="bg-bridge-bg rounded-xl border border-bridge-border p-3 flex items-center justify-between">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-stone-900">{b.blockDate}</p>
-                    {b.reason && <p className="text-xs text-stone-500">{b.reason}</p>}
+                    <p className="text-sm font-semibold text-bridge-heading">{b.blockDate}</p>
+                    {b.reason && <p className="text-xs text-bridge-muted">{b.reason}</p>}
                   </div>
                   {b.id && (
                     <button
                       onClick={() => removeBlock(b.id!)}
-                      className="text-stone-300 hover:text-rose-500 ml-2"
+                      className="text-bridge-border-strong hover:text-bridge-accent ml-2"
                     >
                       <Trash2 size={14} />
                     </button>
@@ -514,25 +514,25 @@ function StaffEditor({
                 </div>
               ))}
               {blocks.length === 0 && (
-                <p className="text-stone-400 text-xs italic">No blocked dates.</p>
+                <p className="text-bridge-muted text-xs italic">No blocked dates.</p>
               )}
             </div>
 
-            <div className="bg-rose-50 rounded-2xl p-3 space-y-2 border border-rose-100">
+            <div className="bg-bridge-accent-wash rounded-2xl p-3 space-y-2 border border-bridge-accent-light">
               <input
                 type="date" value={newBlockDate} onChange={(e) => setNewBlockDate(e.target.value)}
-                className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm bg-white"
+                className="w-full border border-bridge-border rounded-xl px-3 py-2 text-sm bg-white"
               />
               <input
                 type="text" value={newBlockReason} onChange={(e) => setNewBlockReason(e.target.value)}
                 placeholder="Reason (optional, e.g. Sick day)"
-                className="w-full border border-stone-200 rounded-xl px-3 py-2 text-sm bg-white"
+                className="w-full border border-bridge-border rounded-xl px-3 py-2 text-sm bg-white"
               />
               <button
                 type="button"
                 onClick={addBlock}
                 disabled={!newBlockDate}
-                className="w-full py-2.5 rounded-xl bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 disabled:opacity-30 flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 rounded-xl bg-bridge-accent text-white text-sm font-semibold hover:bg-bridge-accent-dark disabled:opacity-30 flex items-center justify-center gap-1.5"
               >
                 <Plus size={13} /> Add blocked date
               </button>
@@ -541,13 +541,13 @@ function StaffEditor({
         )}
 
         {/* Save bar (sticky bottom) */}
-        <div className="fixed bottom-0 left-0 right-0 z-20 max-w-[480px] mx-auto px-4 py-3 bg-white border-t border-stone-200">
+        <div className="fixed bottom-0 left-0 right-0 z-20 max-w-2xl mx-auto px-4 py-3 bg-white border-t border-bridge-border">
           {error && <p className="text-red-600 text-xs mb-2 text-center">{error}</p>}
           <div className="flex gap-2">
             <button
               onClick={save}
               disabled={saving || !name.trim()}
-              className="flex-1 py-3.5 rounded-xl bg-rose-600 text-white font-semibold text-sm disabled:opacity-30 hover:bg-rose-700 flex items-center justify-center gap-1.5"
+              className="flex-1 py-3.5 rounded-xl bg-bridge-accent text-white font-semibold text-sm disabled:opacity-30 hover:bg-bridge-accent-dark flex items-center justify-center gap-1.5"
             >
               <Save size={14} /> {saving ? 'Saving…' : isNew ? 'Create staff' : 'Save changes'}
             </button>
@@ -577,10 +577,10 @@ function Section({
   return (
     <div className="px-4 mt-6">
       <div className="flex items-center justify-between mb-3 px-1">
-        <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-widest">{title}</h2>
+        <h2 className="text-xs font-semibold text-bridge-muted uppercase tracking-widest">{title}</h2>
         {action}
       </div>
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm p-4 space-y-4">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-4 space-y-4">
         {children}
       </div>
     </div>
@@ -596,8 +596,8 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-        {label} {required && <span className="text-rose-500">*</span>}
+      <label className="block text-xs font-semibold text-bridge-text mb-1.5">
+        {label} {required && <span className="text-bridge-accent">*</span>}
       </label>
       {children}
     </div>

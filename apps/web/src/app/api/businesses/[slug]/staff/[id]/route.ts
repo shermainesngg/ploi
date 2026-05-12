@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateStaffMember, deactivateStaffMember } from '@/lib/db'
+import { StaffService } from '@/services/staff.service'
 
 export async function PATCH(
   req: NextRequest,
@@ -8,7 +8,7 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await req.json()
-    await updateStaffMember(id, {
+    await StaffService.update(id, {
       name: body.name,
       role: body.role,
       photoUrl: body.photoUrl,
@@ -26,7 +26,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params
-    await deactivateStaffMember(id)
+    await StaffService.deactivate(id)
     return NextResponse.json({ id, deactivated: true })
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Unknown' }, { status: 500 })

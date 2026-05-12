@@ -14,9 +14,9 @@ export default async function BookingsPage() {
 
   if (!isSupabaseConfigured()) {
     return (
-      <div className="max-w-[480px] mx-auto px-5 py-10">
-        <h1 className="text-2xl font-black text-stone-900">My bookings</h1>
-        <p className="text-stone-500 text-sm mt-2">Connect Supabase to view bookings.</p>
+      <div className="max-w-2xl mx-auto px-5 py-10">
+        <h1 className="font-display text-heading text-bridge-heading">My bookings</h1>
+        <p className="text-bridge-muted text-body mt-2">Connect Supabase to view bookings.</p>
       </div>
     )
   }

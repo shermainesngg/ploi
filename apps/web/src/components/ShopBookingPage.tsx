@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import NextLink from 'next/link'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   MapPin,
   Clock,
@@ -24,6 +25,9 @@ import {
   Play,
   TrendingUp,
 } from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
 import type {
   Business,
   Creator,
@@ -124,7 +128,7 @@ function BusinessHero({
         <span className="inline-block bg-white/20 text-white text-xs font-semibold px-3 py-1 rounded-full mb-4 backdrop-blur-sm">
           {business.category}
         </span>
-        <h1 className="text-3xl font-black text-white leading-tight mb-2">{business.name}</h1>
+        <h1 className="text-3xl font-bold text-white leading-tight mb-2">{business.name}</h1>
         <div className="flex items-center gap-1.5 text-white/85 text-sm">
           <MapPin size={14} />
           <span>{business.location}</span>
@@ -171,7 +175,7 @@ function BusinessHero({
 
 function CreatorBar({ creator, link }: { creator: Creator; link: LinkRecord | null }) {
   const inner = (
-    <div className="mx-4 -mt-3 relative z-10 bg-white rounded-2xl shadow-sm border border-stone-100 px-4 py-3 flex items-center justify-between">
+    <div className="mx-4 -mt-3 relative z-10 bg-white rounded-2xl shadow-sm border border-bridge-border/60 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3 min-w-0">
         <div
           className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
@@ -180,24 +184,24 @@ function CreatorBar({ creator, link }: { creator: Creator; link: LinkRecord | nu
           {creator.avatarInitials}
         </div>
         <div className="min-w-0">
-          <p className="text-xs text-stone-400 leading-none mb-0.5">Recommended by</p>
-          <p className="text-sm font-semibold text-stone-800 leading-none truncate">{creator.handle}</p>
+          <p className="text-xs text-bridge-muted leading-none mb-0.5">Recommended by</p>
+          <p className="text-sm font-semibold text-bridge-text leading-none truncate">{creator.handle}</p>
           {link?.contentUrl && (
-            <p className="text-[10px] text-rose-500 mt-1 flex items-center gap-1">
+            <p className="text-[10px] text-bridge-accent mt-1 flex items-center gap-1">
               <ExternalLink size={10} />
               <span className="truncate">Watch the {link.platform ?? 'post'}</span>
             </p>
           )}
         </div>
       </div>
-      <span className="text-xs font-black tracking-tight text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full flex-shrink-0">
+      <span className="text-xs font-bold tracking-tight text-bridge-accent bg-bridge-accent-wash px-2.5 py-1 rounded-full flex-shrink-0">
         BRIDGE
       </span>
     </div>
   )
   if (link?.contentUrl) {
     return (
-      <a href={link.contentUrl} target="_blank" rel="noopener noreferrer" className="block hover:opacity-90 transition-opacity">
+      <a href={link.contentUrl} target="_blank" rel="noopener noreferrer" className="block hover:opacity-90 transition-opacity cursor-pointer">
         {inner}
       </a>
     )
@@ -288,40 +292,40 @@ function AboutSection({ business }: { business: Business }) {
 
   return (
     <div className="px-4 mt-6">
-      <div className="bg-white rounded-2xl border border-stone-100 overflow-hidden">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 overflow-hidden">
         <button
           onClick={() => setOpen(!open)}
-          className="w-full px-4 py-3 flex items-center justify-between active:bg-stone-50 transition-colors"
+          className="w-full px-4 py-3 flex items-center justify-between active:bg-bridge-surface transition-colors"
         >
           <div className="flex items-center gap-3 text-left">
             {hasHours && todayHours && (
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                openNow ? 'bg-green-50 text-green-700' : 'bg-stone-100 text-stone-500'
+                openNow ? 'bg-green-50 text-green-700' : 'bg-bridge-surface text-bridge-muted'
               }`}>
                 {openNow ? 'Open now' : 'Closed'}
               </span>
             )}
-            <span className="text-sm font-semibold text-stone-800">About this place</span>
+            <span className="text-sm font-semibold text-bridge-text">About this place</span>
           </div>
-          <ChevronDown size={16} className={`text-stone-400 transition-transform ${open ? 'rotate-180' : ''}`} />
+          <ChevronDown size={16} className={`text-bridge-muted transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
 
         {open && (
-          <div className="border-t border-stone-100 px-4 py-4 space-y-4">
+          <div className="border-t border-bridge-border/60 px-4 py-4 space-y-4">
             {business.description && (
-              <p className="text-stone-600 text-sm leading-relaxed">{business.description}</p>
+              <p className="text-bridge-secondary text-sm leading-relaxed">{business.description}</p>
             )}
 
             {/* Hours */}
             {hasHours && (
               <div>
-                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Hours</p>
+                <p className="text-xs font-semibold text-bridge-muted uppercase tracking-wide mb-2">Hours</p>
                 <div className="space-y-1 text-sm">
                   {DAY_ORDER.map((d) => {
                     const h = business.openingHours?.[d]
                     const isToday = d === today
                     return (
-                      <div key={d} className={`flex justify-between ${isToday ? 'font-semibold text-stone-900' : 'text-stone-600'}`}>
+                      <div key={d} className={`flex justify-between ${isToday ? 'font-semibold text-bridge-heading' : 'text-bridge-secondary'}`}>
                         <span>{DAY_LABELS[d]}{isToday && ' (today)'}</span>
                         <span>{h && h !== 'closed' ? h : 'Closed'}</span>
                       </div>
@@ -333,13 +337,13 @@ function AboutSection({ business }: { business: Business }) {
 
             {/* Location */}
             <div>
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Location</p>
-              <p className="text-sm text-stone-600 mb-2">{business.location}</p>
+              <p className="text-xs font-semibold text-bridge-muted uppercase tracking-wide mb-2">Location</p>
+              <p className="text-sm text-bridge-secondary mb-2">{business.location}</p>
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.location + ' ' + business.name)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-rose-600 text-sm font-semibold hover:underline"
+                className="inline-flex items-center gap-1.5 text-bridge-accent text-sm font-semibold hover:underline"
               >
                 <MapPin size={13} /> Open in Google Maps
               </a>
@@ -348,14 +352,14 @@ function AboutSection({ business }: { business: Business }) {
             {/* Contact */}
             {hasContact && (
               <div>
-                <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">Contact</p>
+                <p className="text-xs font-semibold text-bridge-muted uppercase tracking-wide mb-2">Contact</p>
                 <div className="space-y-2">
                   {business.contactPhone && (
                     <a
                       href={`tel:${business.contactPhone.replace(/\s+/g, '')}`}
-                      className="flex items-center gap-2 text-sm text-stone-700 font-medium"
+                      className="flex items-center gap-2 text-sm text-bridge-text font-medium"
                     >
-                      <Phone size={13} className="text-stone-400" />
+                      <Phone size={13} className="text-bridge-muted" />
                       {business.contactPhone}
                     </a>
                   )}
@@ -375,9 +379,9 @@ function AboutSection({ business }: { business: Business }) {
                       href={`https://line.me/ti/p/~${business.contactLine.replace(/^@/, '')}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-sm text-stone-700 font-medium"
+                      className="flex items-center gap-2 text-sm text-bridge-text font-medium"
                     >
-                      <MessageCircle size={13} className="text-stone-400" />
+                      <MessageCircle size={13} className="text-bridge-muted" />
                       LINE: {business.contactLine}
                     </a>
                   )}
@@ -414,7 +418,7 @@ function CreatorsCallout({
       <div className="px-4 mt-4">
         <button
           onClick={() => setShowAll(true)}
-          className="w-full bg-white rounded-2xl border border-stone-100 shadow-sm hover:shadow-md active:scale-[0.99] transition-all overflow-hidden group"
+          className="w-full bg-white rounded-2xl border border-bridge-border/60 shadow-sm hover:shadow-md active:scale-[0.99] transition-all overflow-hidden group"
         >
           <div className="px-4 py-3.5 flex items-center gap-3">
             {/* Stacked avatars */}
@@ -422,7 +426,7 @@ function CreatorsCallout({
               {visibleAvatars.map((a, i) => (
                 <div
                   key={a.creator.id}
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-black ring-[3px] ring-white relative"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-white text-xs font-bold ring-[3px] ring-white relative"
                   style={{
                     backgroundColor: a.creator.avatarColor,
                     marginLeft: i === 0 ? 0 : '-12px',
@@ -434,7 +438,7 @@ function CreatorsCallout({
               ))}
               {overflow > 0 && (
                 <div
-                  className="w-10 h-10 rounded-full flex items-center justify-center text-stone-600 text-[11px] font-black bg-stone-100 ring-[3px] ring-white"
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-bridge-secondary text-[11px] font-bold bg-bridge-surface ring-[3px] ring-white"
                   style={{ marginLeft: '-12px', zIndex: 0 }}
                 >
                   +{overflow}
@@ -444,21 +448,21 @@ function CreatorsCallout({
 
             {/* Label */}
             <div className="flex-1 min-w-0 text-left">
-              <p className="text-sm font-bold text-stone-900 leading-tight">
+              <p className="text-sm font-bold text-bridge-heading leading-tight">
                 {count === 1 ? '1 creator' : `${count} creators`}{' '}
-                <span className="font-medium text-stone-500">recommend{count === 1 ? 's' : ''} this place</span>
+                <span className="font-medium text-bridge-muted">recommend{count === 1 ? 's' : ''} this place</span>
               </p>
-              <p className="text-[11px] text-stone-400 mt-0.5 flex items-center gap-1">
+              <p className="text-[11px] text-bridge-muted mt-0.5 flex items-center gap-1">
                 <Users size={11} />
                 <span>Tap to see their content</span>
               </p>
             </div>
 
-            <ChevronRight size={18} className="text-stone-300 flex-shrink-0 group-hover:text-rose-500 transition-colors" />
+            <ChevronRight size={18} className="text-bridge-border-strong flex-shrink-0 group-hover:text-bridge-accent transition-colors" />
           </div>
 
           {/* Optional: thin gradient strip at bottom for visual flourish */}
-          <div className="h-1 bg-gradient-to-r from-rose-400 via-pink-500 to-orange-400" />
+          <div className="h-1 bg-gradient-to-r from-bridge-accent via-bridge-accent-light to-bridge-accent" />
         </button>
       </div>
 
@@ -499,15 +503,15 @@ function CreatorDetailModal({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto animate-slide-up">
+      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
         <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto">
           {/* Close */}
           <div className="flex justify-end p-4 pb-0">
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-bridge-surface hover:bg-bridge-surface"
             >
-              <X size={16} className="text-stone-600" />
+              <X size={16} className="text-bridge-secondary" />
             </button>
           </div>
 
@@ -515,22 +519,22 @@ function CreatorDetailModal({
           <div className="px-5 pt-2 pb-5">
             <div className="flex items-start gap-3">
               <div
-                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-black flex-shrink-0"
+                className="w-16 h-16 rounded-2xl flex items-center justify-center text-white text-xl font-bold flex-shrink-0"
                 style={{ backgroundColor: creator.avatarColor }}
               >
                 {creator.avatarInitials}
               </div>
               <div className="flex-1 min-w-0 pt-0.5">
-                <h3 className="font-black text-stone-900 text-lg leading-tight">{creator.displayName}</h3>
-                <p className="text-rose-600 font-semibold text-sm">{creator.handle}</p>
-                <p className="text-stone-400 text-xs mt-1">
+                <h3 className="font-bold text-bridge-heading text-lg leading-tight">{creator.displayName}</h3>
+                <p className="text-bridge-accent font-semibold text-sm">{creator.handle}</p>
+                <p className="text-bridge-muted text-xs mt-1">
                   Has recommended {affiliation.totalPlacesRecommended} place{affiliation.totalPlacesRecommended !== 1 ? 's' : ''}
                 </p>
               </div>
             </div>
 
             {creator.bio && (
-              <p className="text-stone-600 text-sm leading-relaxed mt-3">{creator.bio}</p>
+              <p className="text-bridge-secondary text-sm leading-relaxed mt-3">{creator.bio}</p>
             )}
 
             {/* Socials */}
@@ -542,7 +546,7 @@ function CreatorDetailModal({
                     href={s.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 bg-stone-100 hover:bg-stone-200 px-3 py-1.5 rounded-full text-stone-700 text-xs font-semibold"
+                    className="flex items-center gap-1.5 bg-bridge-surface hover:bg-bridge-surface px-3 py-1.5 rounded-full text-bridge-text text-xs font-semibold"
                   >
                     <PlatformIcon platform={s.platform} />
                     {platformLabel(s.platform)}
@@ -555,14 +559,14 @@ function CreatorDetailModal({
           {/* Content */}
           {link.contentUrl && (
             <div className="px-5 pb-5">
-              <p className="text-xs font-semibold text-stone-400 uppercase tracking-wide mb-2">
+              <p className="text-xs font-semibold text-bridge-muted uppercase tracking-wide mb-2">
                 Their content about {business.name}
               </p>
               <a
                 href={link.contentUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block relative aspect-video rounded-2xl overflow-hidden bg-stone-200 group"
+                className="block relative aspect-video rounded-2xl overflow-hidden bg-bridge-border group"
               >
                 {link.contentThumbnailUrl ? (
                   <>
@@ -576,7 +580,7 @@ function CreatorDetailModal({
                 {/* Play button overlay */}
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-14 h-14 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                    <Play size={20} className="text-rose-600 fill-rose-600 ml-0.5" />
+                    <Play size={20} className="text-bridge-accent fill-bridge-accent ml-0.5" />
                   </div>
                 </div>
 
@@ -600,7 +604,7 @@ function CreatorDetailModal({
           <div className="px-5 pb-6">
             <NextLink
               href={`/${creator.slug}`}
-              className="block w-full py-3 rounded-2xl bg-stone-900 text-white text-center font-semibold text-sm hover:bg-stone-800 transition-all"
+              className="block w-full py-3 rounded-2xl bg-bridge-heading text-white text-center font-semibold text-sm hover:bg-bridge-text transition-all"
             >
               View full profile →
             </NextLink>
@@ -632,30 +636,30 @@ function AllCreatorsSheet({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={onClose} />
-      <div className="fixed inset-0 z-50 max-w-[480px] mx-auto animate-slide-up flex flex-col bg-stone-50">
+      <div className="fixed inset-0 z-50 max-w-2xl mx-auto animate-slide-up flex flex-col bg-bridge-bg">
         {/* Header */}
-        <div className="bg-white px-5 py-4 border-b border-stone-100 flex items-center justify-between flex-shrink-0">
+        <div className="bg-white px-5 py-4 border-b border-bridge-border/60 flex items-center justify-between flex-shrink-0">
           <div>
-            <h3 className="font-black text-stone-900 text-base">All creators</h3>
-            <p className="text-xs text-stone-400">{affiliations.length} recommend {business.name}</p>
+            <h3 className="font-bold text-bridge-heading text-base">All creators</h3>
+            <p className="text-xs text-bridge-muted">{affiliations.length} recommend {business.name}</p>
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200"
+            className="w-9 h-9 flex items-center justify-center rounded-full bg-bridge-surface hover:bg-bridge-surface"
           >
-            <X size={16} className="text-stone-600" />
+            <X size={16} className="text-bridge-secondary" />
           </button>
         </div>
 
         {/* Sort */}
-        <div className="bg-white px-5 py-2 border-b border-stone-100 flex items-center gap-2 flex-shrink-0">
-          <span className="text-xs text-stone-400">Sort:</span>
+        <div className="bg-white px-5 py-2 border-b border-bridge-border/60 flex items-center gap-2 flex-shrink-0">
+          <span className="text-xs text-bridge-muted">Sort:</span>
           {(['bookings', 'recent'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setSortBy(s)}
               className={`text-xs font-semibold px-3 py-1 rounded-full transition-colors ${
-                sortBy === s ? 'bg-rose-600 text-white' : 'bg-stone-100 text-stone-600'
+                sortBy === s ? 'bg-bridge-accent text-white' : 'bg-bridge-surface text-bridge-secondary'
               }`}
             >
               {s === 'bookings' ? 'Most bookings' : 'Most recent'}
@@ -669,7 +673,7 @@ function AllCreatorsSheet({
             <button
               key={a.creator.id}
               onClick={() => onSelect(a)}
-              className="w-full text-left bg-white rounded-2xl border border-stone-100 overflow-hidden shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+              className="w-full text-left bg-white rounded-2xl border border-bridge-border/60 overflow-hidden shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
             >
               {/* Content thumbnail */}
               {a.link.contentThumbnailUrl && (
@@ -687,20 +691,20 @@ function AllCreatorsSheet({
 
               <div className="p-3 flex items-center gap-3">
                 <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-base font-black flex-shrink-0"
+                  className="w-12 h-12 rounded-xl flex items-center justify-center text-white text-base font-bold flex-shrink-0"
                   style={{ backgroundColor: a.creator.avatarColor }}
                 >
                   {a.creator.avatarInitials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-stone-900 text-sm truncate">{a.creator.handle}</p>
-                  <p className="text-stone-400 text-xs truncate">{a.creator.displayName}</p>
-                  <p className="text-[11px] text-stone-400 mt-0.5">
+                  <p className="font-semibold text-bridge-heading text-sm truncate">{a.creator.handle}</p>
+                  <p className="text-bridge-muted text-xs truncate">{a.creator.displayName}</p>
+                  <p className="text-[11px] text-bridge-muted mt-0.5">
                     {a.totalPlacesRecommended} places · {a.bookingsDriven} bookings driven
                   </p>
                 </div>
                 {a.link.contentUrl && (
-                  <span className="flex-shrink-0 text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg">
+                  <span className="flex-shrink-0 text-xs font-semibold text-bridge-accent bg-bridge-accent-wash px-2.5 py-1.5 rounded-lg">
                     View
                   </span>
                 )}
@@ -723,29 +727,24 @@ function ServiceCard({
   onBook: (service: Service) => void
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-stone-900 text-base leading-snug mb-1">{service.name}</h3>
-          <p className="text-stone-500 text-sm leading-relaxed line-clamp-2 mb-3">{service.description}</p>
-          <div className="flex items-center gap-3 text-stone-500 text-xs">
-            <span className="flex items-center gap-1">
-              <Clock size={12} />
-              {formatDuration(service.duration)}
-            </span>
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-2 flex-shrink-0">
-          <span className="text-stone-900 font-bold text-lg leading-none">{formatPrice(service.price)}</span>
-          <button
-            onClick={() => onBook(service)}
-            className="bg-rose-600 text-white text-sm font-semibold px-4 py-2 rounded-xl hover:bg-rose-700 active:scale-95 transition-all"
-          >
-            Book
-          </button>
+    <Card className="flex items-start justify-between gap-3">
+      <div className="flex-1 min-w-0">
+        <h3 className="font-semibold text-bridge-heading text-base leading-snug mb-1">{service.name}</h3>
+        <p className="text-bridge-muted text-sm leading-relaxed line-clamp-2 mb-3">{service.description}</p>
+        <div className="flex items-center gap-3 text-bridge-muted text-xs">
+          <span className="flex items-center gap-1">
+            <Clock size={12} />
+            {formatDuration(service.duration)}
+          </span>
         </div>
       </div>
-    </div>
+      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+        <span className="text-bridge-heading font-bold text-lg leading-none">{formatPrice(service.price)}</span>
+        <Button size="sm" onClick={() => onBook(service)} className="cursor-pointer">
+          Book
+        </Button>
+      </div>
+    </Card>
   )
 }
 
@@ -763,11 +762,11 @@ function FeaturedServiceCard({
   const thumbnail = link?.contentThumbnailUrl
   return (
     <div className="px-4 mt-5">
-      <p className="text-[11px] font-bold text-rose-600 uppercase tracking-widest mb-2 px-1">
-        ✨ {creator.handle} recommends this for you
+      <p className="text-[11px] font-bold text-bridge-accent uppercase tracking-widest mb-2 px-1 flex items-center gap-1.5">
+        <Sparkles size={12} /> {creator.handle} recommends this for you
       </p>
 
-      <div className="relative bg-white rounded-3xl shadow-lg border-2 border-rose-300 overflow-hidden">
+      <div className="relative bg-white rounded-3xl shadow-lg border-2 border-bridge-accent-light overflow-hidden">
         {/* Content thumbnail header */}
         {thumbnail && link?.contentUrl && (
           <a
@@ -780,7 +779,7 @@ function FeaturedServiceCard({
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/15 to-transparent" />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-14 h-14 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Play size={20} className="text-rose-600 fill-rose-600 ml-0.5" />
+                <Play size={20} className="text-bridge-accent fill-bridge-accent ml-0.5" />
               </div>
             </div>
             <div className="absolute bottom-3 left-3 bg-white/20 backdrop-blur-sm text-white text-[10px] font-semibold px-2 py-1 rounded-full">
@@ -793,40 +792,37 @@ function FeaturedServiceCard({
         <div className="p-5">
           <div className="flex items-start gap-3 mb-3">
             <div
-              className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-black ring-4 ring-rose-100"
+              className="w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center text-white text-sm font-bold ring-4 ring-bridge-accent-soft"
               style={{ backgroundColor: creator.avatarColor }}
             >
               {creator.avatarInitials}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-stone-500">
+              <p className="text-xs font-semibold text-bridge-muted">
                 {creator.displayName} got the
               </p>
-              <h3 className="font-black text-stone-900 text-lg leading-tight mt-0.5">
+              <h3 className="font-bold text-bridge-heading text-lg leading-tight mt-0.5">
                 {service.name}
               </h3>
             </div>
           </div>
 
-          <p className="text-stone-600 text-sm leading-relaxed mb-4">{service.description}</p>
+          <p className="text-bridge-secondary text-sm leading-relaxed mb-4">{service.description}</p>
 
           <div className="flex items-center gap-3 mb-4 text-xs">
-            <span className="flex items-center gap-1 text-stone-500">
+            <span className="flex items-center gap-1 text-bridge-muted">
               <Clock size={12} />
               {formatDuration(service.duration)}
             </span>
-            <span className="text-stone-300">·</span>
-            <span className="font-bold text-stone-900 text-base">{formatPrice(service.price)}</span>
+            <span className="text-bridge-border-strong">·</span>
+            <span className="font-bold text-bridge-heading text-base">{formatPrice(service.price)}</span>
           </div>
 
-          <button
-            onClick={() => onBook(service)}
-            className="w-full py-4 rounded-2xl bg-rose-600 text-white font-bold text-base hover:bg-rose-700 active:scale-[0.98] transition-all shadow-md"
-          >
+          <Button onClick={() => onBook(service)} size="lg" className="w-full cursor-pointer shadow-md">
             Book this treatment
-          </button>
+          </Button>
 
-          <p className="text-center text-[11px] text-stone-400 mt-2.5">
+          <p className="text-center text-[11px] text-bridge-muted mt-2.5">
             This is what {creator.displayName.split(' ')[0]} experienced — book the exact same thing.
           </p>
         </div>
@@ -941,7 +937,7 @@ function BookingModal({
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto animate-slide-up">
+      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
         <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden">
           {step === 'confirmed' ? (
             <ConfirmedScreen
@@ -951,7 +947,7 @@ function BookingModal({
             />
           ) : (
             <>
-              <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-stone-100">
+              <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-bridge-border/60">
                 <div>
                   {step !== 'date' && (
                     <button
@@ -959,25 +955,32 @@ function BookingModal({
                         if (step === 'time') setStep('date')
                         if (step === 'details') setStep('time')
                       }}
-                      className="flex items-center gap-1 text-stone-400 text-sm mb-1 hover:text-stone-600"
+                      className="flex items-center gap-1 text-bridge-muted text-sm mb-1 hover:text-bridge-secondary"
                     >
                       <ArrowLeft size={14} /> Back
                     </button>
                   )}
-                  <h2 className="font-bold text-stone-900 text-lg leading-tight">{service.name}</h2>
-                  <p className="text-stone-400 text-sm">
+                  <h2 className="font-bold text-bridge-heading text-lg leading-tight">{service.name}</h2>
+                  <p className="text-bridge-muted text-sm">
                     {formatDuration(service.duration)} · {formatPrice(service.price)}
                   </p>
                 </div>
-                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200 transition-colors">
-                  <X size={16} className="text-stone-600" />
+                <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full bg-bridge-surface hover:bg-bridge-surface transition-colors">
+                  <X size={16} className="text-bridge-secondary" />
                 </button>
               </div>
 
-              <div className="px-5 py-4 max-h-[70vh] overflow-y-auto">
+              <div className="px-5 py-4 max-h-[70vh] overflow-y-auto overflow-x-hidden">
+                <AnimatePresence mode="wait">
                 {step === 'date' && (
-                  <div>
-                    <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-4">Select Date</p>
+                  <motion.div
+                    key="date"
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -40 }}
+                    transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  >
+                    <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-4">Select Date</p>
                     <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
                       {dates.map((date) => {
                         const isSelected = selectedDate?.toDateString() === date.toDateString()
@@ -987,36 +990,43 @@ function BookingModal({
                             key={date.toISOString()}
                             onClick={() => setSelectedDate(date)}
                             className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-2xl border-2 transition-all ${
-                              isSelected ? 'border-rose-600 bg-rose-600 text-white' : 'border-stone-200 bg-white text-stone-700 hover:border-rose-300'
+                              isSelected ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border bg-white text-bridge-text hover:border-bridge-accent-light'
                             }`}
                           >
-                            <span className={`text-xs mb-1 ${isSelected ? 'text-rose-100' : 'text-stone-400'}`}>
+                            <span className={`text-xs mb-1 ${isSelected ? 'text-bridge-accent-soft' : 'text-bridge-muted'}`}>
                               {DAY_NAMES[date.getDay()]}
                             </span>
                             <span className="text-xl font-bold leading-none">{date.getDate()}</span>
-                            <span className={`text-xs mt-1 ${isSelected ? 'text-rose-100' : 'text-stone-400'}`}>
+                            <span className={`text-xs mt-1 ${isSelected ? 'text-bridge-accent-soft' : 'text-bridge-muted'}`}>
                               {isToday ? 'Today' : MONTH_NAMES[date.getMonth()]}
                             </span>
                           </button>
                         )
                       })}
                     </div>
-                    <button
+                    <Button
                       disabled={!selectedDate}
                       onClick={() => setStep('time')}
-                      className="w-full mt-6 py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                      size="lg"
+                      className="w-full mt-6 cursor-pointer"
                     >
                       Continue <ChevronRight size={18} />
-                    </button>
-                  </div>
+                    </Button>
+                  </motion.div>
                 )}
 
                 {step === 'time' && (
-                  <div>
-                    <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-4">
+                  <motion.div
+                    key="time"
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -40 }}
+                    transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  >
+                    <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-4">
                       Select Time · {selectedDate && `${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} ${MONTH_NAMES[selectedDate.getMonth()]}`}
                       {availability?.hours && (
-                        <span className="ml-2 normal-case text-stone-300 font-normal lowercase">
+                        <span className="ml-2 normal-case text-bridge-border-strong font-normal lowercase">
                           (open {availability.hours.replace('-', '–')})
                         </span>
                       )}
@@ -1024,14 +1034,14 @@ function BookingModal({
 
                     {/* Preferred therapist (inline, optional) */}
                     {staffOptions.length > 0 && (
-                      <div className="mb-5 bg-stone-50 rounded-2xl p-3 border border-stone-200">
-                        <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                          Preferred therapist <span className="text-stone-400 font-normal">(optional)</span>
+                      <div className="mb-5 bg-bridge-bg rounded-2xl p-3 border border-bridge-border">
+                        <label className="block text-xs font-semibold text-bridge-text mb-1.5">
+                          Preferred therapist <span className="text-bridge-muted font-normal">(optional)</span>
                         </label>
                         <select
                           value={selectedStaffId ?? ''}
                           onChange={(e) => setSelectedStaffId(e.target.value || null)}
-                          className="w-full bg-white border border-stone-200 rounded-xl px-3 py-2.5 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent appearance-none"
+                          className="w-full bg-white border border-bridge-border rounded-xl px-3 py-2.5 text-sm text-bridge-heading focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent appearance-none"
                           style={{
                             backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                             backgroundRepeat: 'no-repeat',
@@ -1047,7 +1057,7 @@ function BookingModal({
                             </option>
                           ))}
                         </select>
-                        <p className="text-[10px] text-stone-400 mt-1.5">
+                        <p className="text-[10px] text-bridge-muted mt-1.5">
                           {selectedStaffId
                             ? "Showing only this therapist's available times."
                             : "We'll auto-assign the best available therapist."}
@@ -1056,17 +1066,17 @@ function BookingModal({
                     )}
 
                     {loadingSlots && (
-                      <p className="text-stone-400 text-sm py-8 text-center">Checking availability…</p>
+                      <p className="text-bridge-muted text-sm py-8 text-center">Checking availability…</p>
                     )}
 
                     {!loadingSlots && availability?.closed && (
-                      <div className="text-center py-8 text-stone-500 text-sm">
+                      <div className="text-center py-8 text-bridge-muted text-sm">
                         {business.name} is closed this day. Pick another date.
                       </div>
                     )}
 
                     {!loadingSlots && availability && !availability.closed && timeSessions.length === 0 && (
-                      <div className="text-center py-8 text-stone-500 text-sm">
+                      <div className="text-center py-8 text-bridge-muted text-sm">
                         No slots available — try another date.
                       </div>
                     )}
@@ -1076,9 +1086,9 @@ function BookingModal({
                       return (
                       <div key={label} className="mb-5">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-xs font-medium text-stone-400">{label}</p>
+                          <p className="text-xs font-medium text-bridge-muted">{label}</p>
                           {!anyAvailable && (
-                            <p className="text-[10px] text-stone-300 uppercase tracking-wide">Fully booked</p>
+                            <p className="text-[10px] text-bridge-border-strong uppercase tracking-wide">Fully booked</p>
                           )}
                         </div>
                         <div className="flex flex-wrap gap-2">
@@ -1090,9 +1100,9 @@ function BookingModal({
                                 disabled={!available}
                                 onClick={() => setSelectedTime(time)}
                                 className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
-                                  !available ? 'border-stone-100 text-stone-300 cursor-not-allowed bg-stone-50'
-                                  : isSelected ? 'border-rose-600 bg-rose-600 text-white'
-                                  : 'border-stone-200 text-stone-700 bg-white hover:border-rose-300'
+                                  !available ? 'border-bridge-border/60 text-bridge-border-strong cursor-not-allowed bg-bridge-bg'
+                                  : isSelected ? 'border-bridge-accent bg-bridge-accent text-white'
+                                  : 'border-bridge-border text-bridge-text bg-white hover:border-bridge-accent-light'
                                 }`}
                               >
                                 {time}
@@ -1102,67 +1112,75 @@ function BookingModal({
                         </div>
                       </div>)
                     })}
-                    <button
+                    <Button
                       disabled={!selectedTime}
                       onClick={() => setStep('details')}
-                      className="w-full mt-2 py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                      size="lg"
+                      className="w-full mt-2 cursor-pointer"
                     >
                       Continue <ChevronRight size={18} />
-                    </button>
-                  </div>
+                    </Button>
+                  </motion.div>
                 )}
 
                 {step === 'details' && (
-                  <div>
-                    <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-4">Your Details</p>
-                    <div className="bg-rose-50 rounded-xl px-4 py-3 mb-6 text-sm">
-                      <p className="font-semibold text-stone-800">{service.name}</p>
-                      <p className="text-stone-500 mt-0.5">
+                  <motion.div
+                    key="details"
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -40 }}
+                    transition={{ duration: 0.2, ease: 'easeInOut' }}
+                  >
+                    <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-4">Your Details</p>
+                    <div className="bg-bridge-accent-wash rounded-xl px-4 py-3 mb-6 text-sm">
+                      <p className="font-semibold text-bridge-text">{service.name}</p>
+                      <p className="text-bridge-muted mt-0.5">
                         {selectedDate && `${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} ${MONTH_NAMES[selectedDate.getMonth()]}`} at {selectedTime}
                       </p>
                     </div>
                     <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-stone-700 mb-1.5">Full Name</label>
-                        <input
-                          type="text" value={name} onChange={(e) => setName(e.target.value)}
-                          placeholder="Your name"
-                          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-stone-700 mb-1.5">Email</label>
-                        <input
-                          type="email" value={email} onChange={(e) => setEmail(e.target.value)}
-                          placeholder="you@example.com"
-                          autoCapitalize="none" autoCorrect="off"
-                          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-stone-700 mb-1.5">Phone</label>
-                        <input
-                          type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+66…"
-                          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base"
-                        />
-                      </div>
+                      <Input
+                        label="Full Name"
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Your name"
+                      />
+                      <Input
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="you@example.com"
+                        autoCapitalize="none"
+                        autoCorrect="off"
+                      />
+                      <Input
+                        label="Phone"
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="+66…"
+                      />
                     </div>
                     {submitError && (
                       <div className="mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">{submitError}</div>
                     )}
-                    <button
-                      disabled={!canProceedFromDetails || submitting}
+                    <Button
+                      disabled={!canProceedFromDetails}
+                      loading={submitting}
                       onClick={handleConfirm}
-                      className="w-full mt-6 py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-rose-700 active:scale-[0.98] transition-all"
+                      size="lg"
+                      className="w-full mt-6 cursor-pointer"
                     >
                       {submitting ? 'Processing…' : 'Confirm & Pay'}
-                    </button>
-                    <p className="text-center text-xs text-stone-400 mt-3">
+                    </Button>
+                    <p className="text-center text-xs text-bridge-muted mt-3">
                       Secure payment via Stripe. {business.name} confirms after payment.
                     </p>
-                  </div>
+                  </motion.div>
                 )}
+                </AnimatePresence>
               </div>
             </>
           )}
@@ -1179,35 +1197,35 @@ function ConfirmedScreen({
 }) {
   return (
     <div className="px-5 py-8 flex flex-col items-center text-center">
-      <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center mb-6">
-        <Check size={36} className="text-rose-600" strokeWidth={3} />
+      <div className="w-20 h-20 rounded-full bg-bridge-accent-soft flex items-center justify-center mb-6">
+        <Check size={36} className="text-bridge-accent" strokeWidth={3} />
       </div>
-      <h2 className="text-2xl font-black text-stone-900 mb-2">You&apos;re booked!</h2>
-      <p className="text-stone-500 text-sm mb-6 max-w-xs">{business.name} will send a confirmation to you shortly.</p>
-      <div className="w-full bg-stone-50 rounded-2xl p-4 text-left space-y-2.5 mb-8">
+      <h2 className="text-2xl font-bold text-bridge-heading mb-2">You&apos;re booked!</h2>
+      <p className="text-bridge-muted text-sm mb-6 max-w-xs">{business.name} will send a confirmation to you shortly.</p>
+      <div className="w-full bg-bridge-bg rounded-2xl p-4 text-left space-y-2.5 mb-8">
         <div className="flex justify-between text-sm">
-          <span className="text-stone-500">Service</span>
-          <span className="font-semibold text-stone-800">{service.name}</span>
+          <span className="text-bridge-muted">Service</span>
+          <span className="font-semibold text-bridge-text">{service.name}</span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-stone-500">Date & Time</span>
-          <span className="font-semibold text-stone-800">
+          <span className="text-bridge-muted">Date & Time</span>
+          <span className="font-semibold text-bridge-text">
             {DAY_NAMES[date.getDay()]} {date.getDate()} {MONTH_NAMES[date.getMonth()]} at {time}
           </span>
         </div>
         <div className="flex justify-between text-sm">
-          <span className="text-stone-500">Name</span>
-          <span className="font-semibold text-stone-800">{name}</span>
+          <span className="text-bridge-muted">Name</span>
+          <span className="font-semibold text-bridge-text">{name}</span>
         </div>
-        <div className="flex justify-between text-sm border-t border-stone-200 pt-2.5">
-          <span className="text-stone-500">Total</span>
-          <span className="font-bold text-stone-900 text-base">฿{service.price.toLocaleString()}</span>
+        <div className="flex justify-between text-sm border-t border-bridge-border pt-2.5">
+          <span className="text-bridge-muted">Total</span>
+          <span className="font-bold text-bridge-heading text-base">฿{service.price.toLocaleString()}</span>
         </div>
       </div>
-      <button onClick={onClose} className="w-full py-4 rounded-2xl bg-stone-900 text-white font-semibold text-base hover:bg-stone-800 active:scale-[0.98] transition-all">
+      <Button onClick={onClose} size="lg" variant="secondary" className="w-full bg-bridge-heading text-white border-bridge-heading hover:bg-bridge-text cursor-pointer">
         Done
-      </button>
-      <p className="text-xs text-stone-400 mt-4">Powered by <span className="font-black text-rose-600">BRIDGE</span></p>
+      </Button>
+      <p className="text-xs text-bridge-muted mt-4">Powered by <span className="font-bold text-bridge-accent">BRIDGE</span></p>
     </div>
   )
 }
@@ -1217,11 +1235,11 @@ function ConfirmedScreen({
 function EmptyServices({ business }: { business: Business }) {
   return (
     <div className="px-6 py-12 text-center">
-      <div className="inline-flex items-center justify-center w-14 h-14 bg-rose-50 rounded-full mb-4">
-        <Sparkles size={22} className="text-rose-500" />
+      <div className="inline-flex items-center justify-center w-14 h-14 bg-bridge-accent-wash rounded-full mb-4">
+        <Sparkles size={22} className="text-bridge-accent" />
       </div>
-      <h3 className="font-bold text-stone-900 text-base mb-1">{business.name} is setting up</h3>
-      <p className="text-stone-500 text-sm max-w-xs mx-auto">
+      <h3 className="font-bold text-bridge-heading text-base mb-1">{business.name} is setting up</h3>
+      <p className="text-bridge-muted text-sm max-w-xs mx-auto">
         This page isn&apos;t published yet — services will appear here once they&apos;re added.
       </p>
     </div>
@@ -1267,8 +1285,8 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-[480px] mx-auto relative">
+    <div className="min-h-screen bg-bridge-bg">
+      <div className="max-w-2xl mx-auto relative">
         <BusinessHero business={business} recentBookings={recentBookings} affiliationsCount={affiliations.length} />
 
         {creator && (
@@ -1301,7 +1319,7 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
         <div className="px-4 mt-6 pb-2" ref={servicesRef}>
           {hasServices ? (
             <>
-              <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-4">
+              <h2 className="text-sm font-semibold text-bridge-muted uppercase tracking-widest mb-4">
                 {featuredService ? 'Or explore other services' : 'Our Services'}
               </h2>
               <div className="space-y-3">
@@ -1320,13 +1338,10 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
 
         {/* Sticky Book Now button */}
         {hasServices && (
-          <div className="fixed bottom-0 left-0 right-0 z-30 max-w-[480px] mx-auto bg-gradient-to-t from-stone-50 via-stone-50/95 to-stone-50/0 px-4 pt-6 pb-4 pointer-events-none">
-            <button
-              onClick={scrollToServices}
-              className="w-full py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base hover:bg-rose-700 active:scale-[0.98] transition-all shadow-xl pointer-events-auto"
-            >
+          <div className="fixed bottom-0 left-0 right-0 z-30 max-w-2xl mx-auto bg-gradient-to-t from-bridge-bg via-bridge-bg/95 to-bridge-bg/0 px-4 pt-6 pb-4 pointer-events-none">
+            <Button onClick={scrollToServices} size="lg" className="w-full shadow-xl pointer-events-auto cursor-pointer">
               Book Now
-            </button>
+            </Button>
           </div>
         )}
 
@@ -1334,15 +1349,15 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
         {showServicePicker && (
           <>
             <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={() => setShowServicePicker(false)} />
-            <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto animate-slide-up">
+            <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
               <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto">
-                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-stone-100">
-                  <h2 className="font-bold text-stone-900 text-lg">Pick a service</h2>
+                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-bridge-border/60">
+                  <h2 className="font-bold text-bridge-heading text-lg">Pick a service</h2>
                   <button
                     onClick={() => setShowServicePicker(false)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-100 hover:bg-stone-200"
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-bridge-surface hover:bg-bridge-surface"
                   >
-                    <X size={16} className="text-stone-600" />
+                    <X size={16} className="text-bridge-secondary" />
                   </button>
                 </div>
                 <div className="p-4 space-y-2">
@@ -1353,13 +1368,13 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
                         setShowServicePicker(false)
                         setActiveService(s)
                       }}
-                      className="w-full text-left bg-stone-50 hover:bg-stone-100 rounded-2xl p-3 flex items-center justify-between"
+                      className="w-full text-left bg-bridge-bg hover:bg-bridge-surface rounded-2xl p-3 flex items-center justify-between"
                     >
                       <div className="min-w-0">
-                        <p className="font-semibold text-stone-900 text-sm">{s.name}</p>
-                        <p className="text-stone-400 text-xs">{formatDuration(s.duration)}</p>
+                        <p className="font-semibold text-bridge-heading text-sm">{s.name}</p>
+                        <p className="text-bridge-muted text-xs">{formatDuration(s.duration)}</p>
                       </div>
-                      <span className="font-bold text-stone-900 text-sm flex-shrink-0">{formatPrice(s.price)}</span>
+                      <span className="font-bold text-bridge-heading text-sm flex-shrink-0">{formatPrice(s.price)}</span>
                     </button>
                   ))}
                 </div>

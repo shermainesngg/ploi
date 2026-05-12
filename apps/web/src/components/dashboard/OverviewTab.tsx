@@ -3,7 +3,7 @@
 import { TrendingUp, Wallet, Users, AlertCircle, Sparkles, Repeat } from 'lucide-react'
 import Link from 'next/link'
 import type { BusinessDashboardData } from '@/lib/types'
-import type { AgendaBooking } from '@/lib/db'
+import type { AgendaBooking } from '@/services/dashboard.service'
 import BookingActionCard, { type StaffSummary } from '../BookingActionCard'
 
 function formatPrice(thb: number) { return `฿${thb.toLocaleString()}` }
@@ -47,7 +47,7 @@ export default function OverviewTab({
         />
       </div>
 
-      {/* Returning customer insight (if any repeat bookings exist) */}
+      {/* Returning customer insight */}
       {(() => {
         const total = data.bookings.filter((b) => b.status !== 'cancelled').length
         const repeats = data.bookings.filter((b) => b.isRepeat && b.status !== 'cancelled').length
@@ -72,34 +72,34 @@ export default function OverviewTab({
 
       {/* Next appointment hero */}
       {next && (
-        <div className="mt-4 bg-rose-600 text-white rounded-2xl p-4">
-          <p className="text-[10px] uppercase tracking-wide font-bold text-rose-200">Next up today</p>
-          <p className="text-xl font-black mt-1 leading-tight">{next.time} · {next.customerName}</p>
-          <p className="text-rose-100 text-sm mt-0.5">{next.serviceName}</p>
-          {next.staffName && <p className="text-rose-200 text-xs mt-1">with {next.staffName}</p>}
+        <div className="mt-4 bg-bridge-accent text-white rounded-2xl p-4">
+          <p className="text-[10px] uppercase tracking-wide font-bold text-bridge-accent-soft">Next up today</p>
+          <p className="text-xl font-bold mt-1 leading-tight">{next.time} · {next.customerName}</p>
+          <p className="text-bridge-accent-soft text-sm mt-0.5">{next.serviceName}</p>
+          {next.staffName && <p className="text-white/70 text-xs mt-1">with {next.staffName}</p>}
         </div>
       )}
 
       {/* Today's compact agenda */}
       <div className="mt-6">
         <div className="flex items-center justify-between mb-3 px-1">
-          <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-widest">
-            Today's agenda
+          <h2 className="text-label text-bridge-muted uppercase tracking-widest">
+            Today&apos;s agenda
           </h2>
           <Link
             href={`/dashboard/business/${businessSlug}?tab=calendar`}
-            className="text-xs font-semibold text-rose-600 hover:underline"
+            className="text-caption font-semibold text-bridge-accent hover:underline"
           >
             Full calendar →
           </Link>
         </div>
 
         {todayAgenda.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-stone-100 p-8 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-stone-50 mb-3">
-              <Sparkles size={20} className="text-stone-400" />
+          <div className="bg-white rounded-2xl border border-bridge-border/60 p-8 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-surface mb-3">
+              <Sparkles size={20} className="text-bridge-muted" />
             </div>
-            <p className="text-stone-500 text-sm">No appointments today.</p>
+            <p className="text-bridge-muted text-body">No appointments today.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -109,7 +109,7 @@ export default function OverviewTab({
             {todayAgenda.length > 5 && (
               <Link
                 href={`/dashboard/business/${businessSlug}?tab=calendar`}
-                className="block text-center py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-xl"
+                className="block text-center py-2 text-caption font-semibold text-bridge-accent hover:bg-bridge-accent-wash rounded-xl transition-colors"
               >
                 See {todayAgenda.length - 5} more →
               </Link>
@@ -127,15 +127,15 @@ function Kpi({
   label: string; value: string; icon: React.ReactNode; hint?: string; highlight?: boolean
 }) {
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${
-      highlight ? 'bg-amber-50 border-amber-200' : 'bg-white border-stone-100'
+    <div className={`rounded-2xl border p-4 shadow-card ${
+      highlight ? 'bg-amber-50 border-amber-200' : 'bg-white border-bridge-border/60'
     }`}>
-      <div className={`flex items-center gap-2 mb-2 ${highlight ? 'text-amber-700' : 'text-stone-400'}`}>
+      <div className={`flex items-center gap-2 mb-2 ${highlight ? 'text-amber-700' : 'text-bridge-muted'}`}>
         {icon}
-        <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
+        <span className="text-micro uppercase tracking-wide">{label}</span>
       </div>
-      <p className={`text-2xl font-black leading-none ${highlight ? 'text-amber-900' : 'text-stone-900'}`}>{value}</p>
-      {hint && <p className={`text-xs mt-1.5 ${highlight ? 'text-amber-700' : 'text-stone-400'}`}>{hint}</p>}
+      <p className={`text-2xl font-bold leading-none ${highlight ? 'text-amber-900' : 'text-bridge-heading'}`}>{value}</p>
+      {hint && <p className={`text-caption mt-1.5 ${highlight ? 'text-amber-700' : 'text-bridge-muted'}`}>{hint}</p>}
     </div>
   )
 }

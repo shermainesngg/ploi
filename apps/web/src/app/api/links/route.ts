@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
-import { createLink } from '@/lib/db'
+import { LinkService } from '@/services/link.service'
 import type { SocialPlatform } from '@/lib/types'
 
 export async function POST(req: NextRequest) {
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
       if (svc) validFeatured = svc.id
     }
 
-    const link = await createLink({
+    const link = await LinkService.create({
       creatorId: creator.id,
       businessId: business.id,
       shortCode: `${creatorSlug}/${businessSlug}`,

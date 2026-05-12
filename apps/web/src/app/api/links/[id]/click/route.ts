@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { recordLinkClick } from '@/lib/db'
+import { LinkService } from '@/services/link.service'
 
 // POST /api/links/[id]/click — id is actually the short_code in `creator/business` form,
 // since clients have the slugs not the UUID.
@@ -14,7 +14,7 @@ export async function POST(
     if (!creatorSlug || !businessSlug) {
       return NextResponse.json({ error: 'Expected <creator>/<business>' }, { status: 400 })
     }
-    await recordLinkClick(creatorSlug, businessSlug)
+    await LinkService.recordClick(creatorSlug, businessSlug)
     return NextResponse.json({ recorded: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'

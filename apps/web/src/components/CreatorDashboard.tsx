@@ -60,13 +60,13 @@ function KpiCard({ label, value, icon, hint }: {
   label: string; value: string; icon: React.ReactNode; hint?: string
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
-      <div className="flex items-center gap-2 text-stone-400 mb-2">
+    <div className="bg-white rounded-2xl border border-bridge-border/60 p-4 shadow-sm">
+      <div className="flex items-center gap-2 text-bridge-muted mb-2">
         {icon}
         <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
       </div>
-      <p className="text-2xl font-black text-stone-900 leading-none">{value}</p>
-      {hint && <p className="text-xs text-stone-400 mt-1.5">{hint}</p>}
+      <p className="text-2xl font-bold text-bridge-heading leading-none">{value}</p>
+      {hint && <p className="text-xs text-bridge-muted mt-1.5">{hint}</p>}
     </div>
   )
 }
@@ -77,7 +77,7 @@ function LinkStatusBadge({ status }: { status: LinkPerformance['status'] }) {
   const styles: Record<LinkPerformance['status'], string> = {
     active: 'bg-green-50 text-green-700',
     pending: 'bg-amber-50 text-amber-700',
-    declined: 'bg-stone-100 text-stone-500',
+    declined: 'bg-bridge-surface text-bridge-muted',
   }
   return (
     <span className={`text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ${styles[status]}`}>
@@ -104,7 +104,7 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
 
   return (
     <div className={`bg-white rounded-2xl border overflow-hidden shadow-sm ${
-      isActive ? 'border-stone-100' : 'border-stone-200 opacity-90'
+      isActive ? 'border-bridge-border/60' : 'border-bridge-border opacity-90'
     }`}>
       {/* Header bar */}
       <div className="h-2" style={{
@@ -119,18 +119,18 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
             <div className="flex items-center gap-2 mb-0.5">
               <Link
                 href={`/${creatorSlug}/${link.business.slug}`}
-                className="font-semibold text-stone-900 text-sm hover:text-rose-600 truncate"
+                className="font-semibold text-bridge-heading text-sm hover:text-bridge-accent truncate"
               >
                 {link.business.name}
               </Link>
               <LinkStatusBadge status={link.status} />
             </div>
-            <p className="font-mono text-stone-400 text-xs truncate">{linkUrl}</p>
+            <p className="font-mono text-bridge-muted text-xs truncate">{linkUrl}</p>
           </div>
           {isActive && (
             <button
               onClick={copy}
-              className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold text-rose-600 bg-rose-50 px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition-colors"
+              className="flex-shrink-0 flex items-center gap-1.5 text-xs font-semibold text-bridge-accent bg-bridge-accent-wash px-2.5 py-1.5 rounded-lg hover:bg-bridge-accent-wash transition-colors"
             >
               <Copy size={11} />
               {copied ? 'Copied' : 'Copy'}
@@ -144,11 +144,11 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
             href={link.contentUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 mb-3 px-2.5 py-1.5 bg-stone-50 border border-stone-200 rounded-lg text-xs text-stone-600 hover:border-rose-300 transition-colors"
+            className="flex items-center gap-2 mb-3 px-2.5 py-1.5 bg-bridge-bg border border-bridge-border rounded-lg text-xs text-bridge-secondary hover:border-bridge-accent-light transition-colors"
           >
             {link.platform && <PlatformIcon platform={link.platform} />}
             <span className="font-mono truncate flex-1">{link.contentUrl}</span>
-            <ExternalLink size={10} className="text-stone-400 flex-shrink-0" />
+            <ExternalLink size={10} className="text-bridge-muted flex-shrink-0" />
           </a>
         )}
 
@@ -156,22 +156,22 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
         {isActive ? (
           <>
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="bg-stone-50 rounded-xl py-2">
-                <p className="text-stone-900 font-bold text-sm">{link.clicks.toLocaleString()}</p>
-                <p className="text-stone-400 text-[10px] uppercase tracking-wide mt-0.5">Clicks</p>
+              <div className="bg-bridge-bg rounded-xl py-2">
+                <p className="text-bridge-heading font-bold text-sm">{link.clicks.toLocaleString()}</p>
+                <p className="text-bridge-muted text-[10px] uppercase tracking-wide mt-0.5">Clicks</p>
               </div>
-              <div className="bg-stone-50 rounded-xl py-2">
-                <p className="text-stone-900 font-bold text-sm">{link.bookings}</p>
-                <p className="text-stone-400 text-[10px] uppercase tracking-wide mt-0.5">Bookings</p>
+              <div className="bg-bridge-bg rounded-xl py-2">
+                <p className="text-bridge-heading font-bold text-sm">{link.bookings}</p>
+                <p className="text-bridge-muted text-[10px] uppercase tracking-wide mt-0.5">Bookings</p>
               </div>
-              <div className="bg-rose-50 rounded-xl py-2">
-                <p className="text-rose-600 font-bold text-sm">{formatPrice(link.earnings)}</p>
-                <p className="text-rose-400 text-[10px] uppercase tracking-wide mt-0.5">Earned</p>
+              <div className="bg-bridge-accent-wash rounded-xl py-2">
+                <p className="text-bridge-accent font-bold text-sm">{formatPrice(link.earnings)}</p>
+                <p className="text-bridge-accent text-[10px] uppercase tracking-wide mt-0.5">Earned</p>
               </div>
             </div>
 
             {link.clicks > 0 && (
-              <div className="mt-3 flex items-center justify-center gap-1 text-xs text-stone-400">
+              <div className="mt-3 flex items-center justify-center gap-1 text-xs text-bridge-muted">
                 <TrendingUp size={11} />
                 <span>{conv.toFixed(1)}% conversion</span>
               </div>
@@ -187,11 +187,11 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
             )}
           </>
         ) : link.status === 'pending' ? (
-          <p className="text-xs text-stone-500 text-center py-3 bg-amber-50/50 rounded-xl">
+          <p className="text-xs text-bridge-muted text-center py-3 bg-amber-50/50 rounded-xl">
             Waiting for {link.business.name} to accept. Tracking starts then.
           </p>
         ) : (
-          <p className="text-xs text-stone-500 text-center py-3 bg-stone-50 rounded-xl">
+          <p className="text-xs text-bridge-muted text-center py-3 bg-bridge-bg rounded-xl">
             This business declined the request.
           </p>
         )}
@@ -205,18 +205,18 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
 function ActivityRow({ event }: { event: ActivityEvent }) {
   const isBooking = event.type === 'booking'
   return (
-    <div className="flex items-center gap-3 py-3 border-b border-stone-100 last:border-b-0">
+    <div className="flex items-center gap-3 py-3 border-b border-bridge-border/60 last:border-b-0">
       <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-        isBooking ? 'bg-rose-50 text-rose-600' : 'bg-stone-100 text-stone-500'
+        isBooking ? 'bg-bridge-accent-wash text-bridge-accent' : 'bg-bridge-surface text-bridge-muted'
       }`}>
         {isBooking ? <CalendarCheck size={15} /> : <MousePointerClick size={15} />}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm text-stone-900 truncate">{event.label}</p>
-        <p className="text-xs text-stone-400">{relativeTime(event.createdAt)}</p>
+        <p className="text-sm text-bridge-heading truncate">{event.label}</p>
+        <p className="text-xs text-bridge-muted">{relativeTime(event.createdAt)}</p>
       </div>
       {isBooking && event.amount !== undefined && (
-        <span className="text-rose-600 font-bold text-sm flex-shrink-0">
+        <span className="text-bridge-accent font-bold text-sm flex-shrink-0">
           +{formatPrice(event.amount)}
         </span>
       )}
@@ -234,10 +234,10 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
   const pendingCount = links.filter((l) => l.status === 'pending').length
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-[480px] mx-auto pb-24">
+    <div className="min-h-screen bg-bridge-bg">
+      <div className="max-w-2xl mx-auto pb-24">
         {/* Header */}
-        <div className="px-5 pt-8 pb-12 bg-stone-900 text-white">
+        <div className="px-5 pt-8 pb-12 bg-bridge-heading text-white">
           <Link
             href={`/${creator.slug}`}
             className="flex items-center gap-1 text-white/60 text-xs mb-4 hover:text-white"
@@ -245,20 +245,20 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
             <ArrowLeft size={12} /> Back to profile
           </Link>
 
-          <span className="text-[10px] font-black tracking-tight text-white/80 bg-white/10 px-2 py-0.5 rounded-full uppercase">
+          <span className="text-[10px] font-bold tracking-tight text-white/80 bg-white/10 px-2 py-0.5 rounded-full uppercase">
             Dashboard
           </span>
 
           <div className="flex items-center gap-3 mt-3">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-black flex-shrink-0"
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0"
               style={{ backgroundColor: creator.avatarColor }}
             >
               {creator.avatarInitials}
             </div>
             <div>
-              <h1 className="text-xl font-black leading-tight">{creator.displayName}</h1>
-              <p className="text-rose-300 text-sm font-semibold">{creator.handle}</p>
+              <h1 className="text-xl font-bold leading-tight">{creator.displayName}</h1>
+              <p className="text-bridge-accent-light text-sm font-semibold">{creator.handle}</p>
             </div>
           </div>
         </div>
@@ -272,14 +272,14 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
           </div>
 
           {totals.pendingPayout > 0 && (
-            <div className="mt-3 bg-rose-600 rounded-2xl p-4 text-white flex items-center justify-between">
+            <div className="mt-3 bg-bridge-accent rounded-2xl p-4 text-white flex items-center justify-between">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-rose-200">
+                <p className="text-xs font-semibold uppercase tracking-wide text-bridge-accent-light">
                   Pending payout
                 </p>
-                <p className="text-2xl font-black mt-1">{formatPrice(totals.pendingPayout)}</p>
+                <p className="text-2xl font-bold mt-1">{formatPrice(totals.pendingPayout)}</p>
               </div>
-              <p className="text-xs text-rose-200 max-w-[140px] text-right">
+              <p className="text-xs text-bridge-accent-light max-w-[140px] text-right">
                 Paid out monthly. Next: 1st of next month.
               </p>
             </div>
@@ -288,16 +288,16 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
           {/* Earnings split */}
           {(totals.firstBookingEarnings > 0 || totals.repeatEarnings > 0) && (
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="bg-white rounded-2xl border border-stone-100 p-3 shadow-sm">
-                <p className="text-[10px] uppercase tracking-wide font-bold text-stone-400">First bookings</p>
-                <p className="text-lg font-black text-stone-900 mt-1 leading-none">
+              <div className="bg-white rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
+                <p className="text-[10px] uppercase tracking-wide font-bold text-bridge-muted">First bookings</p>
+                <p className="text-lg font-bold text-bridge-heading mt-1 leading-none">
                   {formatPrice(totals.firstBookingEarnings)}
                 </p>
-                <p className="text-[10px] text-stone-400 mt-1">10% rate</p>
+                <p className="text-[10px] text-bridge-muted mt-1">10% rate</p>
               </div>
               <div className="bg-white rounded-2xl border border-purple-200 bg-purple-50/30 p-3 shadow-sm">
                 <p className="text-[10px] uppercase tracking-wide font-bold text-purple-700">Repeat earnings</p>
-                <p className="text-lg font-black text-purple-900 mt-1 leading-none">
+                <p className="text-lg font-bold text-purple-900 mt-1 leading-none">
                   {formatPrice(totals.repeatEarnings)}
                 </p>
                 <p className="text-[10px] text-purple-600 mt-1">5% residual</p>
@@ -307,28 +307,28 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
 
           {/* Customer acquisition stats */}
           {totals.customersAcquired > 0 && (
-            <div className="mt-3 bg-white rounded-2xl border border-stone-100 p-4 shadow-sm">
+            <div className="mt-3 bg-white rounded-2xl border border-bridge-border/60 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                <Users size={14} className="text-rose-600" />
-                <span className="text-xs font-semibold uppercase tracking-wide text-stone-500">
+                <Users size={14} className="text-bridge-accent" />
+                <span className="text-xs font-semibold uppercase tracking-wide text-bridge-muted">
                   Customers you acquired
                 </span>
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <p className="text-xl font-black text-stone-900 leading-none">{totals.customersAcquired}</p>
-                  <p className="text-[10px] text-stone-400 mt-1">Total</p>
+                  <p className="text-xl font-bold text-bridge-heading leading-none">{totals.customersAcquired}</p>
+                  <p className="text-[10px] text-bridge-muted mt-1">Total</p>
                 </div>
                 <div>
-                  <p className="text-xl font-black text-stone-900 leading-none">{totals.customersInWindow}</p>
-                  <p className="text-[10px] text-stone-400 mt-1">In window</p>
+                  <p className="text-xl font-bold text-bridge-heading leading-none">{totals.customersInWindow}</p>
+                  <p className="text-[10px] text-bridge-muted mt-1">In window</p>
                 </div>
                 <div>
-                  <p className="text-xl font-black text-stone-900 leading-none">{formatPrice(totals.lifetimeValue)}</p>
-                  <p className="text-[10px] text-stone-400 mt-1">Spent</p>
+                  <p className="text-xl font-bold text-bridge-heading leading-none">{formatPrice(totals.lifetimeValue)}</p>
+                  <p className="text-[10px] text-bridge-muted mt-1">Spent</p>
                 </div>
               </div>
-              <p className="text-[10px] text-stone-400 mt-2 text-center">
+              <p className="text-[10px] text-bridge-muted mt-2 text-center">
                 Repeat bookings within 6 months earn you 5% residual.
               </p>
             </div>
@@ -339,7 +339,7 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
         <div className="px-4 mt-6">
           <button
             onClick={() => setShowAddPlace(true)}
-            className="w-full py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
+            className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base hover:bg-bridge-accent-dark active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
           >
             <Plus size={18} /> Add a new place
           </button>
@@ -348,7 +348,7 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
         {/* Your links */}
         <div className="px-4 mt-8">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest">
+            <h2 className="text-sm font-semibold text-bridge-muted uppercase tracking-widest">
               Your Links
             </h2>
             {pendingCount > 0 && (
@@ -359,11 +359,11 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
           </div>
 
           {links.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-stone-100 p-6 text-center">
-              <p className="text-stone-500 text-sm mb-3">No links yet.</p>
+            <div className="bg-white rounded-2xl border border-bridge-border/60 p-6 text-center">
+              <p className="text-bridge-muted text-sm mb-3">No links yet.</p>
               <button
                 onClick={() => setShowAddPlace(true)}
-                className="text-rose-600 font-semibold text-sm hover:underline"
+                className="text-bridge-accent font-semibold text-sm hover:underline"
               >
                 Add your first place →
               </button>
@@ -379,15 +379,15 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
 
         {/* Recent activity */}
         <div className="px-4 mt-8">
-          <h2 className="text-sm font-semibold text-stone-400 uppercase tracking-widest mb-3">
+          <h2 className="text-sm font-semibold text-bridge-muted uppercase tracking-widest mb-3">
             Recent Activity
           </h2>
           {recentActivity.length === 0 ? (
-            <p className="text-stone-400 text-sm text-center py-8">
+            <p className="text-bridge-muted text-sm text-center py-8">
               Nothing yet. Activity shows up here as people click and book.
             </p>
           ) : (
-            <div className="bg-white rounded-2xl border border-stone-100 px-4 shadow-sm">
+            <div className="bg-white rounded-2xl border border-bridge-border/60 px-4 shadow-sm">
               {recentActivity.map((e) => (
                 <ActivityRow key={e.id} event={e} />
               ))}

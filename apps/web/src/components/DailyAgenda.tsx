@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Calendar, ChevronLeft, ChevronRight, Users, Sparkles } from 'lucide-react'
-import type { AgendaBooking } from '@/lib/db'
+import type { AgendaBooking } from '@/services/dashboard.service'
 import BookingActionCard, { colorForStaff, type StaffSummary } from './BookingActionCard'
 
 interface Props {
@@ -59,30 +59,30 @@ export default function DailyAgenda({ agenda, date, businessSlug, staff }: Props
         <div className="flex justify-end mb-2">
           <button
             onClick={() => go(today)}
-            className="text-xs font-semibold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-md flex items-center gap-1"
+            className="text-caption font-semibold text-bridge-accent hover:bg-bridge-accent-wash px-2 py-1 rounded-md flex items-center gap-1"
           >
             <Calendar size={11} /> Today
           </button>
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden mb-3">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-3">
           <button
             onClick={() => go(shiftDate(date, -1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronLeft size={18} />
           </button>
           <div className="text-center">
-            <p className="font-bold text-stone-900 text-sm">{prettyDate(date)}</p>
-            <p className="text-stone-400 text-[11px] mt-0.5">
+            <p className="font-bold text-bridge-heading text-body">{prettyDate(date)}</p>
+            <p className="text-bridge-muted text-[11px] mt-0.5">
               {active.length} appointment{active.length !== 1 ? 's' : ''} · {formatPrice(revenue)}
             </p>
           </div>
           <button
             onClick={() => go(shiftDate(date, 1))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronRight size={18} />
           </button>
@@ -104,16 +104,16 @@ export default function DailyAgenda({ agenda, date, businessSlug, staff }: Props
               />
             )
           })}
-          <FilterChip label="Unassigned" active={filterStaff === 'unassigned'} onClick={() => setFilterStaff('unassigned')} dotClass="bg-stone-300" />
+          <FilterChip label="Unassigned" active={filterStaff === 'unassigned'} onClick={() => setFilterStaff('unassigned')} dotClass="bg-bridge-border-strong" />
         </div>
       )}
 
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-stone-100 p-8 text-center shadow-sm">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-stone-50 mb-3">
-            <Sparkles size={20} className="text-stone-400" />
+        <div className="bg-white rounded-2xl border border-bridge-border/60 p-8 text-center shadow-sm">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-bg mb-3">
+            <Sparkles size={20} className="text-bridge-muted" />
           </div>
-          <p className="text-stone-500 text-sm">
+          <p className="text-bridge-muted text-body">
             {filterStaff !== 'all' ? 'No appointments match this filter.' : `No appointments ${isToday ? 'today' : 'on this day'} yet.`}
           </p>
         </div>
@@ -136,8 +136,8 @@ function FilterChip({
   return (
     <button
       onClick={onClick}
-      className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-        active ? 'bg-stone-900 text-white border-stone-900' : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'
+      className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-caption font-semibold border transition-colors ${
+        active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-white border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
       }`}
     >
       {dotClass && <span className={`w-2 h-2 rounded-full ${dotClass}`} />}

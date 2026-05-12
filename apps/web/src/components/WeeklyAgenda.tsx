@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
-import type { AgendaBooking } from '@/lib/db'
+import type { AgendaBooking } from '@/services/dashboard.service'
 
 interface Props {
   bookings: AgendaBooking[]
@@ -50,25 +50,25 @@ export default function WeeklyAgenda({ bookings, weekStart, businessSlug }: Prop
   return (
     <>
       {/* Week navigator */}
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden mb-3">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-3">
           <button
             onClick={() => nav(shiftDate(weekStart, -7))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronLeft size={18} />
           </button>
           <div className="text-center">
-            <p className="font-bold text-stone-900 text-sm">
+            <p className="font-bold text-bridge-heading text-body">
               {ws.getDate()} {MONTH_NAMES[ws.getMonth()]} – {we.getDate()} {MONTH_NAMES[we.getMonth()]}
             </p>
-            <p className="text-stone-400 text-[11px] mt-0.5">
+            <p className="text-bridge-muted text-[11px] mt-0.5">
               {totalBookings} appointments · ฿{totalRevenue.toLocaleString()}
             </p>
           </div>
           <button
             onClick={() => nav(shiftDate(weekStart, 7))}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-stone-50 text-stone-500"
+            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-bridge-surface text-bridge-muted"
           >
             <ChevronRight size={18} />
           </button>
@@ -86,39 +86,39 @@ export default function WeeklyAgenda({ bookings, weekStart, businessSlug }: Prop
             <button
               key={date}
               onClick={() => goToDay(date)}
-              className={`w-full text-left bg-white rounded-xl border ${isToday ? 'border-rose-200' : 'border-stone-100'} shadow-sm p-3 hover:shadow-md transition-shadow flex items-center gap-3`}
+              className={`w-full text-left bg-white rounded-xl border ${isToday ? 'border-bridge-accent-light' : 'border-bridge-border/60'} shadow-sm p-3 hover:shadow-md transition-shadow flex items-center gap-3`}
             >
               <div className="flex-shrink-0 w-12 text-center">
-                <p className={`text-[10px] uppercase tracking-wide font-semibold ${isToday ? 'text-rose-600' : 'text-stone-400'}`}>
+                <p className={`text-micro uppercase tracking-wide font-semibold ${isToday ? 'text-bridge-accent' : 'text-bridge-muted'}`}>
                   {DAY_NAMES[d.getDay()]}
                 </p>
-                <p className={`text-lg font-black leading-none mt-0.5 ${isToday ? 'text-rose-600' : 'text-stone-900'}`}>
+                <p className={`text-lg font-bold leading-none mt-0.5 ${isToday ? 'text-bridge-accent' : 'text-bridge-heading'}`}>
                   {d.getDate()}
                 </p>
               </div>
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-semibold text-stone-900">
+                  <p className="text-body font-semibold text-bridge-heading">
                     {db.length} appointment{db.length !== 1 ? 's' : ''}
                   </p>
                   {isToday && (
-                    <span className="text-[10px] uppercase tracking-wide font-bold bg-rose-100 text-rose-600 px-1.5 py-0.5 rounded-full">Today</span>
+                    <span className="text-micro uppercase tracking-wide font-bold bg-bridge-accent-soft text-bridge-accent px-1.5 py-0.5 rounded-full">Today</span>
                   )}
                 </div>
                 {/* Density bar */}
-                <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
+                <div className="w-full h-1.5 bg-bridge-surface rounded-full overflow-hidden">
                   <div
-                    className={`h-full ${isToday ? 'bg-rose-500' : 'bg-stone-400'} rounded-full`}
+                    className={`h-full ${isToday ? 'bg-bridge-accent' : 'bg-bridge-border-strong'} rounded-full`}
                     style={{ width: `${Math.max(density * 100, db.length > 0 ? 8 : 0)}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-stone-400 mt-1">
+                <p className="text-[11px] text-bridge-muted mt-1">
                   {revenue > 0 ? `฿${revenue.toLocaleString()}` : '—'}
                 </p>
               </div>
 
-              <Calendar size={14} className="text-stone-300 flex-shrink-0" />
+              <Calendar size={14} className="text-bridge-border-strong flex-shrink-0" />
             </button>
           )
         })}

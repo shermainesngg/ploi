@@ -1,12 +1,21 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Brygada_1918, Schibsted_Grotesk } from 'next/font/google'
 import './globals.css'
 import NavBar from '@/components/NavBar'
 import { getCurrentUser } from '@/lib/auth'
 
-const inter = Inter({
+const displayFont = Brygada_1918({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-display',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+})
+
+const bodyFont = Schibsted_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-body',
+  display: 'swap',
+  weight: ['400', '500', '600', '700', '800', '900'],
 })
 
 export const metadata: Metadata = {
@@ -23,7 +32,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${inter.variable} font-sans bg-stone-50 min-h-screen`}>
+      <body className={`${displayFont.variable} ${bodyFont.variable} font-sans bg-bridge-bg min-h-screen antialiased`}>
         <NavBar user={user} />
         {children}
       </body>

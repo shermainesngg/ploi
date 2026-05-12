@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { listStaff, createStaffMember } from '@/lib/db'
+import { StaffService } from '@/services/staff.service'
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const staff = await listStaff(slug)
+  const staff = await StaffService.list(slug)
   return NextResponse.json(staff)
 }
 
@@ -13,7 +13,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
     const body = await req.json()
     const { name, role, photoUrl, serviceIds } = body
     if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 })
-    const staff = await createStaffMember(slug, {
+    const staff = await StaffService.create(slug, {
       name,
       role: typeof role === 'string' ? role : undefined,
       photoUrl: typeof photoUrl === 'string' ? photoUrl : undefined,

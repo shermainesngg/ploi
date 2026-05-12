@@ -1,4 +1,4 @@
-import { getCreatorDashboard } from '@/lib/db'
+import { DashboardService } from '@/services/dashboard.service'
 import CreatorDashboard from '@/components/CreatorDashboard'
 import { notFound } from 'next/navigation'
 
@@ -8,7 +8,7 @@ interface PageProps {
 
 export default async function Page({ params }: PageProps) {
   const { slug } = await params
-  const data = await getCreatorDashboard(slug)
+  const data = await DashboardService.getCreatorDashboard(slug)
   if (!data) return notFound()
   return <CreatorDashboard data={data} />
 }

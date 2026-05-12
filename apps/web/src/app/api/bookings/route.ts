@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createBooking } from '@/lib/db'
+import { BookingService } from '@/services/booking.service'
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const booking = await createBooking({
+    const booking = await BookingService.create({
       serviceId,
       businessId,
       linkId,

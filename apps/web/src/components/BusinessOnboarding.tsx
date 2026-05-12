@@ -58,15 +58,15 @@ function StepBar({ step }: { step: Step }) {
         <div key={i} className="flex items-center gap-2">
           <div
             className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              i < idx ? 'bg-rose-600 text-white' : i === idx ? 'bg-rose-600 text-white' : 'bg-stone-200 text-stone-400'
+              i < idx ? 'bg-bridge-accent text-white' : i === idx ? 'bg-bridge-accent text-white' : 'bg-bridge-border text-bridge-muted'
             }`}
           >
             {i < idx ? <Check size={13} strokeWidth={3} /> : i + 1}
           </div>
-          {i < 2 && <div className={`h-0.5 w-6 rounded-full ${i < idx ? 'bg-rose-600' : 'bg-stone-200'}`} />}
+          {i < 2 && <div className={`h-0.5 w-6 rounded-full ${i < idx ? 'bg-bridge-accent' : 'bg-bridge-border'}`} />}
         </div>
       ))}
-      <span className="ml-2 text-sm text-stone-400">{labels[idx] ?? ''}</span>
+      <span className="ml-2 text-sm text-bridge-muted">{labels[idx] ?? ''}</span>
     </div>
   )
 }
@@ -89,26 +89,26 @@ function InfoStep({
   return (
     <div className="space-y-5">
       <div>
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Business name <span className="text-rose-500">*</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Business name <span className="text-bridge-accent">*</span>
         </label>
         <input
           type="text" value={name} onChange={(e) => setName(e.target.value)}
           placeholder="e.g. Glow Studio Bangkok"
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Category <span className="text-rose-500">*</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Category <span className="text-bridge-accent">*</span>
         </label>
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((c) => (
             <button
               key={c} onClick={() => setCategory(c)}
               className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-                category === c ? 'border-rose-600 bg-rose-600 text-white' : 'border-stone-200 text-stone-600 bg-white hover:border-rose-300'
+                category === c ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border text-bridge-secondary bg-white hover:border-bridge-accent-light'
               }`}
             >
               {c}
@@ -118,43 +118,43 @@ function InfoStep({
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Location <span className="text-rose-500">*</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Location <span className="text-bridge-accent">*</span>
         </label>
         <input
           type="text" value={location} onChange={(e) => setLocation(e.target.value)}
           placeholder="e.g. Sukhumvit Soi 24, Bangkok"
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">
-          Owner email <span className="text-rose-500">*</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Owner email <span className="text-bridge-accent">*</span>
         </label>
         <input
           type="email" value={email} onChange={(e) => setEmail(e.target.value)}
           placeholder="you@yourbusiness.com"
           autoCapitalize="none" autoCorrect="off"
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
         />
-        <p className="text-xs text-stone-400 mt-1.5">For login and Stripe payouts.</p>
+        <p className="text-xs text-bridge-muted mt-1.5">For login and Stripe payouts.</p>
       </div>
 
       <div>
-        <label className="block text-sm font-semibold text-stone-700 mb-1.5">Short description</label>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">Short description</label>
         <textarea
           value={description} onChange={(e) => setDescription(e.target.value)}
           placeholder="What makes your business special? (optional)"
           rows={3}
-          className="w-full border border-stone-200 rounded-xl px-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-base resize-none"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base resize-none"
         />
       </div>
 
       <button
         disabled={!canContinue}
         onClick={onNext}
-        className="w-full py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-bridge-accent-dark active:scale-[0.98] transition-all flex items-center justify-center gap-2"
       >
         Continue <ChevronRight size={18} />
       </button>
@@ -186,21 +186,21 @@ function ServicesStep({
 
   return (
     <div>
-      <button onClick={onBack} className="flex items-center gap-1 text-stone-400 text-sm mb-6 hover:text-stone-600">
+      <button onClick={onBack} className="flex items-center gap-1 text-bridge-muted text-sm mb-6 hover:text-bridge-secondary">
         <ArrowLeft size={14} /> Back
       </button>
 
-      <p className="text-stone-500 text-sm mb-5">
+      <p className="text-bridge-muted text-sm mb-5">
         Add at least one service. Your booking page won&apos;t go live until you&apos;ve added one.
       </p>
 
       <div className="space-y-4 mb-4">
         {services.map((svc, idx) => (
-          <div key={svc.id} className="bg-stone-50 rounded-2xl p-4 border border-stone-200">
+          <div key={svc.id} className="bg-bridge-bg rounded-2xl p-4 border border-bridge-border">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-semibold text-stone-400 uppercase tracking-widest">Service {idx + 1}</span>
+              <span className="text-xs font-semibold text-bridge-muted uppercase tracking-widest">Service {idx + 1}</span>
               {services.length > 1 && (
-                <button onClick={() => removeService(svc.id)} className="text-stone-300 hover:text-rose-500 transition-colors">
+                <button onClick={() => removeService(svc.id)} className="text-bridge-border-strong hover:text-bridge-accent transition-colors">
                   <Trash2 size={15} />
                 </button>
               )}
@@ -210,16 +210,16 @@ function ServicesStep({
               <input
                 type="text" value={svc.name} onChange={(e) => updateService(svc.id, 'name', e.target.value)}
                 placeholder="Service name *"
-                className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm bg-white"
+                className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm bg-white"
               />
               <input
                 type="text" value={svc.description} onChange={(e) => updateService(svc.id, 'description', e.target.value)}
                 placeholder="Short description (optional)"
-                className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm bg-white"
+                className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm bg-white"
               />
               <div className="flex gap-2">
                 <div className="flex-1">
-                  <label className="block text-xs text-stone-500 mb-1.5 flex items-center gap-1">
+                  <label className="block text-xs text-bridge-muted mb-1.5 flex items-center gap-1">
                     <Clock size={11} /> Duration
                   </label>
                   <div className="flex flex-wrap gap-1.5">
@@ -227,7 +227,7 @@ function ServicesStep({
                       <button
                         key={d} onClick={() => updateService(svc.id, 'duration', d)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
-                          svc.duration === d ? 'border-rose-600 bg-rose-600 text-white' : 'border-stone-200 text-stone-600 bg-white'
+                          svc.duration === d ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border text-bridge-secondary bg-white'
                         }`}
                       >
                         {durationLabel(d)}
@@ -236,13 +236,13 @@ function ServicesStep({
                   </div>
                 </div>
                 <div className="w-28">
-                  <label className="block text-xs text-stone-500 mb-1.5">Price (THB)</label>
+                  <label className="block text-xs text-bridge-muted mb-1.5">Price (THB)</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm">฿</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-bridge-muted text-sm">฿</span>
                     <input
                       type="number" value={svc.price} onChange={(e) => updateService(svc.id, 'price', e.target.value)}
                       placeholder="0"
-                      className="w-full border border-stone-200 rounded-xl pl-7 pr-3 py-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm bg-white"
+                      className="w-full border border-bridge-border rounded-xl pl-7 pr-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm bg-white"
                     />
                   </div>
                 </div>
@@ -254,7 +254,7 @@ function ServicesStep({
 
       <button
         onClick={addService}
-        className="w-full py-3 rounded-2xl border-2 border-dashed border-stone-200 text-stone-400 text-sm font-medium hover:border-rose-300 hover:text-rose-500 transition-colors flex items-center justify-center gap-2 mb-6"
+        className="w-full py-3 rounded-2xl border-2 border-dashed border-bridge-border text-bridge-muted text-sm font-medium hover:border-bridge-accent-light hover:text-bridge-accent transition-colors flex items-center justify-center gap-2 mb-6"
       >
         <Plus size={16} /> Add another service
       </button>
@@ -262,7 +262,7 @@ function ServicesStep({
       <button
         disabled={!canSubmit}
         onClick={onNext}
-        className="w-full py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-rose-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-bridge-accent-dark active:scale-[0.98] transition-all flex items-center justify-center gap-2"
       >
         Continue <ChevronRight size={18} />
       </button>
@@ -339,33 +339,33 @@ function DetailsStep({
 
   return (
     <div>
-      <button onClick={onBack} className="flex items-center gap-1 text-stone-400 text-sm mb-6 hover:text-stone-600">
+      <button onClick={onBack} className="flex items-center gap-1 text-bridge-muted text-sm mb-6 hover:text-bridge-secondary">
         <ArrowLeft size={14} /> Back
       </button>
 
-      <p className="text-stone-500 text-sm mb-5">
+      <p className="text-bridge-muted text-sm mb-5">
         These show on your public booking page. Customers expect contact info and hours.
       </p>
 
       {/* Hours */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <label className="text-sm font-semibold text-stone-700">Opening hours</label>
+          <label className="text-sm font-semibold text-bridge-text">Opening hours</label>
           <button
             onClick={setAllSame}
-            className="flex items-center gap-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 px-2 py-1 rounded-md"
+            className="flex items-center gap-1 text-xs font-semibold text-bridge-accent hover:bg-bridge-accent-wash px-2 py-1 rounded-md"
           >
             <Copy size={11} /> Same every day
           </button>
         </div>
-        <div className="bg-stone-50 rounded-2xl border border-stone-200 divide-y divide-stone-200">
+        <div className="bg-bridge-bg rounded-2xl border border-bridge-border divide-y divide-bridge-border">
           {DAY_ORDER.map((d) => (
             <div key={d} className="flex items-center gap-2 px-3 py-2.5">
-              <span className="text-sm font-semibold text-stone-700 w-10">{DAY_LABELS[d]}</span>
+              <span className="text-sm font-semibold text-bridge-text w-10">{DAY_LABELS[d]}</span>
               <button
                 onClick={() => updateDay(d, { open: !hours[d].open })}
                 className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase ${
-                  hours[d].open ? 'bg-green-100 text-green-700' : 'bg-stone-200 text-stone-500'
+                  hours[d].open ? 'bg-green-100 text-green-700' : 'bg-bridge-border text-bridge-muted'
                 }`}
               >
                 {hours[d].open ? 'Open' : 'Closed'}
@@ -375,13 +375,13 @@ function DetailsStep({
                   <input
                     type="time" value={hours[d].start}
                     onChange={(e) => updateDay(d, { start: e.target.value })}
-                    className="border border-stone-200 rounded-md px-1.5 py-1 text-xs bg-white"
+                    className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-white"
                   />
-                  <span className="text-stone-400 text-xs">–</span>
+                  <span className="text-bridge-muted text-xs">–</span>
                   <input
                     type="time" value={hours[d].end}
                     onChange={(e) => updateDay(d, { end: e.target.value })}
-                    className="border border-stone-200 rounded-md px-1.5 py-1 text-xs bg-white"
+                    className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-white"
                   />
                 </div>
               )}
@@ -392,17 +392,17 @@ function DetailsStep({
 
       {/* Contact */}
       <div className="mb-6">
-        <label className="block text-sm font-semibold text-stone-700 mb-2">
-          Contact <span className="text-rose-500">*</span>{' '}
-          <span className="text-stone-400 font-normal text-xs">(at least one)</span>
+        <label className="block text-sm font-semibold text-bridge-text mb-2">
+          Contact <span className="text-bridge-accent">*</span>{' '}
+          <span className="text-bridge-muted font-normal text-xs">(at least one)</span>
         </label>
         <div className="space-y-2">
           <div className="relative">
-            <Phone size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
+            <Phone size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-bridge-muted" />
             <input
               type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)}
               placeholder="Phone number"
-              className="w-full border border-stone-200 rounded-xl pl-10 pr-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+              className="w-full border border-bridge-border rounded-xl pl-10 pr-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm"
             />
           </div>
           <div className="relative">
@@ -410,17 +410,17 @@ function DetailsStep({
             <input
               type="tel" value={contactWhatsapp} onChange={(e) => setContactWhatsapp(e.target.value)}
               placeholder="WhatsApp number"
-              className="w-full border border-stone-200 rounded-xl pl-10 pr-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+              className="w-full border border-bridge-border rounded-xl pl-10 pr-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm"
             />
           </div>
           <div className="relative">
-            <MessageCircle size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
+            <MessageCircle size={13} className="absolute left-4 top-1/2 -translate-y-1/2 text-bridge-muted" />
             <input
               type="text" value={contactLine} onChange={(e) => setContactLine(e.target.value)}
               placeholder="LINE ID (e.g. @yourshop)"
               autoCapitalize="none"
               autoCorrect="off"
-              className="w-full border border-stone-200 rounded-xl pl-10 pr-4 py-3 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+              className="w-full border border-bridge-border rounded-xl pl-10 pr-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm"
             />
           </div>
         </div>
@@ -428,19 +428,19 @@ function DetailsStep({
 
       {/* Photos */}
       <div className="mb-6">
-        <label className="block text-sm font-semibold text-stone-700 mb-1">Photos</label>
-        <p className="text-xs text-stone-400 mb-2">Up to 5 URLs. The first becomes your cover photo.</p>
+        <label className="block text-sm font-semibold text-bridge-text mb-1">Photos</label>
+        <p className="text-xs text-bridge-muted mb-2">Up to 5 URLs. The first becomes your cover photo.</p>
         <div className="space-y-2">
           {photos.map((p, i) => (
             <div key={i} className="flex items-center gap-2">
-              <ImageIcon size={13} className="text-stone-400 flex-shrink-0" />
+              <ImageIcon size={13} className="text-bridge-muted flex-shrink-0" />
               <input
                 type="url" value={p} onChange={(e) => updatePhoto(i, e.target.value)}
                 placeholder="https://..."
                 autoCapitalize="none" autoCorrect="off"
-                className="flex-1 min-w-0 border border-stone-200 rounded-lg px-3 py-2 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-xs font-mono"
+                className="flex-1 min-w-0 border border-bridge-border rounded-lg px-3 py-2 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-xs font-mono"
               />
-              <button onClick={() => removePhoto(i)} className="text-stone-300 hover:text-rose-500 flex-shrink-0">
+              <button onClick={() => removePhoto(i)} className="text-bridge-border-strong hover:text-bridge-accent flex-shrink-0">
                 <Trash2 size={14} />
               </button>
             </div>
@@ -449,7 +449,7 @@ function DetailsStep({
         {photos.length < 5 && (
           <button
             onClick={addPhoto}
-            className="w-full mt-2 py-2 rounded-xl border-2 border-dashed border-stone-200 text-stone-400 text-xs font-medium hover:border-rose-300 hover:text-rose-500 flex items-center justify-center gap-1"
+            className="w-full mt-2 py-2 rounded-xl border-2 border-dashed border-bridge-border text-bridge-muted text-xs font-medium hover:border-bridge-accent-light hover:text-bridge-accent flex items-center justify-center gap-1"
           >
             <Plus size={13} /> Add a photo
           </button>
@@ -463,7 +463,7 @@ function DetailsStep({
       <button
         disabled={!canSubmit || loading}
         onClick={onSubmit}
-        className="w-full py-4 rounded-2xl bg-rose-600 text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-rose-700 active:scale-[0.98] transition-all"
+        className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-bridge-accent-dark active:scale-[0.98] transition-all"
       >
         {loading ? 'Creating your page…' : 'Create my booking page'}
       </button>
@@ -477,31 +477,31 @@ function DoneScreen({ slug }: { slug: string }) {
   const url = `bridge.to/[creator]/${slug}`
   return (
     <div className="flex flex-col items-center text-center py-6">
-      <div className="w-20 h-20 rounded-full bg-rose-100 flex items-center justify-center mb-6">
-        <Check size={36} className="text-rose-600" strokeWidth={3} />
+      <div className="w-20 h-20 rounded-full bg-bridge-accent-wash flex items-center justify-center mb-6">
+        <Check size={36} className="text-bridge-accent" strokeWidth={3} />
       </div>
-      <h2 className="text-2xl font-black text-stone-900 mb-2">You&apos;re live!</h2>
-      <p className="text-stone-500 text-sm mb-8 max-w-xs">
+      <h2 className="text-2xl font-display font-bold text-bridge-heading mb-2">You&apos;re live!</h2>
+      <p className="text-bridge-muted text-sm mb-8 max-w-xs">
         Your booking page is ready. Share it with a creator to start getting attributed bookings.
       </p>
 
-      <div className="w-full bg-stone-50 rounded-2xl p-5 text-left mb-8">
-        <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-2">Your page slug</p>
-        <p className="font-mono text-rose-600 font-semibold text-sm break-all">{slug}</p>
-        <p className="text-stone-400 text-xs mt-3">A creator can link to you at: <span className="text-stone-600">{url}</span></p>
+      <div className="w-full bg-bridge-bg rounded-2xl p-5 text-left mb-8">
+        <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-2">Your page slug</p>
+        <p className="font-mono text-bridge-accent font-semibold text-sm break-all">{slug}</p>
+        <p className="text-bridge-muted text-xs mt-3">A creator can link to you at: <span className="text-bridge-secondary">{url}</span></p>
       </div>
 
       <Link
         href={`/${slug}`}
-        className="w-full py-4 rounded-2xl bg-stone-900 text-white font-semibold text-base hover:bg-stone-800 transition-all flex items-center justify-center gap-2"
+        className="w-full py-4 rounded-2xl bg-bridge-heading text-white font-semibold text-base hover:bg-bridge-text transition-all flex items-center justify-center gap-2"
       >
         Preview my booking page →
       </Link>
 
       <div className="mt-4 flex gap-4 text-sm">
-        <Link href="/onboard/creator" className="text-rose-600 font-medium hover:underline">Invite a creator</Link>
-        <span className="text-stone-300">·</span>
-        <Link href="/" className="text-stone-400 hover:text-stone-600">Go home</Link>
+        <Link href="/onboard/creator" className="text-bridge-accent font-medium hover:underline">Invite a creator</Link>
+        <span className="text-bridge-border-strong">·</span>
+        <Link href="/" className="text-bridge-muted hover:text-bridge-secondary">Go home</Link>
       </div>
     </div>
   )
@@ -573,15 +573,15 @@ export default function BusinessOnboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-[480px] mx-auto px-5 py-10">
+    <div className="min-h-screen bg-bridge-bg">
+      <div className="max-w-2xl mx-auto px-5 py-10">
         <div className="mb-8">
-          <Link href="/" className="text-xs font-black text-rose-600 tracking-tight">BRIDGE</Link>
-          <h1 className="text-2xl font-black text-stone-900 mt-4 leading-tight">
+          <Link href="/" className="text-xs font-display font-bold text-bridge-accent tracking-tight">BRIDGE</Link>
+          <h1 className="text-2xl font-display font-bold text-bridge-heading mt-4 leading-tight">
             {step === 'done' ? 'Page created' : 'List your business'}
           </h1>
           {step !== 'done' && (
-            <p className="text-stone-500 text-sm mt-1">Set up your BRIDGE booking page in under 10 minutes.</p>
+            <p className="text-bridge-muted text-sm mt-1">Set up your BRIDGE booking page in under 10 minutes.</p>
           )}
         </div>
 

@@ -77,17 +77,17 @@ export default function WalkinModal({
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={onClose} />
       <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto animate-slide-up">
         <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
-          <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-stone-100">
-            <h2 className="font-bold text-stone-900 text-lg">New walk-in</h2>
-            <button onClick={onClose} className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center">
-              <X size={16} className="text-stone-600" />
+          <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-bridge-border/60">
+            <h2 className="font-bold text-bridge-heading text-lg">New walk-in</h2>
+            <button onClick={onClose} className="w-8 h-8 rounded-full bg-bridge-surface flex items-center justify-center">
+              <X size={16} className="text-bridge-secondary" />
             </button>
           </div>
 
           <div className="px-5 py-4 overflow-y-auto space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                Service <span className="text-rose-500">*</span>
+              <label className="block text-xs font-semibold text-bridge-text mb-1.5">
+                Service <span className="text-bridge-accent">*</span>
               </label>
               <div className="space-y-1.5">
                 {services.map((s) => (
@@ -96,13 +96,13 @@ export default function WalkinModal({
                     onClick={() => setServiceId(s.id)}
                     className={`w-full text-left p-2.5 rounded-xl border transition-all ${
                       serviceId === s.id
-                        ? 'border-rose-600 bg-rose-50'
-                        : 'border-stone-200 bg-white hover:border-rose-300'
+                        ? 'border-bridge-accent bg-bridge-accent-wash'
+                        : 'border-bridge-border bg-white hover:border-bridge-accent-light'
                     }`}
                   >
                     <div className="flex justify-between items-center">
-                      <span className="font-medium text-sm text-stone-900">{s.name}</span>
-                      <span className="text-xs text-stone-500">{s.duration} min · ฿{s.price.toLocaleString()}</span>
+                      <span className="font-medium text-sm text-bridge-heading">{s.name}</span>
+                      <span className="text-xs text-bridge-muted">{s.duration} min · ฿{s.price.toLocaleString()}</span>
                     </div>
                   </button>
                 ))}
@@ -111,14 +111,14 @@ export default function WalkinModal({
 
             {eligibleStaff.length > 0 && (
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                  Staff <span className="text-stone-400 font-normal">(optional)</span>
+                <label className="block text-xs font-semibold text-bridge-text mb-1.5">
+                  Staff <span className="text-bridge-muted font-normal">(optional)</span>
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setStaffId('')}
                     className={`p-2 rounded-xl border text-sm text-left transition-all ${
-                      !staffId ? 'border-rose-600 bg-rose-50 text-rose-700' : 'border-stone-200 text-stone-600'
+                      !staffId ? 'border-bridge-accent bg-bridge-accent-wash text-bridge-accent' : 'border-bridge-border text-bridge-secondary'
                     }`}
                   >
                     <UserIcon size={13} className="inline-block mr-1" /> Any
@@ -128,7 +128,7 @@ export default function WalkinModal({
                       key={s.id}
                       onClick={() => setStaffId(s.id)}
                       className={`p-2 rounded-xl border text-sm text-left transition-all ${
-                        staffId === s.id ? 'border-rose-600 bg-rose-50 text-rose-700' : 'border-stone-200 text-stone-600'
+                        staffId === s.id ? 'border-bridge-accent bg-bridge-accent-wash text-bridge-accent' : 'border-bridge-border text-bridge-secondary'
                       }`}
                     >
                       {s.name}
@@ -140,29 +140,29 @@ export default function WalkinModal({
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1.5">Time</label>
+                <label className="block text-xs font-semibold text-bridge-text mb-1.5">Time</label>
                 <input
                   type="time" value={time} onChange={(e) => setTime(e.target.value)}
-                  className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+                  className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1.5">Date</label>
+                <label className="block text-xs font-semibold text-bridge-text mb-1.5">Date</label>
                 <input
                   type="date" value={date} disabled
-                  className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-stone-500 bg-stone-50 text-sm"
+                  className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-muted bg-bridge-bg text-sm"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                Customer name <span className="text-stone-400 font-normal">(optional)</span>
+              <label className="block text-xs font-semibold text-bridge-text mb-1.5">
+                Customer name <span className="text-bridge-muted font-normal">(optional)</span>
               </label>
               <input
                 type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
                 placeholder="e.g. Lia"
-                className="w-full border border-stone-200 rounded-xl px-3 py-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent text-sm"
+                className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm"
               />
             </div>
 
@@ -171,12 +171,12 @@ export default function WalkinModal({
             <button
               onClick={submit}
               disabled={!serviceId || busy}
-              className="w-full py-3.5 rounded-2xl bg-rose-600 text-white font-semibold text-sm disabled:opacity-30 hover:bg-rose-700 flex items-center justify-center gap-1.5"
+              className="w-full py-3.5 rounded-2xl bg-bridge-accent text-white font-semibold text-sm disabled:opacity-30 hover:bg-bridge-accent-dark flex items-center justify-center gap-1.5"
             >
               <Check size={14} /> {busy ? 'Adding…' : 'Add walk-in'}
             </button>
 
-            <p className="text-center text-[11px] text-stone-400">
+            <p className="text-center text-[11px] text-bridge-muted">
               Walk-ins are direct customers — no creator attribution.
             </p>
           </div>

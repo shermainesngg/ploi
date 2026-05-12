@@ -1,6 +1,4 @@
-import {
-  getStaffById, getStaffSchedule, listStaffBlocks,
-} from '@/lib/db'
+import { StaffService } from '@/services/staff.service'
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import StaffSchedulePage from '@/components/StaffSchedulePage'
@@ -23,7 +21,7 @@ export default async function Page({ params, searchParams }: PageProps) {
   const today = formatDate(new Date())
 
   if (!isSupabaseConfigured()) return notFound()
-  const staff = await getStaffById(id)
+  const staff = await StaffService.getById(id)
   if (!staff) return notFound()
 
   const view = sp.view === 'month' || sp.view === 'day' ? sp.view : 'week'
@@ -143,8 +141,8 @@ export default async function Page({ params, searchParams }: PageProps) {
   }
 
   const [schedule, blocks] = await Promise.all([
-    getStaffSchedule(id),
-    listStaffBlocks(id),
+    StaffService.getSchedule(id),
+    StaffService.listBlocks(id),
   ])
 
   return (

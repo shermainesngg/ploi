@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createBusiness, listBusinesses } from '@/lib/db'
+import { BusinessService } from '@/services/business.service'
 
 export async function GET() {
-  const businesses = await listBusinesses()
+  const businesses = await BusinessService.list()
   return NextResponse.json(businesses)
 }
 
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       .replace(/\s+/g, '-')
       .slice(0, 40)
 
-    const result = await createBusiness({
+    const result = await BusinessService.create({
       slug, name, category, location, description, services,
       email: typeof email === 'string' && email.trim() ? email.trim() : undefined,
       openingHours, contactPhone, contactWhatsapp, contactLine,

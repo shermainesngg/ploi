@@ -18,20 +18,20 @@ export default function BookingsList({ bookings, userEmail }: { bookings: RawBoo
   const past = bookings.filter((b) => b.booking_date < today)
 
   return (
-    <div className="max-w-[480px] mx-auto px-4 py-8 pb-24">
-      <h1 className="text-2xl font-black text-stone-900 px-1">My bookings</h1>
-      <p className="text-stone-500 text-sm mt-1 px-1">Booked under {userEmail}</p>
+    <div className="max-w-2xl mx-auto px-4 py-8 pb-24">
+      <h1 className="text-2xl font-bold text-bridge-heading px-1">My bookings</h1>
+      <p className="text-bridge-muted text-sm mt-1 px-1">Booked under {userEmail}</p>
 
       {bookings.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-stone-100 p-8 mt-6 text-center">
-          <p className="text-stone-500 text-sm mb-4">No bookings yet.</p>
-          <Link href="/" className="text-rose-600 font-semibold text-sm hover:underline">Browse places →</Link>
+        <div className="bg-white rounded-2xl border border-bridge-border/60 p-8 mt-6 text-center">
+          <p className="text-bridge-muted text-sm mb-4">No bookings yet.</p>
+          <Link href="/" className="text-bridge-accent font-semibold text-sm hover:underline">Browse places →</Link>
         </div>
       ) : (
         <>
           {upcoming.length > 0 && (
             <section className="mt-6">
-              <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-3 px-1">Upcoming</h2>
+              <h2 className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-3 px-1">Upcoming</h2>
               <div className="space-y-3">
                 {upcoming.map((b) => <BookingRow key={b.id} booking={b} canChange />)}
               </div>
@@ -39,7 +39,7 @@ export default function BookingsList({ bookings, userEmail }: { bookings: RawBoo
           )}
           {past.length > 0 && (
             <section className="mt-8">
-              <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-3 px-1">Past</h2>
+              <h2 className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-3 px-1">Past</h2>
               <div className="space-y-2">
                 {past.map((b) => <BookingRow key={b.id} booking={b} canChange={false} />)}
               </div>
@@ -82,25 +82,25 @@ function BookingRow({ booking, canChange }: { booking: RawBooking; canChange: bo
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-stone-100 shadow-sm overflow-hidden">
-        <Link href={`/booking-confirmed/${booking.id}`} className="block p-4 hover:bg-stone-50/50 transition-colors">
+      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden">
+        <Link href={`/booking-confirmed/${booking.id}`} className="block p-4 hover:bg-bridge-surface/50 transition-colors">
           <div className="flex items-start justify-between gap-3 mb-2">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-0.5">
-                <p className="font-semibold text-stone-900 text-sm truncate">{svc?.name ?? 'Service'}</p>
+                <p className="font-semibold text-bridge-heading text-sm truncate">{svc?.name ?? 'Service'}</p>
                 {paid && <span className="text-[10px] font-bold uppercase bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Paid</span>}
                 <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
                   status === 'confirmed' ? 'bg-green-100 text-green-700' :
                   status === 'pending' ? 'bg-amber-100 text-amber-700' :
                   status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                  'bg-stone-100 text-stone-500'
+                  'bg-bridge-surface text-bridge-muted'
                 }`}>{status}</span>
               </div>
-              <p className="text-stone-500 text-xs truncate">{biz?.name}</p>
+              <p className="text-bridge-muted text-xs truncate">{biz?.name}</p>
             </div>
-            <span className="font-bold text-stone-900 text-sm flex-shrink-0">฿{(svc?.price ?? 0).toLocaleString()}</span>
+            <span className="font-bold text-bridge-heading text-sm flex-shrink-0">฿{(svc?.price ?? 0).toLocaleString()}</span>
           </div>
-          <div className="flex items-center gap-3 text-xs text-stone-400">
+          <div className="flex items-center gap-3 text-xs text-bridge-muted">
             <span className="flex items-center gap-1"><Calendar size={11} />{DAY_NAMES[date.getDay()]} {date.getDate()} {MONTH_NAMES[date.getMonth()]}</span>
             <span className="flex items-center gap-1"><Clock size={11} />{time}</span>
             {biz?.location && <span className="flex items-center gap-1 truncate"><MapPin size={11} />{biz.location}</span>}
@@ -108,11 +108,11 @@ function BookingRow({ booking, canChange }: { booking: RawBooking; canChange: bo
         </Link>
 
         {isCancellable && (
-          <div className="border-t border-stone-100 flex divide-x divide-stone-100">
+          <div className="border-t border-bridge-border/60 flex divide-x divide-bridge-border/60">
             <button
               onClick={() => setReschedOpen(true)}
               disabled={busy}
-              className="flex-1 py-2.5 text-xs font-semibold text-stone-700 hover:bg-stone-50 flex items-center justify-center gap-1.5 disabled:opacity-50"
+              className="flex-1 py-2.5 text-xs font-semibold text-bridge-text hover:bg-bridge-surface flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               <Repeat size={12} /> Reschedule
             </button>

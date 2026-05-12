@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { Inbox } from 'lucide-react'
-import type { AgendaBooking } from '@/lib/db'
+import type { AgendaBooking } from '@/services/dashboard.service'
 import BookingActionCard, { type StaffSummary } from '../BookingActionCard'
 
 const STATUSES: { key: string; label: string }[] = [
@@ -35,12 +35,12 @@ export default function BookingsTab({ bookings, status, staff, businessSlug }: P
               key={s.key}
               href={`/dashboard/business/${businessSlug}?tab=bookings&status=${s.key}`}
               scroll={false}
-              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors ${
-                active ? 'bg-stone-900 text-white border-stone-900' : 'bg-white border-stone-200 text-stone-600 hover:border-stone-400'
+              className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-micro font-semibold border transition-colors ${
+                active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-white border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
               }`}
             >
               {s.label}
-              <span className={`text-[10px] font-bold ${active ? 'text-stone-300' : 'text-stone-400'}`}>
+              <span className={`text-[10px] font-bold ${active ? 'text-bridge-border' : 'text-bridge-muted'}`}>
                 {count}
               </span>
             </Link>
@@ -49,11 +49,11 @@ export default function BookingsTab({ bookings, status, staff, businessSlug }: P
       </div>
 
       {bookings.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-stone-100 p-12 text-center">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-stone-50 mb-3">
-            <Inbox size={20} className="text-stone-400" />
+        <div className="bg-white rounded-2xl border border-bridge-border/60 p-12 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-surface mb-3">
+            <Inbox size={20} className="text-bridge-muted" />
           </div>
-          <p className="text-stone-500 text-sm">
+          <p className="text-bridge-muted text-body">
             {status === 'all' ? 'No bookings yet.' : `No ${status} bookings.`}
           </p>
         </div>

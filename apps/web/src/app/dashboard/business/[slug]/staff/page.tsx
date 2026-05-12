@@ -1,4 +1,4 @@
-import { listStaff } from '@/lib/db'
+import { StaffService } from '@/services/staff.service'
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import StaffManagement from '@/components/StaffManagement'
@@ -19,7 +19,7 @@ export default async function Page({ params }: PageProps) {
     .single()
   if (!biz) return notFound()
 
-  const staff = await listStaff(slug)
+  const staff = await StaffService.list(slug)
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const services = (biz.services as any[] ?? [])

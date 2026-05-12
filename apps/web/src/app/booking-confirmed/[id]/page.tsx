@@ -12,12 +12,6 @@ interface PageProps {
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-/**
- * Payment-finalisation guard:
- * If the user just came back from Stripe but the webhook hasn't fired yet,
- * fetch the session synchronously and update the booking. This keeps the
- * confirmation page accurate regardless of webhook timing.
- */
 async function reconcileWithStripe(bookingId: string, sessionId: string) {
   if (!isStripeConfigured() || !isSupabaseConfigured()) return
   try {
@@ -34,11 +28,9 @@ async function reconcileWithStripe(bookingId: string, sessionId: string) {
         stripe_payment_intent_id: piId,
       }).eq('id', bookingId)
 
-      // Record attribution if linked
       const { data: booking } = await db
         .from('bookings').select('link_id').eq('id', bookingId).single()
       if (booking?.link_id) {
-        // Avoid duplicate insert if webhook already handled it
         const { data: existing } = await db
           .from('attribution_events')
           .select('id')
@@ -55,7 +47,7 @@ async function reconcileWithStripe(bookingId: string, sessionId: string) {
       }
     }
   } catch {
-    // Webhook will handle it eventually; don't block the page.
+    // Webhook will handle it eventually
   }
 }
 
@@ -65,7 +57,6 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   if (!isSupabaseConfigured()) return notFound()
 
-  // If we have a session_id, reconcile state before rendering
   if (session_id) await reconcileWithStripe(id, session_id)
 
   const db = createServerClient()
@@ -92,22 +83,22 @@ export default async function Page({ params, searchParams }: PageProps) {
   const isPending = booking.payment_status === 'pending' && !!session_id
 
   return (
-    <div className="min-h-screen bg-stone-50 flex flex-col items-center px-5 py-12">
+    <div className="min-h-screen bg-bridge-bg flex flex-col items-center px-5 py-12">
       <div className="max-w-[460px] w-full">
         <div className="flex flex-col items-center text-center mb-8">
           <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-5 ${
-            isPaid ? 'bg-rose-100' : isPending ? 'bg-amber-100' : 'bg-stone-100'
+            isPaid ? 'bg-bridge-accent-soft' : isPending ? 'bg-amber-100' : 'bg-bridge-surface'
           }`}>
             {isPending ? (
               <Clock size={36} className="text-amber-600" />
             ) : (
-              <Check size={36} className="text-rose-600" strokeWidth={3} />
+              <Check size={36} className="text-bridge-accent" strokeWidth={3} />
             )}
           </div>
-          <h1 className="text-3xl font-black text-stone-900 mb-1">
+          <h1 className="font-display text-heading text-bridge-heading mb-1">
             {isPending ? 'Finalising payment…' : "You're booked!"}
           </h1>
-          <p className="text-stone-500 text-sm max-w-xs">
+          <p className="text-bridge-muted text-body max-w-xs">
             {isPaid
               ? `Payment received. ${biz?.name} will see you soon.`
               : isPending
@@ -115,45 +106,45 @@ export default async function Page({ params, searchParams }: PageProps) {
               : `Booking submitted. ${biz?.name} will see you soon.`}
           </p>
           {isPending && (
-            <p className="text-stone-400 text-xs mt-2">Refresh in a few seconds.</p>
+            <p className="text-bridge-muted text-caption mt-2">Refresh in a few seconds.</p>
           )}
         </div>
 
         {/* Summary card */}
-        <div className="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm space-y-3 text-sm">
+        <div className="bg-white rounded-2xl border border-bridge-border/60 p-5 shadow-card space-y-3 text-body">
           <div className="flex justify-between">
-            <span className="text-stone-500">Service</span>
-            <span className="font-semibold text-stone-900">{svc?.name}</span>
+            <span className="text-bridge-muted">Service</span>
+            <span className="font-semibold text-bridge-heading">{svc?.name}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-stone-500">Where</span>
-            <span className="font-semibold text-stone-900">{biz?.name}</span>
+            <span className="text-bridge-muted">Where</span>
+            <span className="font-semibold text-bridge-heading">{biz?.name}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-stone-500">Date & time</span>
-            <span className="font-semibold text-stone-900">
+            <span className="text-bridge-muted">Date & time</span>
+            <span className="font-semibold text-bridge-heading">
               {DAY_NAMES[date.getDay()]} {date.getDate()} {MONTH_NAMES[date.getMonth()]} at {booking.booking_time?.toString().slice(0, 5)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-stone-500">Name</span>
-            <span className="font-semibold text-stone-900">{booking.customer_name}</span>
+            <span className="text-bridge-muted">Name</span>
+            <span className="font-semibold text-bridge-heading">{booking.customer_name}</span>
           </div>
           {booking.customer_email && (
             <div className="flex justify-between">
-              <span className="text-stone-500">Email</span>
-              <span className="font-semibold text-stone-900 truncate ml-2">{booking.customer_email}</span>
+              <span className="text-bridge-muted">Email</span>
+              <span className="font-semibold text-bridge-heading truncate ml-2">{booking.customer_email}</span>
             </div>
           )}
-          <div className="flex justify-between border-t border-stone-200 pt-3">
-            <span className="text-stone-500">Total</span>
-            <span className="font-bold text-stone-900 text-base">
+          <div className="flex justify-between border-t border-bridge-border pt-3">
+            <span className="text-bridge-muted">Total</span>
+            <span className="font-bold text-bridge-heading text-base">
               ฿{(svc?.price ?? 0).toLocaleString()}
-              {isPaid && <span className="ml-2 text-[10px] font-bold uppercase bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Paid</span>}
-              {isPending && <span className="ml-2 text-[10px] font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Pending</span>}
+              {isPaid && <span className="ml-2 text-micro font-bold uppercase bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Paid</span>}
+              {isPending && <span className="ml-2 text-micro font-bold uppercase bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Paid</span>}
             </span>
           </div>
-          <div className="text-xs text-stone-400 pt-2 border-t border-stone-100">
+          <div className="text-caption text-bridge-muted pt-2 border-t border-bridge-border/60">
             Confirmation #{booking.id.slice(0, 8).toUpperCase()}
           </div>
         </div>
@@ -161,20 +152,20 @@ export default async function Page({ params, searchParams }: PageProps) {
         <div className="mt-6 space-y-2">
           <Link
             href="/bookings"
-            className="block text-center w-full py-4 rounded-2xl bg-stone-900 text-white font-semibold text-base hover:bg-stone-800"
+            className="block text-center w-full py-4 rounded-2xl bg-bridge-heading text-white font-semibold text-body hover:bg-bridge-text transition-colors"
           >
             View my bookings
           </Link>
           <Link
             href={biz?.slug ? `/glowwithsara/${biz.slug}` : '/'}
-            className="block text-center w-full py-3 rounded-2xl border border-stone-200 text-stone-700 text-sm font-semibold hover:bg-stone-50"
+            className="block text-center w-full py-3 rounded-2xl border border-bridge-border text-bridge-text text-body font-semibold hover:bg-bridge-surface transition-colors"
           >
             Book another service
           </Link>
         </div>
 
-        <p className="text-center text-xs text-stone-400 mt-6">
-          Powered by <span className="font-black text-rose-600">BRIDGE</span>
+        <p className="text-center text-caption text-bridge-muted mt-6">
+          Powered by <span className="font-display font-bold text-bridge-accent">BRIDGE</span>
         </p>
       </div>
     </div>

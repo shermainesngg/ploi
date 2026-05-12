@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { updateLinkStatus } from '@/lib/db'
+import { LinkService } from '@/services/link.service'
 import type { LinkStatus } from '@/lib/types'
 
 export async function PATCH(
@@ -14,7 +14,7 @@ export async function PATCH(
     if (!valid.includes(status)) {
       return NextResponse.json({ error: `status must be one of ${valid.join(', ')}` }, { status: 400 })
     }
-    await updateLinkStatus(id, status)
+    await LinkService.updateStatus(id, status)
     return NextResponse.json({ id, status })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'

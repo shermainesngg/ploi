@@ -1,4 +1,4 @@
-import { getCreatorProfile } from '@/lib/db'
+import { CreatorService } from '@/services/creator.service'
 import CreatorProfilePage from '@/components/CreatorProfilePage'
 import { notFound } from 'next/navigation'
 
@@ -8,7 +8,7 @@ interface PageProps {
 
 export default async function Page({ params }: PageProps) {
   const { creator } = await params
-  const { creator: creatorData, entries } = await getCreatorProfile(creator)
+  const { creator: creatorData, entries } = await CreatorService.getProfile(creator)
 
   if (!creatorData) return notFound()
 
@@ -17,7 +17,7 @@ export default async function Page({ params }: PageProps) {
 
 export async function generateMetadata({ params }: PageProps) {
   const { creator } = await params
-  const { creator: c } = await getCreatorProfile(creator)
+  const { creator: c } = await CreatorService.getProfile(creator)
   if (!c) return {}
   return {
     title: `${c.handle} — BRIDGE`,

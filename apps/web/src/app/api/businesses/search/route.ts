@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { searchBusinesses } from '@/lib/db'
+import { BusinessService } from '@/services/business.service'
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const q = searchParams.get('q') ?? ''
   if (q.length < 1) return NextResponse.json([])
-  const results = await searchBusinesses(q)
+  const results = await BusinessService.search(q)
   // Slim payload — the search dropdown only needs name + slug + category + cover/gradient
   return NextResponse.json(
     results.map((b) => ({

@@ -1,16 +1,9 @@
-import {
-  getBusinessDashboard,
-  getPendingLinkRequests,
-  getMyCreators,
-  getBusinessStripeStatus,
-  getBookingsForDate,
-  getBookingsForRange,
-  listStaff,
-  listBusinessBookings,
-} from '@/lib/db'
+import { DashboardService, type AgendaBooking } from '@/services/dashboard.service'
+import { LinkService } from '@/services/link.service'
+import { BusinessService } from '@/services/business.service'
+import { StaffService } from '@/services/staff.service'
 import BusinessDashboard from '@/components/BusinessDashboard'
 import { notFound } from 'next/navigation'
-import type { AgendaBooking } from '@/lib/db'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -43,12 +36,12 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   // Always-fetched data (cheap)
   const [data, pendingRequests, myCreators, stripeStatus, staff, todayAgenda] = await Promise.all([
-    getBusinessDashboard(slug),
-    getPendingLinkRequests(slug),
-    getMyCreators(slug),
-    getBusinessStripeStatus(slug),
-    listStaff(slug),
-    getBookingsForDate(slug, today),
+    DashboardService.getBusinessDashboard(slug),
+    LinkService.getPendingRequests(slug),
+    LinkService.getMyCreators(slug),
+    BusinessService.getStripeStatus(slug),
+    StaffService.list(slug),
+    DashboardService.getBookingsForDate(slug, today),
   ])
   if (!data) return notFound()
 
@@ -60,16 +53,16 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   if (tab === 'calendar') {
     if (view === 'day') {
-      agenda = await getBookingsForDate(slug, baseDate)
+      agenda = await DashboardService.getBookingsForDate(slug, baseDate)
     } else if (view === 'week') {
       viewStartDate = startOfWeek(baseDate)
-      rangeData = await getBookingsForRange(slug, viewStartDate, endOfWeek(viewStartDate))
+      rangeData = await DashboardService.getBookingsForRange(slug, viewStartDate, endOfWeek(viewStartDate))
     } else {
       viewStartDate = startOfMonth(baseDate)
-      rangeData = await getBookingsForRange(slug, viewStartDate, endOfMonth(viewStartDate))
+      rangeData = await DashboardService.getBookingsForRange(slug, viewStartDate, endOfMonth(viewStartDate))
     }
   } else if (tab === 'bookings') {
-    bookingsList = await listBusinessBookings(slug, {
+    bookingsList = await DashboardService.listBusinessBookings(slug, {
       status: status === 'all' ? undefined : (status as AgendaBooking['status']),
     })
   }

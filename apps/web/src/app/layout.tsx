@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Brygada_1918, Schibsted_Grotesk } from 'next/font/google'
 import './globals.css'
 import NavBar from '@/components/NavBar'
+import { ThemeProvider } from '@/components/ThemeProvider'
 import { getCurrentUser } from '@/lib/auth'
 
 const displayFont = Brygada_1918({
@@ -31,10 +32,12 @@ export default async function RootLayout({
   const user = await getCurrentUser()
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${displayFont.variable} ${bodyFont.variable} font-sans bg-bridge-bg min-h-screen antialiased`}>
-        <NavBar user={user} />
-        {children}
+        <ThemeProvider>
+          <NavBar user={user} />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   )

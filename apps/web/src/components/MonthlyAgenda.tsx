@@ -89,7 +89,7 @@ export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Pr
   return (
     <>
       {/* Month navigator */}
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-3">
           <button
             onClick={() => nav(shiftMonth(monthStart, -1))}
@@ -113,7 +113,7 @@ export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Pr
       </div>
 
       {/* Calendar grid */}
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-3 mb-3">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm p-3 mb-3">
         <div className="grid grid-cols-7 gap-1 mb-1.5">
           {DAY_LABELS.map((d, i) => (
             <div key={i} className="text-center text-micro font-bold text-bridge-muted uppercase">{d}</div>
@@ -151,7 +151,7 @@ export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Pr
 
       {/* Stats */}
       {activeBookings.length > 0 && (
-        <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-4 space-y-2 text-body">
+        <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm p-4 space-y-2 text-body">
           <p className="text-caption font-semibold text-bridge-muted uppercase tracking-widest mb-2">Summary</p>
           <div className="flex justify-between"><span className="text-bridge-muted">Total bookings</span><span className="font-semibold text-bridge-heading">{activeBookings.length}</span></div>
           <div className="flex justify-between"><span className="text-bridge-muted">Total revenue</span><span className="font-semibold text-bridge-heading">฿{totalRevenue.toLocaleString()}</span></div>

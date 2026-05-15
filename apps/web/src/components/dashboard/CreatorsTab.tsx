@@ -34,7 +34,7 @@ interface Props {
 export default function CreatorsTab({ pendingRequests, myCreators, creatorRollups }: Props) {
   if (pendingRequests.length === 0 && myCreators.length === 0 && creatorRollups.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-bridge-border/60 p-12 text-center">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-12 text-center">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-surface mb-3">
           <Inbox size={20} className="text-bridge-muted" />
         </div>
@@ -144,7 +144,7 @@ function PendingRequestCard({ request }: { request: PendingLinkRequest }) {
           href={request.link.contentUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-2 mb-3 px-3 py-2 bg-white border border-bridge-border rounded-button text-caption text-bridge-secondary hover:border-bridge-accent-light transition-colors"
+          className="flex items-center gap-2 mb-3 px-3 py-2 bg-bridge-card border border-bridge-border rounded-button text-caption text-bridge-secondary hover:border-bridge-accent-light transition-colors"
         >
           {request.link.platform && <PlatformIcon platform={request.link.platform} />}
           <span className="font-mono truncate flex-1">{request.link.contentUrl}</span>
@@ -175,7 +175,7 @@ function PendingRequestCard({ request }: { request: PendingLinkRequest }) {
 function MyCreatorCard({ entry }: { entry: MyCreatorEntry }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-card overflow-hidden">
+    <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-card overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
         className="w-full p-4 flex items-center gap-3 text-left active:bg-bridge-surface transition-colors"
@@ -210,7 +210,7 @@ function MyCreatorCard({ entry }: { entry: MyCreatorEntry }) {
               href={entry.link.contentUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-3 py-2 bg-white border border-bridge-border rounded-button text-caption text-bridge-secondary hover:border-bridge-accent-light transition-colors"
+              className="flex items-center gap-2 px-3 py-2 bg-bridge-card border border-bridge-border rounded-button text-caption text-bridge-secondary hover:border-bridge-accent-light transition-colors"
             >
               {entry.link.platform && <PlatformIcon platform={entry.link.platform} />}
               <span className="font-mono truncate flex-1">View their content</span>
@@ -225,7 +225,7 @@ function MyCreatorCard({ entry }: { entry: MyCreatorEntry }) {
                   href={s.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 bg-white border border-bridge-border hover:border-bridge-accent-light px-2.5 py-1.5 rounded-full text-caption font-medium text-bridge-secondary transition-colors"
+                  className="flex items-center gap-1.5 bg-bridge-card border border-bridge-border hover:border-bridge-accent-light px-2.5 py-1.5 rounded-full text-caption font-medium text-bridge-secondary transition-colors"
                 >
                   <PlatformIcon platform={s.platform} />
                   {platformLabel(s.platform)}
@@ -235,7 +235,7 @@ function MyCreatorCard({ entry }: { entry: MyCreatorEntry }) {
           )}
           <Link
             href={`/${entry.creator.slug}`}
-            className="block text-center w-full py-2.5 rounded-button border border-bridge-border text-bridge-text text-label hover:bg-white transition-colors"
+            className="block text-center w-full py-2.5 rounded-button border border-bridge-border text-bridge-text text-label hover:bg-bridge-card transition-colors"
           >
             View full profile →
           </Link>
@@ -249,7 +249,7 @@ function RollupRow({ rollup }: { rollup: CreatorRollup }) {
   return (
     <Link
       href={`/dashboard/creator/${rollup.slug}`}
-      className="flex items-center justify-between bg-white rounded-2xl border border-bridge-border/60 p-4 shadow-card hover:shadow-card-hover transition-shadow group"
+      className="flex items-center justify-between bg-bridge-card rounded-2xl border border-bridge-border/60 p-4 shadow-card hover:shadow-card-hover transition-shadow group"
     >
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-bridge-heading text-body">{rollup.handle}</p>

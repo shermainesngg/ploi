@@ -23,7 +23,7 @@ export default function BookingsList({ bookings, userEmail }: { bookings: RawBoo
       <p className="text-bridge-muted text-sm mt-1 px-1">Booked under {userEmail}</p>
 
       {bookings.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-bridge-border/60 p-8 mt-6 text-center">
+        <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-8 mt-6 text-center">
           <p className="text-bridge-muted text-sm mb-4">No bookings yet.</p>
           <Link href="/" className="text-bridge-accent font-semibold text-sm hover:underline">Browse places →</Link>
         </div>
@@ -82,7 +82,7 @@ function BookingRow({ booking, canChange }: { booking: RawBooking; canChange: bo
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden">
         <Link href={`/booking-confirmed/${booking.id}`} className="block p-4 hover:bg-bridge-surface/50 transition-colors">
           <div className="flex items-start justify-between gap-3 mb-2">
             <div className="min-w-0 flex-1">

@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Sparkles, Store, ArrowRight } from 'lucide-react'
+import { Megaphone, Store, ArrowRight } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 
 export const metadata = {
@@ -11,7 +11,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-bridge-bg flex flex-col items-center justify-center px-5 py-16">
       <Card className="max-w-sm w-full p-6 sm:p-8">
         <div className="text-center mb-10">
-          <span className="font-display text-sm font-bold text-bridge-accent">BRIDGE</span>
+          <span className="font-display text-sm font-bold text-bridge-heading">BRIDGE</span>
           <h1 className="font-display text-heading text-bridge-heading mt-6 leading-tight">I am a…</h1>
           <p className="text-bridge-muted text-body mt-2">Pick the path that fits you.</p>
         </div>
@@ -19,10 +19,10 @@ export default function SignupPage() {
         <div className="space-y-3">
           <Link
             href="/onboard/creator"
-            className="flex items-start gap-4 bg-white rounded-card border-2 border-bridge-accent-soft hover:border-bridge-accent hover:shadow-card-hover active:scale-[0.99] transition-all duration-200 p-5 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent focus-visible:ring-offset-2"
+            className="flex items-start gap-4 bg-bridge-card rounded-card border-2 border-bridge-accent-soft hover:border-bridge-accent hover:shadow-card-hover transition-all duration-200 p-5 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent focus-visible:ring-offset-2"
           >
             <div className="w-11 h-11 rounded-lg bg-bridge-accent-wash flex items-center justify-center flex-shrink-0 text-bridge-accent">
-              <Sparkles size={20} />
+              <Megaphone size={20} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-bridge-heading text-body">A creator looking to earn</p>
@@ -33,7 +33,7 @@ export default function SignupPage() {
 
           <Link
             href="/onboard/business"
-            className="flex items-start gap-4 bg-white rounded-card border-2 border-bridge-border hover:border-bridge-heading hover:shadow-card-hover active:scale-[0.99] transition-all duration-200 p-5 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent focus-visible:ring-offset-2"
+            className="flex items-start gap-4 bg-bridge-card rounded-card border-2 border-bridge-border hover:border-bridge-heading hover:shadow-card-hover transition-all duration-200 p-5 group cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent focus-visible:ring-offset-2"
           >
             <div className="w-11 h-11 rounded-lg bg-bridge-surface flex items-center justify-center flex-shrink-0 text-bridge-secondary">
               <Store size={20} />

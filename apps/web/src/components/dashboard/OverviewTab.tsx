@@ -95,7 +95,7 @@ export default function OverviewTab({
         </div>
 
         {todayAgenda.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-bridge-border/60 p-8 text-center">
+          <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-8 text-center">
             <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-surface mb-3">
               <Sparkles size={20} className="text-bridge-muted" />
             </div>
@@ -128,7 +128,7 @@ function Kpi({
 }) {
   return (
     <div className={`rounded-2xl border p-4 shadow-card ${
-      highlight ? 'bg-amber-50 border-amber-200' : 'bg-white border-bridge-border/60'
+      highlight ? 'bg-amber-50 border-amber-200' : 'bg-bridge-card border-bridge-border/60'
     }`}>
       <div className={`flex items-center gap-2 mb-2 ${highlight ? 'text-amber-700' : 'text-bridge-muted'}`}>
         {icon}

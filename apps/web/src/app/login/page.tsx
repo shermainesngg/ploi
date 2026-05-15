@@ -51,7 +51,7 @@ function LoginInner() {
           <ArrowLeft size={12} /> Back
         </Link>
 
-        <span className="font-display text-sm font-bold text-bridge-accent">BRIDGE</span>
+        <span className="font-display text-sm font-bold text-bridge-heading">BRIDGE</span>
 
         {sent ? (
           <div className="mt-10 text-center">

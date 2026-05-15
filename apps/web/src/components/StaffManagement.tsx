@@ -98,7 +98,7 @@ export default function StaffManagement({
   return (
     <div className="min-h-screen bg-bridge-bg">
       <div className="max-w-2xl mx-auto pb-24">
-        <div className="px-5 pt-8 pb-6 bg-white border-b border-bridge-border/60">
+        <div className="px-5 pt-8 pb-6 bg-bridge-card border-b border-bridge-border/60">
           <Link
             href={`/dashboard/business/${businessSlug}`}
             className="flex items-center gap-1 text-bridge-muted text-xs mb-3 hover:text-bridge-secondary"
@@ -158,7 +158,7 @@ function StaffCard({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-4 mb-3">
+    <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm p-4 mb-3">
       <button onClick={onEdit} className="w-full text-left">
         <div className="flex items-start gap-3">
           <div className="w-12 h-12 rounded-xl flex-shrink-0 overflow-hidden bg-bridge-surface flex items-center justify-center">
@@ -361,7 +361,7 @@ function StaffEditor({
   return (
     <div className="min-h-screen bg-bridge-bg">
       <div className="max-w-2xl mx-auto pb-32">
-        <div className="px-5 pt-8 pb-6 bg-white border-b border-bridge-border/60">
+        <div className="px-5 pt-8 pb-6 bg-bridge-card border-b border-bridge-border/60">
           <button
             onClick={onClose}
             className="flex items-center gap-1 text-bridge-muted text-xs mb-3 hover:text-bridge-secondary"
@@ -419,12 +419,12 @@ function StaffEditor({
                     className={`w-full text-left flex items-center gap-3 p-3 rounded-2xl border-2 transition-all active:scale-[0.99] ${
                       on
                         ? 'border-bridge-accent bg-bridge-accent-wash'
-                        : 'border-bridge-border bg-white hover:border-bridge-accent-light'
+                        : 'border-bridge-border bg-bridge-card hover:border-bridge-accent-light'
                     }`}
                   >
                     <div
                       className={`w-5 h-5 rounded-md flex-shrink-0 flex items-center justify-center ${
-                        on ? 'bg-bridge-accent' : 'border-2 border-bridge-border-strong bg-white'
+                        on ? 'bg-bridge-accent' : 'border-2 border-bridge-border-strong bg-bridge-card'
                       }`}
                     >
                       {on && <Check size={13} className="text-white" strokeWidth={3} />}
@@ -474,14 +474,14 @@ function StaffEditor({
                         type="time"
                         value={hours[dow].start}
                         onChange={(e) => setDay(dow, { start: e.target.value })}
-                        className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-white"
+                        className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-bridge-card"
                       />
                       <span className="text-bridge-muted text-xs">--</span>
                       <input
                         type="time"
                         value={hours[dow].end}
                         onChange={(e) => setDay(dow, { end: e.target.value })}
-                        className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-white"
+                        className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-bridge-card"
                       />
                     </div>
                   )}
@@ -521,12 +521,12 @@ function StaffEditor({
             <div className="bg-bridge-accent-wash rounded-2xl p-3 space-y-2 border border-bridge-accent-light">
               <input
                 type="date" value={newBlockDate} onChange={(e) => setNewBlockDate(e.target.value)}
-                className="w-full border border-bridge-border rounded-xl px-3 py-2 text-sm bg-white"
+                className="w-full border border-bridge-border rounded-xl px-3 py-2 text-sm bg-bridge-card"
               />
               <input
                 type="text" value={newBlockReason} onChange={(e) => setNewBlockReason(e.target.value)}
                 placeholder="Reason (optional, e.g. Sick day)"
-                className="w-full border border-bridge-border rounded-xl px-3 py-2 text-sm bg-white"
+                className="w-full border border-bridge-border rounded-xl px-3 py-2 text-sm bg-bridge-card"
               />
               <button
                 type="button"
@@ -541,7 +541,7 @@ function StaffEditor({
         )}
 
         {/* Save bar (sticky bottom) */}
-        <div className="fixed bottom-0 left-0 right-0 z-20 max-w-2xl mx-auto px-4 py-3 bg-white border-t border-bridge-border">
+        <div className="fixed bottom-0 left-0 right-0 z-20 max-w-2xl mx-auto px-4 py-3 bg-bridge-card border-t border-bridge-border">
           {error && <p className="text-red-600 text-xs mb-2 text-center">{error}</p>}
           <div className="flex gap-2">
             <button
@@ -580,7 +580,7 @@ function Section({
         <h2 className="text-xs font-semibold text-bridge-muted uppercase tracking-widest">{title}</h2>
         {action}
       </div>
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-4 space-y-4">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm p-4 space-y-4">
         {children}
       </div>
     </div>

@@ -3,10 +3,65 @@
 @tailwind utilities;
 
 :root {
-  --background: #faf8f5;
-  --foreground: #2a2320;
-  --accent: #c05636;
-  --accent-soft: #fdf5f2;
+  --bridge-accent: #DC2751;
+  --bridge-accent-dark: #B81E42;
+  --bridge-accent-light: #F5C6D0;
+  --bridge-accent-soft: #FDF0F3;
+  --bridge-accent-wash: #FAF0F2;
+
+  --bridge-pop: var(--bridge-accent);
+  --bridge-pop-light: var(--bridge-accent-soft);
+  --bridge-pop-soft: var(--bridge-accent);
+
+  --bridge-bg: #faf8f5;
+  --bridge-surface: #f2ede7;
+  --bridge-card: #ffffff;
+  --bridge-border: #e3dbd2;
+  --bridge-border-strong: #d1c7bb;
+  --bridge-muted: #8f8279;
+  --bridge-secondary: #6b5e54;
+  --bridge-text: #3d3530;
+  --bridge-heading: #2a2320;
+
+  --bridge-sage: #7a8f72;
+  --bridge-sage-light: #e8ede6;
+
+  --bridge-hero-gradient: linear-gradient(135deg, #DC2751, #F97316);
+
+  --shadow-card: 0 1px 3px rgba(42, 35, 32, 0.06), 0 1px 2px rgba(42, 35, 32, 0.04);
+  --shadow-card-hover: 0 4px 16px rgba(42, 35, 32, 0.08);
+  --shadow-modal: 0 -4px 24px rgba(42, 35, 32, 0.1);
+}
+
+.dark {
+  --bridge-accent: #E5436B;
+  --bridge-accent-dark: #F06688;
+  --bridge-accent-light: #3A1C24;
+  --bridge-accent-soft: #221418;
+  --bridge-accent-wash: #1C1215;
+
+  --bridge-pop: var(--bridge-accent);
+  --bridge-pop-light: var(--bridge-accent-soft);
+  --bridge-pop-soft: var(--bridge-accent);
+
+  --bridge-bg: #161311;
+  --bridge-surface: #1e1a17;
+  --bridge-card: #211d1a;
+  --bridge-border: #332c26;
+  --bridge-border-strong: #443b33;
+  --bridge-muted: #7a7068;
+  --bridge-secondary: #a09488;
+  --bridge-text: #ddd5cc;
+  --bridge-heading: #f0eae4;
+
+  --bridge-sage: #8aa080;
+  --bridge-sage-light: #1e2a1c;
+
+  --bridge-hero-gradient: linear-gradient(135deg, #E5436B, #FB923C);
+
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+  --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-modal: 0 -4px 24px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -20,14 +75,15 @@ body {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bridge-bg);
+  color: var(--bridge-text);
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
 }
 
 ::selection {
-  background-color: #f9e7e0;
-  color: #2a2320;
+  background-color: var(--bridge-accent-light);
+  color: var(--bridge-heading);
 }
 
 html {

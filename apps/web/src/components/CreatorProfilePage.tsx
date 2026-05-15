@@ -33,30 +33,21 @@ function CreatorHero({
   const city = cityMatch ? cityMatch[0] : null
 
   return (
-    <div className="relative overflow-hidden border-b border-bridge-border/30">
-      <div className="absolute inset-0 bg-gradient-to-br from-bridge-accent-wash via-white to-bridge-bg" />
-      <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-bridge-accent/[0.03]" />
+    <div className="border-b border-bridge-border/40">
+      <div className="relative px-5 pt-16 pb-12 sm:pt-24 sm:pb-14 max-w-lg mx-auto text-center">
 
-      <div className="relative px-5 pt-14 pb-10 sm:pt-20 sm:pb-12 max-w-3xl mx-auto">
-        <div className="mb-8">
-          <span className="font-display text-sm font-bold text-bridge-accent">BRIDGE</span>
-        </div>
+        <Avatar
+          initials={creator.avatarInitials}
+          color={creator.avatarColor}
+          size="lg"
+          className="w-24 h-24 rounded-full text-3xl shadow-md mx-auto ring-4 ring-bridge-card ring-offset-2 ring-offset-bridge-bg"
+        />
 
-        <div className="flex items-start gap-5">
-          <Avatar
-            initials={creator.avatarInitials}
-            color={creator.avatarColor}
-            size="lg"
-            className="w-20 h-20 rounded-2xl text-2xl shadow-sm"
-          />
-          <div className="flex-1 min-w-0">
-            <h1 className="font-display text-heading text-bridge-heading leading-tight">{creator.displayName}</h1>
-            <p className="text-bridge-accent font-semibold text-label mt-1 mb-3">{creator.handle}</p>
-            <p className="text-bridge-muted text-body leading-relaxed max-w-prose">{creator.bio}</p>
-          </div>
-        </div>
+        <h1 className="font-display text-heading text-bridge-heading leading-tight mt-5">{creator.displayName}</h1>
+        <p className="text-bridge-accent font-semibold text-label mt-1">{creator.handle}</p>
+        <p className="text-bridge-muted text-body leading-relaxed mt-3 max-w-sm mx-auto">{creator.bio}</p>
 
-        <div className="mt-6 flex flex-wrap items-center gap-2.5">
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
           <span className="bg-bridge-surface text-bridge-secondary font-semibold text-caption px-3 py-1.5 rounded-badge">
             {placesCount} place{placesCount !== 1 ? 's' : ''} recommended
           </span>
@@ -68,14 +59,14 @@ function CreatorHero({
         </div>
 
         {creator.socials.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
             {creator.socials.map((s) => (
               <a
                 key={s.platform + s.url}
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 bg-bridge-heading text-white hover:bg-bridge-secondary active:scale-[0.97] transition-all px-3 py-1.5 rounded-badge text-caption font-semibold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent focus-visible:ring-offset-2"
+                className="flex items-center gap-1.5 bg-bridge-heading text-white hover:bg-bridge-secondary active:scale-[0.97] transition-all px-4 py-2 rounded-full text-caption font-semibold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent focus-visible:ring-offset-2"
               >
                 <PlatformIcon platform={s.platform} />
                 {PlatformLabel(s.platform)}
@@ -190,8 +181,8 @@ export default function CreatorProfilePage({
           Powered by <span className="font-display font-bold text-bridge-accent">BRIDGE</span>
         </p>
         <div className="mt-4 flex items-center justify-center gap-6">
-          <Link href="/onboard/business" className="text-caption text-bridge-muted hover:text-bridge-text transition-colors cursor-pointer">List your business</Link>
-          <Link href="/onboard/creator" className="text-caption text-bridge-muted hover:text-bridge-text transition-colors cursor-pointer">Join as creator</Link>
+          <Link href="/onboard/business" className="text-caption text-bridge-muted hover:text-bridge-accent transition-colors cursor-pointer">List your business</Link>
+          <Link href="/onboard/creator" className="text-caption text-bridge-muted hover:text-bridge-accent transition-colors cursor-pointer">Join as creator</Link>
         </div>
       </div>
     </div>

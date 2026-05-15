@@ -11,29 +11,20 @@ export default async function Home() {
 
   return (
     <div className="min-h-screen bg-bridge-bg">
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b border-bridge-border/30">
-        <div className="absolute inset-0 bg-gradient-to-br from-bridge-accent-wash via-bridge-bg to-bridge-bg" />
-        <div className="absolute -right-24 -top-24 w-[420px] h-[420px] rounded-full bg-bridge-accent/[0.035]" />
-        <div className="absolute right-16 bottom-12 w-40 h-40 rounded-full border border-bridge-accent/[0.08] hidden sm:block" />
-
-        <div className="relative max-w-5xl mx-auto px-5 pt-16 pb-14 sm:pt-28 sm:pb-24 lg:pt-36 lg:pb-28">
-          <p className="text-micro uppercase tracking-[0.25em] text-bridge-muted mb-8 sm:mb-10">
-            Bangkok&rsquo;s creator-curated bookings
-          </p>
-          <h1 className="font-display text-display text-bridge-heading max-w-2xl">
-            Book local experiences{' '}
-            <span className="text-bridge-accent">recommended by creators</span>{' '}
-            you trust.
+      {/* Hero — editorial, left-aligned, no decorative elements */}
+      <section className="border-b border-bridge-border/40">
+        <div className="max-w-5xl mx-auto px-5 pt-14 pb-12 sm:pt-24 sm:pb-20 lg:pt-32 lg:pb-24">
+          <h1 className="font-display text-display text-bridge-heading max-w-xl">
+            Book local experiences recommended by creators you trust<span className="text-bridge-accent">.</span>
           </h1>
-          <p className="text-body-lg text-bridge-muted max-w-md mt-6 mb-12">
-            See it on TikTok. Tap. Book. Done.
+          <p className="text-body-lg text-bridge-secondary max-w-sm mt-5 mb-10">
+            Discover Bangkok&rsquo;s best salons, spas, and studios through the creators you already follow.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 max-w-sm">
             <Link href="#featured" className="flex-1">
               <Button size="lg" className="w-full gap-1.5 cursor-pointer">
-                Find a place <ArrowRight size={16} />
+                Browse places <ArrowRight size={16} />
               </Button>
             </Link>
             <Link href="/signup" className="flex-1">
@@ -46,24 +37,22 @@ export default async function Home() {
       </section>
 
       {/* Featured businesses */}
-      <section id="featured" className="max-w-5xl mx-auto px-4 sm:px-6 mt-14 sm:mt-20">
+      <section id="featured" className="max-w-5xl mx-auto px-5 sm:px-6 mt-14 sm:mt-20">
         <AnimateOnScroll>
-          <div className="flex items-baseline justify-between mb-8 px-1">
-            <div>
-              <h2 className="font-display text-heading text-bridge-heading">
-                Featured places
-              </h2>
-              <p className="text-caption text-bridge-muted mt-1">Handpicked by our creator community</p>
-            </div>
+          <div className="mb-8">
+            <h2 className="font-display text-heading text-bridge-heading">
+              Featured places
+            </h2>
+            <p className="text-body text-bridge-muted mt-1.5">Handpicked by our creator community</p>
           </div>
         </AnimateOnScroll>
 
         {featured.length === 0 ? (
-          <p className="text-bridge-muted text-body text-center py-16">No businesses listed yet.</p>
+          <p className="text-bridge-muted text-body py-16">No businesses listed yet.</p>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-5">
             {featured.map((b, i) => (
-              <AnimateOnScroll key={b.id} delay={i * 80}>
+              <AnimateOnScroll key={b.id} delay={i * 60}>
                 <FeaturedCard business={b} />
               </AnimateOnScroll>
             ))}
@@ -71,58 +60,56 @@ export default async function Home() {
         )}
       </section>
 
-      {/* How it works */}
-      <section className="max-w-5xl mx-auto mt-20 sm:mt-32 px-4 sm:px-6">
+      {/* How it works — editorial layout, not three equal columns */}
+      <section className="max-w-5xl mx-auto mt-20 sm:mt-32 px-5 sm:px-6">
         <AnimateOnScroll>
-          <div className="max-w-2xl mb-12 sm:mb-16">
-            <p className="text-micro uppercase tracking-[0.25em] text-bridge-accent font-bold mb-4">How it works</p>
-            <h2 className="font-display text-heading text-bridge-heading">
-              From content to confirmed
-              <br className="hidden sm:inline" /> in three steps
-            </h2>
-          </div>
+          <h2 className="font-display text-heading text-bridge-heading max-w-md mb-12 sm:mb-16">
+            From a creator&rsquo;s recommendation to your confirmed booking.
+          </h2>
         </AnimateOnScroll>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-12">
-          <AnimateOnScroll delay={0}>
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-y-10 sm:gap-x-8">
+          <AnimateOnScroll delay={0} className="sm:col-span-4">
             <HowStep
-              n="01"
-              title="Discover via creators"
-              body="Find spots through TikToks and Reels from creators you already follow and trust."
+              num="01"
+              title="Discover"
+              body="A creator you follow shares a salon, spa, or studio they genuinely love. You tap their link."
             />
           </AnimateOnScroll>
-          <AnimateOnScroll delay={120}>
+          <AnimateOnScroll delay={80} className="sm:col-span-4">
             <HowStep
-              n="02"
-              title="Book instantly"
-              body="One tap from the creator's link to a confirmed appointment. Pick your time, done."
+              num="02"
+              title="Book"
+              body="Pick your service, choose a time, confirm. The whole thing takes about thirty seconds."
             />
           </AnimateOnScroll>
-          <AnimateOnScroll delay={240}>
+          <AnimateOnScroll delay={160} className="sm:col-span-4">
             <HowStep
-              n="03"
-              title="Creators earn"
-              body="The creator who recommended the spot earns a commission. Everyone wins."
+              num="03"
+              title="Everyone wins"
+              body="You get a great experience. The business gets a customer. The creator earns a commission."
             />
           </AnimateOnScroll>
         </div>
       </section>
 
-      {/* CTA */}
-      <AnimateOnScroll as="section" className="max-w-5xl mx-auto mt-20 sm:mt-32 px-4 sm:px-6">
-        <div className="bg-bridge-heading rounded-2xl p-8 sm:p-14 relative overflow-hidden">
-          <div className="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-bridge-accent/10" />
-          <div className="relative">
-            <p className="text-micro uppercase tracking-[0.25em] text-bridge-accent-light font-bold mb-4">Get started</p>
-            <h3 className="font-display text-heading text-white leading-tight max-w-md">
-              Are you a business or creator?
+      {/* CTA — warm, not dark-card-with-circle */}
+      <AnimateOnScroll as="section" className="max-w-5xl mx-auto mt-20 sm:mt-32 px-5 sm:px-6">
+        <div className="pt-12 sm:pt-16 relative">
+          <div className="flex items-center gap-3 mb-12 sm:mb-16">
+            <div className="w-8 h-0.5 bg-bridge-accent rounded-full" />
+            <div className="flex-1 h-px bg-bridge-border/60" />
+          </div>
+          <div className="max-w-lg">
+            <h3 className="font-display text-heading text-bridge-heading leading-tight">
+              Are you a business or creator<span className="text-bridge-accent">?</span>
             </h3>
-            <p className="text-bridge-border text-body mt-3 mb-10 max-w-sm">
-              Get on BRIDGE in under 10 minutes. No setup fees, no commitment.
+            <p className="text-bridge-secondary text-body mt-3 mb-8">
+              Get on BRIDGE in under ten minutes. No setup fees.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 max-w-md">
               <Link href="/onboard/business" className="flex-1">
-                <Button variant="secondary" size="lg" className="w-full bg-white text-bridge-heading border-white hover:bg-bridge-surface cursor-pointer">
+                <Button variant="secondary" size="lg" className="w-full cursor-pointer">
                   List your business
                 </Button>
               </Link>
@@ -141,7 +128,7 @@ export default async function Home() {
         <div className="border-t border-bridge-border/60 pt-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div>
-              <span className="font-display text-lg font-bold text-bridge-accent">BRIDGE</span>
+              <span className="font-display text-lg font-bold text-bridge-heading">BRIDGE<span className="text-bridge-accent">.</span></span>
               <p className="text-caption text-bridge-muted mt-1">Bangkok&rsquo;s creator-curated bookings</p>
             </div>
             <div className="flex items-center gap-6 text-caption text-bridge-muted">
@@ -173,13 +160,13 @@ function FeaturedCard({ business }: { business: any }) {
           {business.coverPhotoUrl ? (
             <>
               <img src={business.coverPhotoUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
             </>
           ) : (
             <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${from}, ${to})` }} />
           )}
           <div className="absolute top-3 left-3">
-            <span className="bg-white/90 backdrop-blur-sm text-bridge-secondary text-micro px-2.5 py-1 rounded-badge">
+            <span className="bg-white/90 backdrop-blur-sm text-bridge-secondary text-micro px-2.5 py-1 rounded-badge font-medium border-l-2 border-bridge-accent">
               {business.category}
             </span>
           </div>
@@ -213,13 +200,13 @@ function FeaturedCard({ business }: { business: any }) {
   )
 }
 
-function HowStep({ n, title, body }: { n: string; title: string; body: string }) {
+function HowStep({ num, title, body }: { num: string; title: string; body: string }) {
   return (
     <div>
-      <span className="font-display text-caption font-bold text-bridge-accent tracking-wide">{n}</span>
-      <div className="w-8 h-px bg-bridge-accent/30 mt-2.5 mb-4" />
-      <p className="font-semibold text-bridge-heading text-title mb-2">{title}</p>
-      <p className="text-bridge-muted text-body leading-relaxed max-w-xs">{body}</p>
+      <span className="text-bridge-accent font-display font-bold text-caption tracking-wider">{num}</span>
+      <div className="w-6 h-0.5 bg-bridge-accent/40 rounded-full mt-1.5 mb-3" />
+      <p className="font-display font-semibold text-bridge-heading text-title mb-2">{title}</p>
+      <p className="text-bridge-muted text-body leading-relaxed">{body}</p>
     </div>
   )
 }

@@ -50,7 +50,7 @@ export default function WeeklyAgenda({ bookings, weekStart, businessSlug }: Prop
   return (
     <>
       {/* Week navigator */}
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-3">
           <button
             onClick={() => nav(shiftDate(weekStart, -7))}
@@ -86,7 +86,7 @@ export default function WeeklyAgenda({ bookings, weekStart, businessSlug }: Prop
             <button
               key={date}
               onClick={() => goToDay(date)}
-              className={`w-full text-left bg-white rounded-xl border ${isToday ? 'border-bridge-accent-light' : 'border-bridge-border/60'} shadow-sm p-3 hover:shadow-md transition-shadow flex items-center gap-3`}
+              className={`w-full text-left bg-bridge-card rounded-xl border ${isToday ? 'border-bridge-accent-light' : 'border-bridge-border/60'} shadow-sm p-3 hover:shadow-md transition-shadow flex items-center gap-3`}
             >
               <div className="flex-shrink-0 w-12 text-center">
                 <p className={`text-micro uppercase tracking-wide font-semibold ${isToday ? 'text-bridge-accent' : 'text-bridge-muted'}`}>

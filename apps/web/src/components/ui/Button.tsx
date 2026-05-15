@@ -6,13 +6,13 @@ import { Loader2 } from 'lucide-react'
 
 const variants = {
   primary:
-    'bg-bridge-accent text-white hover:bg-bridge-accent-dark active:scale-[0.98]',
+    'bg-bridge-accent text-white hover:bg-bridge-accent-dark',
   secondary:
-    'border border-bridge-border-strong text-bridge-text hover:bg-bridge-surface active:scale-[0.98]',
+    'border border-bridge-border-strong text-bridge-text hover:bg-bridge-surface',
   ghost:
-    'text-bridge-secondary hover:bg-bridge-surface active:scale-[0.98]',
+    'text-bridge-secondary hover:bg-bridge-surface',
   danger:
-    'bg-red-600 text-white hover:bg-red-700 active:scale-[0.98]',
+    'bg-red-600 text-white hover:bg-red-700',
 } as const
 
 const sizes = {

@@ -76,7 +76,7 @@ export default function WalkinModal({
     <>
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={onClose} />
       <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto animate-slide-up">
-        <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-bridge-border/60">
             <h2 className="font-bold text-bridge-heading text-lg">New walk-in</h2>
             <button onClick={onClose} className="w-8 h-8 rounded-full bg-bridge-surface flex items-center justify-center">
@@ -97,7 +97,7 @@ export default function WalkinModal({
                     className={`w-full text-left p-2.5 rounded-xl border transition-all ${
                       serviceId === s.id
                         ? 'border-bridge-accent bg-bridge-accent-wash'
-                        : 'border-bridge-border bg-white hover:border-bridge-accent-light'
+                        : 'border-bridge-border bg-bridge-card hover:border-bridge-accent-light'
                     }`}
                   >
                     <div className="flex justify-between items-center">

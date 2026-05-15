@@ -16,12 +16,12 @@ export default function DevComponentsPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-8 px-4 space-y-section">
-      <h1 className="text-display text-bridge-stone">Design System</h1>
+      <h1 className="text-display text-bridge-heading">Design System</h1>
       <p className="text-body text-bridge-muted">All shared UI primitives with variants</p>
 
       {/* Buttons */}
       <section className="space-y-4">
-        <h2 className="text-heading text-bridge-stone">Button</h2>
+        <h2 className="text-heading text-bridge-heading">Button</h2>
         <div className="flex flex-wrap gap-3">
           <Button variant="primary" size="sm">Primary SM</Button>
           <Button variant="primary" size="md">Primary MD</Button>
@@ -40,7 +40,7 @@ export default function DevComponentsPage() {
 
       {/* Cards */}
       <section className="space-y-4">
-        <h2 className="text-heading text-bridge-stone">Card</h2>
+        <h2 className="text-heading text-bridge-heading">Card</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <Card variant="default">
             <p className="text-label">Default Card</p>
@@ -63,7 +63,7 @@ export default function DevComponentsPage() {
 
       {/* Inputs */}
       <section className="space-y-4">
-        <h2 className="text-heading text-bridge-stone">Input</h2>
+        <h2 className="text-heading text-bridge-heading">Input</h2>
         <div className="max-w-md space-y-4">
           <Input label="Name" placeholder="Enter your name" />
           <Input label="Search" placeholder="Search..." icon={<Search size={16} />} />
@@ -75,7 +75,7 @@ export default function DevComponentsPage() {
 
       {/* Badges */}
       <section className="space-y-4">
-        <h2 className="text-heading text-bridge-stone">Badge</h2>
+        <h2 className="text-heading text-bridge-heading">Badge</h2>
         <div className="flex flex-wrap gap-2">
           <Badge status="confirmed">Confirmed</Badge>
           <Badge status="pending">Pending</Badge>
@@ -94,7 +94,7 @@ export default function DevComponentsPage() {
 
       {/* Avatar */}
       <section className="space-y-4">
-        <h2 className="text-heading text-bridge-stone">Avatar</h2>
+        <h2 className="text-heading text-bridge-heading">Avatar</h2>
         <div className="flex items-center gap-3">
           <Avatar initials="SC" color="#e11d48" size="xs" />
           <Avatar initials="SC" color="#e11d48" size="sm" />
@@ -107,7 +107,7 @@ export default function DevComponentsPage() {
 
       {/* EmptyState */}
       <section className="space-y-4">
-        <h2 className="text-heading text-bridge-stone">EmptyState</h2>
+        <h2 className="text-heading text-bridge-heading">EmptyState</h2>
         <Card variant="default">
           <EmptyState
             icon={<Inbox size={48} />}
@@ -120,7 +120,7 @@ export default function DevComponentsPage() {
 
       {/* Skeleton */}
       <section className="space-y-4">
-        <h2 className="text-heading text-bridge-stone">Skeleton</h2>
+        <h2 className="text-heading text-bridge-heading">Skeleton</h2>
         <div className="space-y-3 max-w-md">
           <Skeleton className="h-10 w-full rounded" />
           <div className="flex gap-3">
@@ -136,7 +136,7 @@ export default function DevComponentsPage() {
 
       {/* Modal */}
       <section className="space-y-4">
-        <h2 className="text-heading text-bridge-stone">Modal</h2>
+        <h2 className="text-heading text-bridge-heading">Modal</h2>
         <Button onClick={() => setModalOpen(true)}>Open Modal</Button>
         <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Example Modal">
           <div className="space-y-4">
@@ -152,7 +152,7 @@ export default function DevComponentsPage() {
 
       {/* Typography Scale */}
       <section className="space-y-4">
-        <h2 className="text-heading text-bridge-stone">Typography Scale</h2>
+        <h2 className="text-heading text-bridge-heading">Typography Scale</h2>
         <div className="space-y-2">
           <p className="text-display">Display (2rem / 900)</p>
           <p className="text-heading">Heading (1.5rem / 900)</p>

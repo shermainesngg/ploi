@@ -66,7 +66,7 @@ export default function DailyAgenda({ agenda, date, businessSlug, staff }: Props
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-3">
           <button
             onClick={() => go(shiftDate(date, -1))}
@@ -109,7 +109,7 @@ export default function DailyAgenda({ agenda, date, businessSlug, staff }: Props
       )}
 
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-bridge-border/60 p-8 text-center shadow-sm">
+        <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-8 text-center shadow-sm">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-bg mb-3">
             <Sparkles size={20} className="text-bridge-muted" />
           </div>
@@ -137,7 +137,7 @@ function FilterChip({
     <button
       onClick={onClick}
       className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-caption font-semibold border transition-colors ${
-        active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-white border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
+        active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
       }`}
     >
       {dotClass && <span className={`w-2 h-2 rounded-full ${dotClass}`} />}

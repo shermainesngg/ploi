@@ -86,7 +86,7 @@ export default function StaffSchedulePage({
                 href={`/staff/${staff.id}/schedule?view=${v}&date=${baseDate}`}
                 scroll={false}
                 className={`flex-1 text-center py-1.5 rounded-lg text-xs font-semibold capitalize transition-colors ${
-                  view === v ? 'bg-white text-bridge-heading shadow-sm' : 'text-bridge-muted hover:text-bridge-text'
+                  view === v ? 'bg-bridge-card text-bridge-heading shadow-sm' : 'text-bridge-muted hover:text-bridge-text'
                 }`}
               >
                 {v}
@@ -136,7 +136,7 @@ export default function StaffSchedulePage({
 
 function Header({ staff, businessName }: { staff: StaffMember; businessName: string | null }) {
   return (
-    <div className="px-5 pt-8 pb-6 bg-white border-b border-bridge-border/60">
+    <div className="px-5 pt-8 pb-6 bg-bridge-card border-b border-bridge-border/60">
       <span className="text-xs font-bold tracking-tight text-bridge-accent bg-bridge-accent-wash px-2.5 py-1 rounded-full">BRIDGE</span>
       <div className="flex items-start gap-3 mt-4">
         <div className="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden bg-bridge-surface flex items-center justify-center">
@@ -167,12 +167,12 @@ function Stats({
 }) {
   return (
     <div className="px-4 mt-4 grid grid-cols-2 gap-3">
-      <div className="bg-white rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
         <p className="text-[10px] uppercase tracking-wide font-bold text-bridge-muted">This week</p>
         <p className="text-2xl font-bold text-bridge-heading leading-none mt-1">{weekCount}</p>
         <p className="text-bridge-muted text-[11px] mt-1">appointment{weekCount !== 1 ? 's' : ''}</p>
       </div>
-      <div className="bg-white rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
         <p className="text-[10px] uppercase tracking-wide font-bold text-bridge-muted">Next up</p>
         {nextAppointment ? (
           <>
@@ -239,7 +239,7 @@ function WeekView({
   return (
     <>
       {/* Week strip */}
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-2.5 border-b border-bridge-border/60">
           <button
             onClick={() => navWeek(-1)}
@@ -364,7 +364,7 @@ function MonthView({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-2.5">
           <button
             onClick={() => navMonth(-1)}
@@ -382,7 +382,7 @@ function MonthView({
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-3">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm p-3">
         <div className="grid grid-cols-7 gap-1 mb-1.5">
           {DAY_LETTERS.map((d, i) => (
             <div key={i} className="text-center text-[10px] font-bold text-bridge-muted uppercase">{d}</div>
@@ -443,7 +443,7 @@ function DayView({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden mb-3">
         <div className="flex items-center justify-between px-3 py-2.5">
           <button
             onClick={() => nav(-1)}
@@ -525,7 +525,7 @@ function DayDetail({
       )}
 
       {bookings.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-bridge-border/60 p-8 text-center">
+        <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-8 text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-bg mb-3">
             <Sparkles size={20} className="text-bridge-muted" />
           </div>
@@ -534,7 +534,7 @@ function DayDetail({
       ) : (
         <div className="space-y-2">
           {bookings.map((b) => (
-            <div key={b.id} className="bg-white rounded-2xl border border-bridge-border/60 shadow-sm p-3">
+            <div key={b.id} className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm p-3">
               <div className="flex items-start gap-3">
                 <div className="text-right flex-shrink-0 w-14">
                   <p className="font-bold text-bridge-heading text-sm leading-none">{b.time}</p>

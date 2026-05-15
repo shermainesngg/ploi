@@ -108,7 +108,7 @@ function InfoStep({
             <button
               key={c} onClick={() => setCategory(c)}
               className={`px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
-                category === c ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border text-bridge-secondary bg-white hover:border-bridge-accent-light'
+                category === c ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border text-bridge-secondary bg-bridge-card hover:border-bridge-accent-light'
               }`}
             >
               {c}
@@ -210,12 +210,12 @@ function ServicesStep({
               <input
                 type="text" value={svc.name} onChange={(e) => updateService(svc.id, 'name', e.target.value)}
                 placeholder="Service name *"
-                className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm bg-white"
+                className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm bg-bridge-card"
               />
               <input
                 type="text" value={svc.description} onChange={(e) => updateService(svc.id, 'description', e.target.value)}
                 placeholder="Short description (optional)"
-                className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm bg-white"
+                className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm bg-bridge-card"
               />
               <div className="flex gap-2">
                 <div className="flex-1">
@@ -227,7 +227,7 @@ function ServicesStep({
                       <button
                         key={d} onClick={() => updateService(svc.id, 'duration', d)}
                         className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
-                          svc.duration === d ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border text-bridge-secondary bg-white'
+                          svc.duration === d ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border text-bridge-secondary bg-bridge-card'
                         }`}
                       >
                         {durationLabel(d)}
@@ -242,7 +242,7 @@ function ServicesStep({
                     <input
                       type="number" value={svc.price} onChange={(e) => updateService(svc.id, 'price', e.target.value)}
                       placeholder="0"
-                      className="w-full border border-bridge-border rounded-xl pl-7 pr-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm bg-white"
+                      className="w-full border border-bridge-border rounded-xl pl-7 pr-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm bg-bridge-card"
                     />
                   </div>
                 </div>
@@ -375,13 +375,13 @@ function DetailsStep({
                   <input
                     type="time" value={hours[d].start}
                     onChange={(e) => updateDay(d, { start: e.target.value })}
-                    className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-white"
+                    className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-bridge-card"
                   />
                   <span className="text-bridge-muted text-xs">–</span>
                   <input
                     type="time" value={hours[d].end}
                     onChange={(e) => updateDay(d, { end: e.target.value })}
-                    className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-white"
+                    className="border border-bridge-border rounded-md px-1.5 py-1 text-xs bg-bridge-card"
                   />
                 </div>
               )}

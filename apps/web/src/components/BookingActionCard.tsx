@@ -112,7 +112,7 @@ export default function BookingActionCard({
 
   return (
     <>
-      <div className="bg-white rounded-2xl border border-bridge-border/60 shadow-card overflow-hidden">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-card overflow-hidden">
         <button
           onClick={toggle}
           className="w-full text-left flex items-stretch gap-3 p-3 hover:bg-bridge-surface/50 transition-colors"
@@ -285,8 +285,8 @@ function ReassignChip({
         active
           ? 'bg-bridge-heading text-white border-bridge-heading'
           : dim
-            ? 'bg-white border-bridge-border text-bridge-muted hover:border-bridge-border-strong'
-            : 'bg-white border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
+            ? 'bg-bridge-card border-bridge-border text-bridge-muted hover:border-bridge-border-strong'
+            : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
       }`}
     >
       {dotClass && <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />}
@@ -308,7 +308,7 @@ function Btn({
   const styles = {
     primary: 'bg-bridge-accent text-white hover:bg-bridge-accent-dark',
     success: 'bg-green-600 text-white hover:bg-green-700',
-    ghost: 'border border-bridge-border text-bridge-secondary hover:bg-white',
+    ghost: 'border border-bridge-border text-bridge-secondary hover:bg-bridge-card',
     danger: 'border border-red-200 text-red-600 hover:bg-red-50',
   }[variant]
   return (

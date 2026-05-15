@@ -92,7 +92,7 @@ export default function RescheduleModal({
     <>
       <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={onClose} />
       <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto animate-slide-up">
-        <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden">
+        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-bridge-border/60">
             <div>
               {step === 'time' && (
@@ -127,7 +127,7 @@ export default function RescheduleModal({
                         key={d.toISOString()}
                         onClick={() => setSelectedDate(d)}
                         className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-2xl border-2 transition-all ${
-                          isSel ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border bg-white text-bridge-text hover:border-bridge-accent-light'
+                          isSel ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border bg-bridge-card text-bridge-text hover:border-bridge-accent-light'
                         }`}
                       >
                         <span className={`text-xs mb-1 ${isSel ? 'text-white/70' : 'text-bridge-muted'}`}>{DAY_NAMES[d.getDay()]}</span>
@@ -184,7 +184,7 @@ export default function RescheduleModal({
                               className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
                                 !available ? 'border-bridge-border/60 text-bridge-border-strong cursor-not-allowed bg-bridge-bg'
                                 : isSel ? 'border-bridge-accent bg-bridge-accent text-white'
-                                : 'border-bridge-border text-bridge-text bg-white hover:border-bridge-accent-light'
+                                : 'border-bridge-border text-bridge-text bg-bridge-card hover:border-bridge-accent-light'
                               }`}
                             >
                               {time}

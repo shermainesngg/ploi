@@ -112,14 +112,14 @@ export default function BusinessDashboard(props: Props) {
                   href={`/dashboard/business/${business.slug}?tab=${t.key}`}
                   scroll={false}
                   className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-micro font-semibold border transition-colors ${
-                    active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-white border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
+                    active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
                   }`}
                 >
                   {t.icon}
                   {t.label}
                   {badge !== null && (
                     <span className={`text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 ${
-                      active ? 'bg-white text-bridge-heading' : 'bg-amber-100 text-amber-800'
+                      active ? 'bg-bridge-card text-bridge-heading' : 'bg-amber-100 text-amber-800'
                     }`}>
                       {badge}
                     </span>
@@ -144,7 +144,7 @@ export default function BusinessDashboard(props: Props) {
               <button
                 onClick={connectStripe}
                 disabled={connecting}
-                className="w-full py-2.5 rounded-xl bg-white text-bridge-heading text-sm font-semibold hover:bg-bridge-surface disabled:opacity-50 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-bridge-card text-bridge-heading text-sm font-semibold hover:bg-bridge-surface disabled:opacity-50 transition-colors"
               >
                 {connecting ? 'Opening Stripe…' : 'Connect with Stripe'}
               </button>
@@ -193,7 +193,7 @@ export default function BusinessDashboard(props: Props) {
                     href={`/dashboard/business/${business.slug}?tab=calendar&view=${v}&date=${viewDate}`}
                     scroll={false}
                     className={`flex-1 text-center py-1.5 rounded-button text-caption font-semibold capitalize transition-colors ${
-                      view === v ? 'bg-white text-bridge-heading shadow-card' : 'text-bridge-muted hover:text-bridge-text'
+                      view === v ? 'bg-bridge-card text-bridge-heading shadow-card' : 'text-bridge-muted hover:text-bridge-text'
                     }`}
                   >
                     {v}

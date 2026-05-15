@@ -45,7 +45,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
           />
           <motion.div
             className={cn(
-              'fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-modal shadow-modal max-h-[85vh] overflow-y-auto',
+              'fixed bottom-0 left-0 right-0 z-50 bg-bridge-card rounded-t-modal shadow-modal max-h-[85vh] overflow-y-auto',
               className,
             )}
             initial={{ y: '100%' }}
@@ -53,7 +53,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           >
-            <div className="sticky top-0 bg-white rounded-t-modal z-10">
+            <div className="sticky top-0 bg-bridge-card rounded-t-modal z-10">
               <div className="flex justify-center pt-3 pb-1">
                 <div className="w-10 h-1 rounded-full bg-bridge-border-strong" />
               </div>

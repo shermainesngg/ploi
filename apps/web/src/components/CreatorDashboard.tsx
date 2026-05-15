@@ -60,7 +60,7 @@ function KpiCard({ label, value, icon, hint }: {
   label: string; value: string; icon: React.ReactNode; hint?: string
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-bridge-border/60 p-4 shadow-sm">
+    <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-4 shadow-sm">
       <div className="flex items-center gap-2 text-bridge-muted mb-2">
         {icon}
         <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
@@ -103,7 +103,7 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
   const isActive = link.status === 'active'
 
   return (
-    <div className={`bg-white rounded-2xl border overflow-hidden shadow-sm ${
+    <div className={`bg-bridge-card rounded-2xl border overflow-hidden shadow-sm ${
       isActive ? 'border-bridge-border/60' : 'border-bridge-border opacity-90'
     }`}>
       {/* Header bar */}
@@ -288,14 +288,14 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
           {/* Earnings split */}
           {(totals.firstBookingEarnings > 0 || totals.repeatEarnings > 0) && (
             <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="bg-white rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
+              <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
                 <p className="text-[10px] uppercase tracking-wide font-bold text-bridge-muted">First bookings</p>
                 <p className="text-lg font-bold text-bridge-heading mt-1 leading-none">
                   {formatPrice(totals.firstBookingEarnings)}
                 </p>
                 <p className="text-[10px] text-bridge-muted mt-1">10% rate</p>
               </div>
-              <div className="bg-white rounded-2xl border border-purple-200 bg-purple-50/30 p-3 shadow-sm">
+              <div className="bg-bridge-card rounded-2xl border border-purple-200 bg-purple-50/30 p-3 shadow-sm">
                 <p className="text-[10px] uppercase tracking-wide font-bold text-purple-700">Repeat earnings</p>
                 <p className="text-lg font-bold text-purple-900 mt-1 leading-none">
                   {formatPrice(totals.repeatEarnings)}
@@ -307,7 +307,7 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
 
           {/* Customer acquisition stats */}
           {totals.customersAcquired > 0 && (
-            <div className="mt-3 bg-white rounded-2xl border border-bridge-border/60 p-4 shadow-sm">
+            <div className="mt-3 bg-bridge-card rounded-2xl border border-bridge-border/60 p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
                 <Users size={14} className="text-bridge-accent" />
                 <span className="text-xs font-semibold uppercase tracking-wide text-bridge-muted">
@@ -359,7 +359,7 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
           </div>
 
           {links.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-bridge-border/60 p-6 text-center">
+            <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-6 text-center">
               <p className="text-bridge-muted text-sm mb-3">No links yet.</p>
               <button
                 onClick={() => setShowAddPlace(true)}
@@ -387,7 +387,7 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
               Nothing yet. Activity shows up here as people click and book.
             </p>
           ) : (
-            <div className="bg-white rounded-2xl border border-bridge-border/60 px-4 shadow-sm">
+            <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 px-4 shadow-sm">
               {recentActivity.map((e) => (
                 <ActivityRow key={e.id} event={e} />
               ))}

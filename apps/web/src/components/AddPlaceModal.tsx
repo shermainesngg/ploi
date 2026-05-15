@@ -129,7 +129,7 @@ export default function AddPlaceModal({
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={handleClose} />
 
       <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto animate-slide-up">
-        <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-bridge-border/60">
@@ -175,7 +175,7 @@ export default function AddPlaceModal({
                 </div>
 
                 {query.length > 0 && (
-                  <div className="mt-3 bg-white border border-bridge-border rounded-xl overflow-hidden">
+                  <div className="mt-3 bg-bridge-card border border-bridge-border rounded-xl overflow-hidden">
                     {searching ? (
                       <p className="text-bridge-muted text-sm p-4 flex items-center gap-2">
                         <Clock size={13} /> Searching…
@@ -261,7 +261,7 @@ export default function AddPlaceModal({
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium border transition-all ${
                           platform === p.value
                             ? 'border-bridge-accent bg-bridge-accent text-white'
-                            : 'border-bridge-border text-bridge-secondary bg-white hover:border-bridge-accent-light'
+                            : 'border-bridge-border text-bridge-secondary bg-bridge-card hover:border-bridge-accent-light'
                         }`}
                       >
                         {p.icon}

@@ -30,7 +30,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full rounded-input border border-bridge-border bg-white px-input-x py-input-y text-body text-bridge-text',
+              'w-full rounded-input border border-bridge-border bg-bridge-card px-input-x py-input-y text-body text-bridge-text',
               'placeholder:text-bridge-muted/60',
               'focus:outline-none focus:ring-2 focus:ring-bridge-accent/40 focus:border-bridge-accent',
               'disabled:opacity-50 disabled:bg-bridge-surface',
@@ -70,7 +70,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={inputId}
           className={cn(
-            'w-full rounded-input border border-bridge-border bg-white px-input-x py-input-y text-body text-bridge-text',
+            'w-full rounded-input border border-bridge-border bg-bridge-card px-input-x py-input-y text-body text-bridge-text',
             'placeholder:text-bridge-muted/60',
             'focus:outline-none focus:ring-2 focus:ring-bridge-accent/40 focus:border-bridge-accent',
             'disabled:opacity-50 disabled:bg-bridge-surface',

@@ -35,8 +35,8 @@ export function AnimateOnScroll({ children, className = '', delay = 0, as: Tag =
       className={className}
       style={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(20px)',
-        transition: `opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1) ${delay}ms`,
+        transform: visible ? 'translateY(0)' : 'translateY(6px)',
+        transition: `opacity 0.5s ease-out ${delay}ms, transform 0.5s ease-out ${delay}ms`,
       }}
     >
       {children}

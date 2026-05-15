@@ -24,6 +24,7 @@ import {
   Globe,
   Play,
   TrendingUp,
+  Zap,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -107,7 +108,6 @@ function BusinessHero({
   recentBookings: number
   affiliationsCount: number
 }) {
-  const [from, to] = business.coverGradient
   const hasPhoto = !!business.coverPhotoUrl
   const fromPrice = business.services.length
     ? Math.min(...business.services.map((s) => s.price))
@@ -118,10 +118,10 @@ function BusinessHero({
       {hasPhoto ? (
         <div className="absolute inset-0">
           <img src={business.coverPhotoUrl!} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/65" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/45 to-black/70" />
         </div>
       ) : (
-        <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${from}, ${to})` }} />
+        <div className="absolute inset-0" style={{ background: 'var(--bridge-hero-gradient)' }} />
       )}
 
       <div className="relative px-5 pt-14 pb-8">
@@ -147,25 +147,25 @@ function BusinessHero({
           )}
         </div>
 
-        {/* Trust signals row */}
-        {(recentBookings > 0 || affiliationsCount > 0) && (
-          <div className="flex flex-wrap items-center gap-3 mt-4 text-white/90 text-xs">
-            {recentBookings > 0 && (
-              <span className="flex items-center gap-1.5">
-                <TrendingUp size={12} />
-                <span className="font-semibold">{recentBookings}</span>
-                <span className="text-white/70">booked this week</span>
-              </span>
-            )}
-            {affiliationsCount > 0 && (
-              <span className="flex items-center gap-1.5">
-                <Users size={12} />
-                <span className="text-white/70">Recommended by</span>
-                <span className="font-semibold">{affiliationsCount} creator{affiliationsCount !== 1 ? 's' : ''}</span>
-              </span>
-            )}
-          </div>
-        )}
+        {/* Trust signals — Klook-style bold pill badges, creators first (BRIDGE differentiator) */}
+        <div className="flex flex-wrap items-center gap-2 mt-4">
+          {affiliationsCount > 0 && (
+            <span className="inline-flex items-center gap-1.5 bg-white/25 backdrop-blur-sm border border-white/10 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+              <Users size={12} />
+              {affiliationsCount} creator{affiliationsCount !== 1 ? 's' : ''} recommend
+            </span>
+          )}
+          {recentBookings > 0 && (
+            <span className="inline-flex items-center gap-1.5 bg-white/25 backdrop-blur-sm border border-white/10 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+              <TrendingUp size={12} />
+              {recentBookings > 10 ? `Popular · ${recentBookings} booked` : `${recentBookings} booked this week`}
+            </span>
+          )}
+          <span className="inline-flex items-center gap-1.5 bg-white/25 backdrop-blur-sm border border-white/10 text-white text-xs font-bold px-3 py-1.5 rounded-full">
+            <Zap size={12} />
+            Instant Booking
+          </span>
+        </div>
       </div>
     </div>
   )
@@ -175,10 +175,10 @@ function BusinessHero({
 
 function CreatorBar({ creator, link }: { creator: Creator; link: LinkRecord | null }) {
   const inner = (
-    <div className="mx-4 -mt-3 relative z-10 bg-white rounded-2xl shadow-sm border border-bridge-border/60 px-4 py-3 flex items-center justify-between">
+    <div className="mx-4 -mt-3 relative z-10 bg-bridge-card rounded-2xl shadow-sm border border-bridge-border/60 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-3 min-w-0">
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+          className="w-11 h-11 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
           style={{ backgroundColor: creator.avatarColor }}
         >
           {creator.avatarInitials}
@@ -220,7 +220,7 @@ function PhotoGallery({ photos, onOpen }: { photos: string[]; onOpen: (i: number
           <button
             key={i}
             onClick={() => onOpen(i)}
-            className="flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden snap-start active:scale-95 transition-transform"
+            className="flex-shrink-0 w-28 h-20 rounded-2xl overflow-hidden snap-start active:scale-95 transition-transform"
           >
             <img src={p} alt="" className="w-full h-full object-cover" />
           </button>
@@ -252,7 +252,7 @@ function PhotoLightbox({
           <button
             key={n}
             onClick={(e) => { e.stopPropagation(); setI(n) }}
-            className={`w-2 h-2 rounded-full ${n === i ? 'bg-white' : 'bg-white/30'}`}
+            className={`w-2 h-2 rounded-full ${n === i ? 'bg-bridge-card' : 'bg-white/30'}`}
           />
         ))}
       </div>
@@ -292,7 +292,10 @@ function AboutSection({ business }: { business: Business }) {
 
   return (
     <div className="px-4 mt-6">
-      <div className="bg-white rounded-2xl border border-bridge-border/60 overflow-hidden">
+      <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 overflow-hidden">
+        {business.description && (
+          <p className={`px-4 pt-3.5 text-bridge-secondary text-sm leading-relaxed ${open ? '' : 'line-clamp-2'}`}>{business.description}</p>
+        )}
         <button
           onClick={() => setOpen(!open)}
           className="w-full px-4 py-3 flex items-center justify-between active:bg-bridge-surface transition-colors"
@@ -305,17 +308,13 @@ function AboutSection({ business }: { business: Business }) {
                 {openNow ? 'Open now' : 'Closed'}
               </span>
             )}
-            <span className="text-sm font-semibold text-bridge-text">About this place</span>
+            <span className="text-sm font-semibold text-bridge-text">{open ? 'About this place' : 'Hours, location & contact'}</span>
           </div>
           <ChevronDown size={16} className={`text-bridge-muted transition-transform ${open ? 'rotate-180' : ''}`} />
         </button>
 
         {open && (
           <div className="border-t border-bridge-border/60 px-4 py-4 space-y-4">
-            {business.description && (
-              <p className="text-bridge-secondary text-sm leading-relaxed">{business.description}</p>
-            )}
-
             {/* Hours */}
             {hasHours && (
               <div>
@@ -418,7 +417,7 @@ function CreatorsCallout({
       <div className="px-4 mt-4">
         <button
           onClick={() => setShowAll(true)}
-          className="w-full bg-white rounded-2xl border border-bridge-border/60 shadow-sm hover:shadow-md active:scale-[0.99] transition-all overflow-hidden group"
+          className="w-full bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm hover:shadow-md active:scale-[0.99] transition-all overflow-hidden group"
         >
           <div className="px-4 py-3.5 flex items-center gap-3">
             {/* Stacked avatars */}
@@ -504,7 +503,7 @@ function CreatorDetailModal({
     <>
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={onClose} />
       <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
-        <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto">
+        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto">
           {/* Close */}
           <div className="flex justify-end p-4 pb-0">
             <button
@@ -638,7 +637,7 @@ function AllCreatorsSheet({
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={onClose} />
       <div className="fixed inset-0 z-50 max-w-2xl mx-auto animate-slide-up flex flex-col bg-bridge-bg">
         {/* Header */}
-        <div className="bg-white px-5 py-4 border-b border-bridge-border/60 flex items-center justify-between flex-shrink-0">
+        <div className="bg-bridge-card px-5 py-4 border-b border-bridge-border/60 flex items-center justify-between flex-shrink-0">
           <div>
             <h3 className="font-bold text-bridge-heading text-base">All creators</h3>
             <p className="text-xs text-bridge-muted">{affiliations.length} recommend {business.name}</p>
@@ -652,7 +651,7 @@ function AllCreatorsSheet({
         </div>
 
         {/* Sort */}
-        <div className="bg-white px-5 py-2 border-b border-bridge-border/60 flex items-center gap-2 flex-shrink-0">
+        <div className="bg-bridge-card px-5 py-2 border-b border-bridge-border/60 flex items-center gap-2 flex-shrink-0">
           <span className="text-xs text-bridge-muted">Sort:</span>
           {(['bookings', 'recent'] as const).map((s) => (
             <button
@@ -673,7 +672,7 @@ function AllCreatorsSheet({
             <button
               key={a.creator.id}
               onClick={() => onSelect(a)}
-              className="w-full text-left bg-white rounded-2xl border border-bridge-border/60 overflow-hidden shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
+              className="w-full text-left bg-bridge-card rounded-2xl border border-bridge-border/60 overflow-hidden shadow-sm hover:shadow-md active:scale-[0.99] transition-all"
             >
               {/* Content thumbnail */}
               {a.link.contentThumbnailUrl && (
@@ -722,13 +721,20 @@ function AllCreatorsSheet({
 function ServiceCard({
   service,
   onBook,
+  isPopular,
 }: {
   service: Service
   onBook: (service: Service) => void
+  isPopular?: boolean
 }) {
   return (
     <Card className="flex items-start justify-between gap-3">
       <div className="flex-1 min-w-0">
+        {isPopular && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-bridge-accent bg-bridge-accent-wash px-2 py-0.5 rounded-full mb-1.5">
+            <Sparkles size={10} /> Most popular
+          </span>
+        )}
         <h3 className="font-semibold text-bridge-heading text-base leading-snug mb-1">{service.name}</h3>
         <p className="text-bridge-muted text-sm leading-relaxed line-clamp-2 mb-3">{service.description}</p>
         <div className="flex items-center gap-3 text-bridge-muted text-xs">
@@ -739,7 +745,7 @@ function ServiceCard({
         </div>
       </div>
       <div className="flex flex-col items-end gap-2 flex-shrink-0">
-        <span className="text-bridge-heading font-bold text-lg leading-none">{formatPrice(service.price)}</span>
+        <span className="text-bridge-heading font-bold text-xl leading-none">{formatPrice(service.price)}</span>
         <Button size="sm" onClick={() => onBook(service)} className="cursor-pointer">
           Book
         </Button>
@@ -766,7 +772,7 @@ function FeaturedServiceCard({
         <Sparkles size={12} /> {creator.handle} recommends this for you
       </p>
 
-      <div className="relative bg-white rounded-3xl shadow-lg border-2 border-bridge-accent-light overflow-hidden">
+      <div className="relative bg-bridge-card rounded-3xl shadow-lg border-2 border-bridge-accent-light overflow-hidden">
         {/* Content thumbnail header */}
         {thumbnail && link?.contentUrl && (
           <a
@@ -842,20 +848,18 @@ function BookingModal({
   linkId?: string
   onClose: () => void
 }) {
+  const dates = getUpcomingDates(14)
   const [staffOptions, setStaffOptions] = useState<BookingStaff[]>([])
   const [staffLoaded, setStaffLoaded] = useState(false)
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
-  // initial step depends on whether staff exist for this service — set after fetch
   const [step, setStep] = useState<Step>('date')
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+  const [selectedDate, setSelectedDate] = useState<Date | null>(dates[0] ?? null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [phone, setPhone] = useState('')
+  const [name, setName] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('bridge_name') ?? '' : ''))
+  const [email, setEmail] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('bridge_email') ?? '' : ''))
+  const [phone, setPhone] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('bridge_phone') ?? '' : ''))
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-
-  const dates = getUpcomingDates(14)
   const [availability, setAvailability] = useState<AvailabilityResult | null>(null)
   const [loadingSlots, setLoadingSlots] = useState(false)
 
@@ -923,7 +927,12 @@ function BookingModal({
         window.location.href = data.url
         return
       }
-      // In-app fallback
+      // In-app fallback — save details for pre-fill on return visits
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('bridge_name', name)
+        localStorage.setItem('bridge_email', email)
+        localStorage.setItem('bridge_phone', phone)
+      }
       setStep('confirmed')
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : 'Something went wrong')
@@ -938,10 +947,10 @@ function BookingModal({
     <>
       <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={onClose} />
       <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
-        <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden">
+        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden">
           {step === 'confirmed' ? (
             <ConfirmedScreen
-              service={service} business={business}
+              service={service} business={business} creator={creator}
               date={selectedDate!} time={selectedTime!} name={name}
               onClose={onClose}
             />
@@ -970,6 +979,23 @@ function BookingModal({
                 </button>
               </div>
 
+              {/* Step progress indicator */}
+              <div className="flex items-center gap-1.5 px-5 pt-3 pb-1">
+                {(['date', 'time', 'details'] as const).map((s) => {
+                  const stepOrder = ['date', 'time', 'details']
+                  const current = stepOrder.indexOf(step)
+                  const thisIdx = stepOrder.indexOf(s)
+                  return (
+                    <div
+                      key={s}
+                      className={`h-1 flex-1 rounded-full transition-colors ${
+                        thisIdx === current ? 'bg-bridge-accent' : thisIdx < current ? 'bg-bridge-accent/40' : 'bg-bridge-border'
+                      }`}
+                    />
+                  )
+                })}
+              </div>
+
               <div className="px-5 py-4 max-h-[70vh] overflow-y-auto overflow-x-hidden">
                 <AnimatePresence mode="wait">
                 {step === 'date' && (
@@ -990,7 +1016,7 @@ function BookingModal({
                             key={date.toISOString()}
                             onClick={() => setSelectedDate(date)}
                             className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-2xl border-2 transition-all ${
-                              isSelected ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border bg-white text-bridge-text hover:border-bridge-accent-light'
+                              isSelected ? 'border-bridge-accent bg-bridge-accent text-white' : 'border-bridge-border bg-bridge-card text-bridge-text hover:border-bridge-accent-light'
                             }`}
                           >
                             <span className={`text-xs mb-1 ${isSelected ? 'text-bridge-accent-soft' : 'text-bridge-muted'}`}>
@@ -1041,7 +1067,7 @@ function BookingModal({
                         <select
                           value={selectedStaffId ?? ''}
                           onChange={(e) => setSelectedStaffId(e.target.value || null)}
-                          className="w-full bg-white border border-bridge-border rounded-xl px-3 py-2.5 text-sm text-bridge-heading focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent appearance-none"
+                          className="w-full bg-bridge-card border border-bridge-border rounded-xl px-3 py-2.5 text-sm text-bridge-heading focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent appearance-none"
                           style={{
                             backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
                             backgroundRepeat: 'no-repeat',
@@ -1102,7 +1128,7 @@ function BookingModal({
                                 className={`px-4 py-2 rounded-xl text-sm font-medium border transition-all ${
                                   !available ? 'border-bridge-border/60 text-bridge-border-strong cursor-not-allowed bg-bridge-bg'
                                   : isSelected ? 'border-bridge-accent bg-bridge-accent text-white'
-                                  : 'border-bridge-border text-bridge-text bg-white hover:border-bridge-accent-light'
+                                  : 'border-bridge-border text-bridge-text bg-bridge-card hover:border-bridge-accent-light'
                                 }`}
                               >
                                 {time}
@@ -1191,9 +1217,9 @@ function BookingModal({
 }
 
 function ConfirmedScreen({
-  service, business, date, time, name, onClose,
+  service, business, creator, date, time, name, onClose,
 }: {
-  service: Service; business: Business; date: Date; time: string; name: string; onClose: () => void
+  service: Service; business: Business; creator: Creator | null; date: Date; time: string; name: string; onClose: () => void
 }) {
   return (
     <div className="px-5 py-8 flex flex-col items-center text-center">
@@ -1225,6 +1251,14 @@ function ConfirmedScreen({
       <Button onClick={onClose} size="lg" variant="secondary" className="w-full bg-bridge-heading text-white border-bridge-heading hover:bg-bridge-text cursor-pointer">
         Done
       </Button>
+      {creator && (
+        <NextLink
+          href={`/${creator.slug}`}
+          className="block w-full py-3 mt-3 rounded-2xl bg-bridge-accent-wash text-bridge-accent text-center font-semibold text-sm hover:bg-bridge-accent-soft transition-colors"
+        >
+          See what else {creator.displayName.split(' ')[0]} recommends →
+        </NextLink>
+      )}
       <p className="text-xs text-bridge-muted mt-4">Powered by <span className="font-bold text-bridge-accent">BRIDGE</span></p>
     </div>
   )
@@ -1273,6 +1307,7 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
     ? business.services.filter((s) => s.id !== featuredService.id)
     : business.services
   const hasServices = business.services.length > 0
+  const fromPrice = hasServices ? Math.min(...business.services.map(s => s.price)) : null
   const photos = business.photos.length > 0 ? business.photos : business.coverPhotoUrl ? [business.coverPhotoUrl] : []
 
   function scrollToServices() {
@@ -1323,8 +1358,8 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
                 {featuredService ? 'Or explore other services' : 'Our Services'}
               </h2>
               <div className="space-y-3">
-                {otherServices.map((service) => (
-                  <ServiceCard key={service.id} service={service} onBook={setActiveService} />
+                {otherServices.map((service, i) => (
+                  <ServiceCard key={service.id} service={service} onBook={setActiveService} isPopular={i === 0 && !featuredService} />
                 ))}
               </div>
             </>
@@ -1336,12 +1371,20 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
         {/* Bottom padding so content clears the sticky button */}
         <div className="pb-32" />
 
-        {/* Sticky Book Now button */}
+        {/* Sticky Book Now bar — Klook-style with price context */}
         {hasServices && (
-          <div className="fixed bottom-0 left-0 right-0 z-30 max-w-2xl mx-auto bg-gradient-to-t from-bridge-bg via-bridge-bg/95 to-bridge-bg/0 px-4 pt-6 pb-4 pointer-events-none">
-            <Button onClick={scrollToServices} size="lg" className="w-full shadow-xl pointer-events-auto cursor-pointer">
-              Book Now
-            </Button>
+          <div className="fixed bottom-0 left-0 right-0 z-30 max-w-2xl mx-auto bg-bridge-card border-t border-bridge-border/60 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="min-w-0">
+                {fromPrice !== null && (
+                  <p className="text-base font-bold text-bridge-heading leading-tight">from {formatPrice(fromPrice)}</p>
+                )}
+                <p className="text-xs text-bridge-muted">{business.services.length} service{business.services.length !== 1 ? 's' : ''} available</p>
+              </div>
+              <Button onClick={scrollToServices} size="lg" className="shadow-lg cursor-pointer flex-shrink-0">
+                Book Now
+              </Button>
+            </div>
           </div>
         )}
 
@@ -1350,7 +1393,7 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
           <>
             <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={() => setShowServicePicker(false)} />
             <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
-              <div className="bg-white rounded-t-3xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto">
+              <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto">
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-bridge-border/60">
                   <h2 className="font-bold text-bridge-heading text-lg">Pick a service</h2>
                   <button

@@ -111,7 +111,7 @@ export default async function Page({ params, searchParams }: PageProps) {
         </div>
 
         {/* Summary card */}
-        <div className="bg-white rounded-2xl border border-bridge-border/60 p-5 shadow-card space-y-3 text-body">
+        <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-5 shadow-card space-y-3 text-body">
           <div className="flex justify-between">
             <span className="text-bridge-muted">Service</span>
             <span className="font-semibold text-bridge-heading">{svc?.name}</span>
@@ -152,7 +152,7 @@ export default async function Page({ params, searchParams }: PageProps) {
         <div className="mt-6 space-y-2">
           <Link
             href="/bookings"
-            className="block text-center w-full py-4 rounded-2xl bg-bridge-heading text-white font-semibold text-body hover:bg-bridge-text transition-colors"
+            className="block text-center w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-body hover:bg-bridge-accent-dark transition-colors"
           >
             View my bookings
           </Link>

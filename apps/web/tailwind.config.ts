@@ -1,6 +1,7 @@
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
+  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -10,25 +11,28 @@ const config: Config = {
     extend: {
       colors: {
         bridge: {
-          accent: '#e11d48',
-          'accent-dark': '#be123c',
-          'accent-light': '#fecdd3',
-          'accent-soft': '#fff1f2',
-          'accent-wash': '#fff1f2',
+          accent: 'var(--bridge-accent)',
+          'accent-dark': 'var(--bridge-accent-dark)',
+          'accent-light': 'var(--bridge-accent-light)',
+          'accent-soft': 'var(--bridge-accent-soft)',
+          'accent-wash': 'var(--bridge-accent-wash)',
 
-          bg: '#fafaf9',
-          surface: '#f5f5f4',
-          border: '#e7e5e4',
-          'border-strong': '#d6d3d1',
-          muted: '#78716c',
-          secondary: '#57534e',
-          text: '#292524',
-          heading: '#1c1917',
+          bg: 'var(--bridge-bg)',
+          surface: 'var(--bridge-surface)',
+          card: 'var(--bridge-card)',
+          border: 'var(--bridge-border)',
+          'border-strong': 'var(--bridge-border-strong)',
+          muted: 'var(--bridge-muted)',
+          secondary: 'var(--bridge-secondary)',
+          text: 'var(--bridge-text)',
+          heading: 'var(--bridge-heading)',
 
-          rose: '#e11d48',
-          roseSoft: '#fff1f2',
-          roseLight: '#fecdd3',
-          stone: '#1c1917',
+          pop: 'var(--bridge-pop)',
+          'pop-light': 'var(--bridge-pop-light)',
+          'pop-soft': 'var(--bridge-pop-soft)',
+
+          sage: 'var(--bridge-sage)',
+          'sage-light': 'var(--bridge-sage-light)',
         },
       },
       fontFamily: {
@@ -52,9 +56,9 @@ const config: Config = {
         'input-x': '1rem',
       },
       boxShadow: {
-        card: '0 1px 3px rgba(42,35,32,0.04), 0 1px 2px rgba(42,35,32,0.03)',
-        'card-hover': '0 8px 24px rgba(42,35,32,0.08), 0 2px 6px rgba(42,35,32,0.04)',
-        modal: '0 -8px 32px rgba(42,35,32,0.12)',
+        card: 'var(--shadow-card)',
+        'card-hover': 'var(--shadow-card-hover)',
+        modal: 'var(--shadow-modal)',
       },
       borderRadius: {
         card: '0.875rem',
@@ -63,12 +67,13 @@ const config: Config = {
         modal: '1.25rem',
         badge: '9999px',
       },
+      backgroundImage: {
+        'hero-gradient': 'var(--bridge-hero-gradient)',
+      },
       animation: {
         'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         'slide-in-right': 'slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
-        'fade-in': 'fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-        'fade-up': 'fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) both',
-        shimmer: 'shimmer 1.5s ease-in-out infinite',
+        'fade-in': 'fadeIn 0.35s ease-out',
       },
       keyframes: {
         slideUp: {
@@ -80,16 +85,8 @@ const config: Config = {
           '100%': { transform: 'translateX(0)' },
         },
         fadeIn: {
-          '0%': { opacity: '0', transform: 'translateY(4px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        fadeUp: {
-          '0%': { opacity: '0', transform: 'translateY(16px)' },
-          '100%': { opacity: '1', transform: 'translateY(0)' },
-        },
-        shimmer: {
-          '0%': { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition: '200% 0' },
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
         },
       },
     },

@@ -2,9 +2,32 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState } from 'react'
-import { Search, Menu, X, LogOut, LayoutDashboard, Calendar } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Search, Menu, X, LogOut, LayoutDashboard, Calendar, Sun, Moon } from 'lucide-react'
+import { useTheme } from 'next-themes'
 import type { AppUser } from '@/lib/auth'
+
+function ThemeToggle() {
+  const { resolvedTheme, setTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => { setMounted(true) }, [])
+
+  if (!mounted) {
+    return <div className="w-9 h-9" />
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+      className="w-9 h-9 flex items-center justify-center text-bridge-muted hover:text-bridge-text transition-colors rounded-full hover:bg-bridge-surface"
+      aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+    >
+      {resolvedTheme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+    </button>
+  )
+}
 
 export default function NavBar({ user }: { user: AppUser | null }) {
   const router = useRouter()
@@ -28,10 +51,13 @@ export default function NavBar({ user }: { user: AppUser | null }) {
 
   return (
     <>
-      <nav className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b border-bridge-border/40">
+      <nav
+        className="sticky top-0 z-30 backdrop-blur-md border-b border-bridge-border/40"
+        style={{ backgroundColor: 'color-mix(in srgb, var(--bridge-card) 85%, transparent)' }}
+      >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <span className="font-display text-lg font-bold tracking-tight text-bridge-accent">BRIDGE</span>
+            <span className="font-display text-lg font-bold tracking-tight text-bridge-heading">BRIDGE<span className="text-bridge-accent">.</span></span>
           </Link>
 
           <div className="flex items-center gap-1">
@@ -43,6 +69,8 @@ export default function NavBar({ user }: { user: AppUser | null }) {
             >
               <Search size={17} />
             </button>
+
+            <ThemeToggle />
 
             {user ? (
               <button
@@ -88,9 +116,9 @@ export default function NavBar({ user }: { user: AppUser | null }) {
       {open && (
         <>
           <div className="fixed inset-0 bg-bridge-heading/40 z-40 animate-fade-in" onClick={() => setOpen(false)} />
-          <div className="fixed top-0 right-0 bottom-0 w-72 max-w-[85vw] bg-white z-50 shadow-2xl flex flex-col animate-slide-in-right">
+          <div className="fixed top-0 right-0 bottom-0 w-72 max-w-[85vw] bg-bridge-card z-50 shadow-2xl flex flex-col animate-slide-in-right">
             <div className="flex items-center justify-between p-4 border-b border-bridge-border/50">
-              <span className="font-display text-lg font-bold tracking-tight text-bridge-accent">BRIDGE</span>
+              <span className="font-display text-lg font-bold tracking-tight text-bridge-heading">BRIDGE<span className="text-bridge-accent">.</span></span>
               <button
                 onClick={() => setOpen(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-bridge-surface hover:bg-bridge-border transition-colors"

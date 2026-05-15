@@ -36,7 +36,7 @@ export default function BookingsTab({ bookings, status, staff, businessSlug }: P
               href={`/dashboard/business/${businessSlug}?tab=bookings&status=${s.key}`}
               scroll={false}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-micro font-semibold border transition-colors ${
-                active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-white border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
+                active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
               }`}
             >
               {s.label}
@@ -49,7 +49,7 @@ export default function BookingsTab({ bookings, status, staff, businessSlug }: P
       </div>
 
       {bookings.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-bridge-border/60 p-12 text-center">
+        <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-12 text-center">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-surface mb-3">
             <Inbox size={20} className="text-bridge-muted" />
           </div>

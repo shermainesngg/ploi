@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import { Search, Menu, X, LogOut, LayoutDashboard, Calendar, Sun, Moon } from 'lucide-react'
+import { useState, useEffect, useTransition } from 'react'
+import { Search, Menu, X, LogOut, LayoutDashboard, Calendar, Sun, Moon, Check, Megaphone, Store } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import type { AppUser } from '@/lib/auth'
+import type { AppUser, UserRole } from '@/lib/auth'
+import { setActiveRole } from '@/actions/auth.actions'
+import { PloiLogo } from '@/components/ui/Logo'
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
@@ -33,6 +35,7 @@ export default function NavBar({ user }: { user: AppUser | null }) {
   const router = useRouter()
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const [switching, startSwitch] = useTransition()
 
   const HIDE_ON = ['/login', '/signup', '/auth/callback']
   if (HIDE_ON.some((p) => pathname?.startsWith(p))) return null
@@ -42,6 +45,29 @@ export default function NavBar({ user }: { user: AppUser | null }) {
     setOpen(false)
     router.refresh()
     router.push('/')
+  }
+
+  // Dashboard-backed roles the user can switch between (creator / business).
+  const roleTargets: { role: UserRole; label: string; href: string; icon: React.ReactNode }[] = []
+  if (user?.creatorSlug) {
+    roleTargets.push({ role: 'creator', label: 'Creator dashboard', href: `/dashboard/creator/${user.creatorSlug}`, icon: <Megaphone size={15} /> })
+  }
+  if (user?.businessSlug) {
+    roleTargets.push({ role: 'business', label: 'Business dashboard', href: `/dashboard/business/${user.businessSlug}`, icon: <Store size={15} /> })
+  }
+  const showSwitcher = roleTargets.length > 1
+
+  function switchRole(role: UserRole, href: string) {
+    if (role === user?.activeRole) {
+      setOpen(false)
+      return
+    }
+    startSwitch(async () => {
+      await setActiveRole(role)
+      setOpen(false)
+      router.push(href)
+      router.refresh()
+    })
   }
 
   const dashHref =
@@ -56,8 +82,8 @@ export default function NavBar({ user }: { user: AppUser | null }) {
         style={{ backgroundColor: 'color-mix(in srgb, var(--bridge-card) 85%, transparent)' }}
       >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="font-display text-lg font-bold tracking-tight text-bridge-heading">BRIDGE<span className="text-bridge-accent">.</span></span>
+          <Link href="/" className="flex items-center gap-2" aria-label="PLOI home">
+            <PloiLogo size={22} />
           </Link>
 
           <div className="flex items-center gap-1">
@@ -94,7 +120,7 @@ export default function NavBar({ user }: { user: AppUser | null }) {
                 </Link>
                 <Link
                   href="/signup"
-                  className="text-label text-white bg-bridge-accent hover:bg-bridge-accent-dark px-3.5 py-1.5 rounded-button transition-colors"
+                  className="text-label text-bridge-ink-foreground bg-bridge-ink hover:bg-bridge-ink-hover px-3.5 py-1.5 rounded-button transition-colors"
                 >
                   Sign up
                 </Link>
@@ -115,10 +141,10 @@ export default function NavBar({ user }: { user: AppUser | null }) {
 
       {open && (
         <>
-          <div className="fixed inset-0 bg-bridge-heading/40 z-40 animate-fade-in" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={() => setOpen(false)} />
           <div className="fixed top-0 right-0 bottom-0 w-72 max-w-[85vw] bg-bridge-card z-50 shadow-2xl flex flex-col animate-slide-in-right">
             <div className="flex items-center justify-between p-4 border-b border-bridge-border/50">
-              <span className="font-display text-lg font-bold tracking-tight text-bridge-heading">BRIDGE<span className="text-bridge-accent">.</span></span>
+              <PloiLogo size={22} />
               <button
                 onClick={() => setOpen(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-bridge-surface hover:bg-bridge-border transition-colors"
@@ -140,6 +166,32 @@ export default function NavBar({ user }: { user: AppUser | null }) {
                   <p className="text-bridge-muted text-caption truncate">{user.email}</p>
                   <p className="text-micro text-bridge-accent uppercase tracking-wide mt-0.5">{user.role}</p>
                 </div>
+              </div>
+            )}
+
+            {showSwitcher && (
+              <div className="px-2 pt-3 pb-1 border-b border-bridge-border/50">
+                <p className="px-3 pb-1.5 text-micro text-bridge-muted uppercase tracking-wide">Switch to</p>
+                {roleTargets.map(({ role, label, href, icon }) => {
+                  const active = role === user?.activeRole
+                  return (
+                    <button
+                      key={role}
+                      type="button"
+                      disabled={switching}
+                      onClick={() => switchRole(role, href)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-button text-label transition-colors disabled:opacity-50 ${
+                        active
+                          ? 'bg-bridge-surface text-bridge-text'
+                          : 'text-bridge-secondary hover:bg-bridge-surface hover:text-bridge-text'
+                      }`}
+                    >
+                      <span className="text-bridge-muted">{icon}</span>
+                      <span className="flex-1 text-left">{label}</span>
+                      {active && <Check size={15} className="text-bridge-accent" />}
+                    </button>
+                  )
+                })}
               </div>
             )}
 

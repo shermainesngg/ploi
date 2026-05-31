@@ -5,7 +5,8 @@ import {
   links as seedLinks,
 } from '@/lib/seed-data'
 import { rowToBusiness, rowToCreator, rowToLink } from '@/lib/mappers'
-import type { Business, BusinessCreatorAffiliation } from '@/lib/types'
+import { ContentService } from '@/services/content.service'
+import type { Business, BusinessCreatorAffiliation, ContentWithCreator } from '@/lib/types'
 
 export const BusinessService = {
   async list(): Promise<Business[]> {
@@ -99,6 +100,7 @@ export const BusinessService = {
     contactPhone?: string
     contactWhatsapp?: string
     contactLine?: string
+    authUserId?: string
     services: Array<{ name: string; description: string; duration: number; price: number }>
   }) {
     if (!isSupabaseConfigured()) {
@@ -123,6 +125,7 @@ export const BusinessService = {
         location: data.location,
         description: data.description,
         email: data.email ?? null,
+        auth_user_id: data.authUserId ?? null,
         cover_photo_url: coverPhoto,
         photos,
         opening_hours: data.openingHours ?? null,
@@ -237,6 +240,30 @@ export const BusinessService = {
         }
       })
       .filter(Boolean) as BusinessCreatorAffiliation[]
+  },
+
+  async getContent(businessSlug: string): Promise<ContentWithCreator[]> {
+    if (!isSupabaseConfigured()) return []
+    const db = createServerClient()
+    const { data: bizRow } = await db
+      .from('businesses')
+      .select('id')
+      .eq('slug', businessSlug)
+      .single()
+    if (!bizRow) return []
+    return ContentService.listForBusiness(bizRow.id)
+  },
+
+  async getPendingContent(businessSlug: string): Promise<ContentWithCreator[]> {
+    if (!isSupabaseConfigured()) return []
+    const db = createServerClient()
+    const { data: bizRow } = await db
+      .from('businesses')
+      .select('id')
+      .eq('slug', businessSlug)
+      .single()
+    if (!bizRow) return []
+    return ContentService.listPendingForBusiness(bizRow.id)
   },
 
   async getRecentBookingCount(businessSlug: string): Promise<number> {

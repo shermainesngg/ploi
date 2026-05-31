@@ -8,10 +8,11 @@ interface PageProps {
 
 export default async function Page({ params }: PageProps) {
   const { creator, shop } = await params
-  const [{ business, creator: creatorData, link }, affiliations, recentBookings] =
+  const [{ business, creator: creatorData, link }, affiliations, content, recentBookings] =
     await Promise.all([
       BusinessService.getPageData(creator, shop),
       BusinessService.getAffiliations(shop),
+      BusinessService.getContent(shop),
       BusinessService.getRecentBookingCount(shop),
     ])
 
@@ -23,6 +24,7 @@ export default async function Page({ params }: PageProps) {
       creator={creatorData}
       link={link}
       affiliations={affiliations}
+      content={content}
       recentBookings={recentBookings}
     />
   )
@@ -33,9 +35,9 @@ export async function generateMetadata({ params }: PageProps) {
   const { business, creator: creatorData } = await BusinessService.getPageData(creator, shop)
   if (!business) return {}
   return {
-    title: `${business.name} — Book via BRIDGE`,
+    title: `${business.name} — Book via PLOI`,
     description: creatorData
-      ? `Recommended by ${creatorData.handle}. Book ${business.name} on BRIDGE.`
-      : `Book ${business.name} on BRIDGE.`,
+      ? `Recommended by ${creatorData.handle}. Book ${business.name} on PLOI.`
+      : `Book ${business.name} on PLOI.`,
   }
 }

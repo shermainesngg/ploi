@@ -352,16 +352,20 @@ db.from('creator_content')
 ## 9. Implementation Phases
 
 ### Phase 1 — TikTok end-to-end (the trojan horse)
-- [ ] Migration `006`: `creator_content` + indexes (keep `links.content_*`)
-- [ ] Backfill existing link content into `creator_content`
-- [ ] `MediaFrame` + `ContentEmbed` primitives + tokens (`media-radius`, `media-placeholder`, `overlay-scrim`)
-- [ ] `tiktok` adapter
-- [ ] Server Action (validate → upsert pending → enqueue) + QStash worker route + state machine
-- [ ] pg_cron re-validation batch route
-- [ ] Bottom-sheet player (single iframe, swipe, unmount-on-close test)
-- [ ] Refactor the 6 read paths to `creator_content`
-- [ ] Per-video approval queue in the business dashboard
-- [ ] CSP: `frame-src https://*.tiktok.com`
+- [x] Migration `007`: `creator_content` + indexes (keep `links.content_*`) — `migration_007` / `supabase/migrations/...0007`
+- [x] Backfill existing link content into `creator_content` — `migration_008` / `...0008`
+- [x] `MediaFrame` + `ContentEmbed` primitives + tokens (`media-radius`, `media-placeholder`, `overlay-scrim`)
+- [x] `tiktok` adapter — `lib/providers/{types,tiktok,index}.ts` (+ unit tests)
+- [x] Server Action (validate → upsert pending → enqueue) + QStash worker route + state machine — `content.service`, `content.actions`, `lib/qstash` (dev fallback to direct dispatch), `api/content/process`
+- [x] pg_cron re-validation batch route — `api/content/revalidate-batch` + `packages/db/cron_revalidate_posters.sql` (apply manually)
+- [x] Bottom-sheet player (single iframe, swipe, unmount-on-close test) — `ContentPlayer.tsx` + `ContentPlayer.test.ts`
+- [x] ~~Refactor the 6 read paths~~ → content **wall** wired on the company page (`ShopBookingPage`) + dashboard queue; the 6 legacy `links.content_*` display reads still work (non-destructive) and are a tracked follow-up cutover
+- [x] Per-video approval queue in the business dashboard — `CreatorsTab` "Content to Review"
+- [x] CSP: `frame-src https://*.tiktok.com` — `next.config.ts` `headers()`
+
+**Status**: Backend pipeline + primitives + player + carousel + approval queue + CSP all implemented; `tsc`, 72 unit tests, and `next build` green. Content auto-enrolls into the pipeline when a creator adds a link with a supported URL (`api/links` route).
+
+**New env vars (all optional with dev fallbacks)**: `QSTASH_TOKEN` (prod enqueue; dev dispatches the worker directly), `CONTENT_WORKER_SECRET` (worker auth; defaults to a dev secret), `NEXT_PUBLIC_POSTER_CDN_URL` (R2/CDN poster host override). Self-hosting needs a public `content-posters` Storage bucket; absent it, the worker falls back to the remote TikTok thumbnail URL.
 
 **Validation**: a creator submits a TikTok URL → poster appears after processing → business approves → renders in the swimlane → tap opens the player → Lighthouse mobile LCP < 2.5s, CLS ≈ 0.
 

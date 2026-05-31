@@ -70,7 +70,7 @@ export default function StaffSchedulePage({
         <div className="mx-4 mt-3 bg-bridge-surface border border-bridge-border rounded-2xl p-3 text-center">
           <p className="text-bridge-muted text-xs">
             <span className="font-semibold text-bridge-text">Want separate staff logins?</span>{' '}
-            Coming soon in <span className="font-bold text-bridge-accent">BRIDGE Pro</span>.
+            Coming soon in <span className="font-bold text-bridge-accent">PLOI Pro</span>.
           </p>
         </div>
 
@@ -137,7 +137,7 @@ export default function StaffSchedulePage({
 function Header({ staff, businessName }: { staff: StaffMember; businessName: string | null }) {
   return (
     <div className="px-5 pt-8 pb-6 bg-bridge-card border-b border-bridge-border/60">
-      <span className="text-xs font-bold tracking-tight text-bridge-accent bg-bridge-accent-wash px-2.5 py-1 rounded-full">BRIDGE</span>
+      <span className="text-xs font-bold tracking-tight text-bridge-accent bg-bridge-accent-wash px-2.5 py-1 rounded-full">PLOI</span>
       <div className="flex items-start gap-3 mt-4">
         <div className="w-14 h-14 rounded-2xl flex-shrink-0 overflow-hidden bg-bridge-surface flex items-center justify-center">
           {staff.photoUrl ? (

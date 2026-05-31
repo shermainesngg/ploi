@@ -150,7 +150,7 @@ function ProfileStep({
       <div className="bg-bridge-accent-wash rounded-2xl p-4 border border-bridge-accent-wash">
         <p className="text-sm font-semibold text-bridge-text mb-1">How earnings work</p>
         <p className="text-sm text-bridge-muted leading-relaxed">
-          You earn <span className="font-semibold text-bridge-accent">10%</span> on every booking driven through your BRIDGE link. No minimums. Paid monthly.
+          You earn <span className="font-semibold text-bridge-accent">10%</span> on every booking driven through your PLOI link. No minimums. Paid monthly.
         </p>
       </div>
 
@@ -285,7 +285,7 @@ function DoneScreen({ slug }: { slug: string }) {
       </div>
       <h2 className="text-2xl font-display font-bold text-bridge-heading mb-2">You&apos;re in!</h2>
       <p className="text-bridge-muted text-sm mb-8 max-w-xs">
-        Your BRIDGE profile is live. Head to your dashboard to add places you love and start earning.
+        Your PLOI profile is live. Head to your dashboard to add places you love and start earning.
       </p>
 
       <div className="w-full space-y-3 mb-8">
@@ -364,9 +364,9 @@ export default function CreatorOnboarding() {
     <div className="min-h-screen bg-bridge-bg">
       <div className="max-w-2xl mx-auto px-5 py-10">
         <div className="mb-8">
-          <Link href="/" className="text-xs font-display font-bold text-bridge-accent tracking-tight">BRIDGE</Link>
+          <Link href="/" className="text-xs font-display font-bold text-bridge-accent tracking-tight">PLOI</Link>
           <h1 className="text-2xl font-display font-bold text-bridge-heading mt-4 leading-tight">
-            {step === 'done' ? 'Welcome to BRIDGE' : 'Share spots you love. Earn when people book.'}
+            {step === 'done' ? 'Welcome to PLOI' : 'Share spots you love. Earn when people book.'}
           </h1>
           {step !== 'done' && (
             <p className="text-bridge-muted text-sm mt-1">

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import NextLink from 'next/link'
 import { ArrowLeft, Wallet, LayoutGrid, Calendar, Inbox, Users, Plus } from 'lucide-react'
-import type { BusinessDashboardData } from '@/lib/types'
+import type { BusinessDashboardData, ContentWithCreator } from '@/lib/types'
 import type { PendingLinkRequest, MyCreatorEntry } from '@/services/link.service'
 import type { AgendaBooking } from '@/services/dashboard.service'
 import DailyAgenda from './DailyAgenda'
@@ -23,6 +23,7 @@ interface Props {
   data: BusinessDashboardData
   pendingRequests: PendingLinkRequest[]
   myCreators: MyCreatorEntry[]
+  pendingContent: ContentWithCreator[]
   stripeConnected: boolean
   view: ScheduleView
   viewDate: string
@@ -44,7 +45,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 
 export default function BusinessDashboard(props: Props) {
   const {
-    tab, data, pendingRequests, myCreators, stripeConnected,
+    tab, data, pendingRequests, myCreators, pendingContent, stripeConnected,
     view, viewDate, agenda, rangeBookings, todayAgenda,
     bookingsList, bookingsStatus, services, staff,
   } = props
@@ -67,7 +68,7 @@ export default function BusinessDashboard(props: Props) {
   }
 
   const pendingBookingCount = data.bookings.filter((b) => b.status === 'pending').length
-  const creatorActionCount = pendingRequests.length
+  const creatorActionCount = pendingRequests.length + pendingContent.length
 
   return (
     <div className="min-h-screen bg-bridge-bg">
@@ -112,7 +113,7 @@ export default function BusinessDashboard(props: Props) {
                   href={`/dashboard/business/${business.slug}?tab=${t.key}`}
                   scroll={false}
                   className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-micro font-semibold border transition-colors ${
-                    active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
+                    active ? 'bg-bridge-ink text-bridge-ink-foreground border-bridge-ink' : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
                   }`}
                 >
                   {t.icon}
@@ -133,7 +134,7 @@ export default function BusinessDashboard(props: Props) {
         {/* Stripe Connect prompt */}
         {tab === 'overview' && !stripeConnected && (
           <div className="px-4 mt-4">
-            <div className="bg-bridge-heading text-white rounded-2xl p-4">
+            <div className="bg-bridge-ink-static text-white rounded-2xl p-4">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-sm">Set up payments</p>
@@ -227,6 +228,8 @@ export default function BusinessDashboard(props: Props) {
               pendingRequests={pendingRequests}
               myCreators={myCreators}
               creatorRollups={data.creatorRollups}
+              pendingContent={pendingContent}
+              businessId={business.id}
             />
           )}
         </div>

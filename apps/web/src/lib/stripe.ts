@@ -15,7 +15,7 @@ export function getStripe(): Stripe {
   return cached
 }
 
-export const PLATFORM_FEE_PERCENT = 0.05  // 5% to BRIDGE
+export const PLATFORM_FEE_PERCENT = 0.05  // 5% to PLOI
 
 export function calculatePlatformFee(amountCents: number) {
   return Math.round(amountCents * PLATFORM_FEE_PERCENT)

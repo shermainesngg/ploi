@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Check, Clock } from 'lucide-react'
+import { PoweredByPloi } from '@/components/ui/Logo'
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
 import { getStripe, isStripeConfigured } from '@/lib/stripe'
 import { notFound } from 'next/navigation'
@@ -164,9 +165,9 @@ export default async function Page({ params, searchParams }: PageProps) {
           </Link>
         </div>
 
-        <p className="text-center text-caption text-bridge-muted mt-6">
-          Powered by <span className="font-display font-bold text-bridge-accent">BRIDGE</span>
-        </p>
+        <div className="flex justify-center mt-6">
+          <PoweredByPloi />
+        </div>
       </div>
     </div>
   )

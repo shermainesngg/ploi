@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: PageProps) {
   const { creator: c } = await CreatorService.getProfile(creator)
   if (!c) return {}
   return {
-    title: `${c.handle} — BRIDGE`,
+    title: `${c.handle} — PLOI`,
     description: c.bio,
   }
 }

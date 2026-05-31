@@ -37,7 +37,7 @@ export function statusStyles(status: AgendaBooking['status']) {
   switch (status) {
     case 'confirmed':  return 'text-green-700 bg-green-50'
     case 'pending':    return 'text-amber-700 bg-amber-50'
-    case 'completed':  return 'text-blue-700 bg-blue-50'
+    case 'completed':  return 'text-bridge-secondary bg-bridge-surface'
     case 'cancelled':
     case 'declined':   return 'text-bridge-muted bg-bridge-surface'
     case 'no_show':    return 'text-rose-600 bg-rose-50'
@@ -130,17 +130,17 @@ export default function BookingActionCard({
               <div className="flex items-center gap-2 flex-wrap">
                 <p className="font-semibold text-bridge-heading text-body truncate">{booking.customerName}</p>
                 {booking.isWalkin && (
-                  <span className="text-[9px] font-bold uppercase bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">Walk-in</span>
+                  <span className="text-[9px] font-bold uppercase bg-bridge-surface text-bridge-secondary px-1.5 py-0.5 rounded-full">Walk-in</span>
                 )}
                 {booking.isRepeat && (
-                  <span className="text-[9px] font-bold uppercase bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-full">Repeat</span>
+                  <span className="text-[9px] font-bold uppercase bg-bridge-accent-wash text-bridge-accent px-1.5 py-0.5 rounded-full">Repeat</span>
                 )}
                 <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${statusStyles(booking.status)}`}>
                   {booking.status === 'no_show' ? 'No-show' : booking.status}
                 </span>
               </div>
               {booking.isRepeat && booking.acquiredBy && (
-                <p className="text-micro text-purple-600 mt-0.5">
+                <p className="text-micro text-bridge-accent mt-0.5">
                   Returning customer · originally via {booking.acquiredBy.handle}
                 </p>
               )}
@@ -283,7 +283,7 @@ function ReassignChip({
       disabled={busy}
       className={`flex items-center gap-1 px-2.5 py-1.5 rounded-button text-micro font-semibold border transition-colors disabled:opacity-50 ${
         active
-          ? 'bg-bridge-heading text-white border-bridge-heading'
+          ? 'bg-bridge-ink text-bridge-ink-foreground border-bridge-ink'
           : dim
             ? 'bg-bridge-card border-bridge-border text-bridge-muted hover:border-bridge-border-strong'
             : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'

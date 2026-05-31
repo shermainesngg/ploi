@@ -4,10 +4,12 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Check, X, ExternalLink, ChevronRight, Music, Instagram, Youtube, Twitter, Globe, Inbox,
+  Check, X, ExternalLink, ChevronRight, Music, Instagram, Youtube, Twitter, Globe, Inbox, EyeOff, Play,
 } from 'lucide-react'
-import type { CreatorRollup, SocialPlatform } from '@/lib/types'
+import type { CreatorRollup, SocialPlatform, ContentWithCreator } from '@/lib/types'
 import type { PendingLinkRequest, MyCreatorEntry } from '@/services/link.service'
+import { resolvePosterUrl } from '@/lib/poster'
+import { moderateContent } from '@/actions/content.actions'
 
 function formatPrice(thb: number) { return `฿${thb.toLocaleString()}` }
 
@@ -29,10 +31,19 @@ interface Props {
   pendingRequests: PendingLinkRequest[]
   myCreators: MyCreatorEntry[]
   creatorRollups: CreatorRollup[]
+  pendingContent: ContentWithCreator[]
+  businessId: string
 }
 
-export default function CreatorsTab({ pendingRequests, myCreators, creatorRollups }: Props) {
-  if (pendingRequests.length === 0 && myCreators.length === 0 && creatorRollups.length === 0) {
+export default function CreatorsTab({
+  pendingRequests, myCreators, creatorRollups, pendingContent, businessId,
+}: Props) {
+  if (
+    pendingRequests.length === 0 &&
+    myCreators.length === 0 &&
+    creatorRollups.length === 0 &&
+    pendingContent.length === 0
+  ) {
     return (
       <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-12 text-center">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-bridge-surface mb-3">
@@ -46,6 +57,17 @@ export default function CreatorsTab({ pendingRequests, myCreators, creatorRollup
 
   return (
     <div className="space-y-8">
+      {/* Content approval queue — per-video moderation (PRD §D6) */}
+      {pendingContent.length > 0 && (
+        <Section title="Content to Review" tone="amber" badge={pendingContent.length}>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {pendingContent.map((item) => (
+              <ContentApprovalCard key={item.content.id} item={item} businessId={businessId} />
+            ))}
+          </div>
+        </Section>
+      )}
+
       {/* Pending Requests */}
       {pendingRequests.length > 0 && (
         <Section title="Pending Requests" tone="amber" badge={pendingRequests.length}>
@@ -100,6 +122,68 @@ function Section({
       </div>
       {children}
     </section>
+  )
+}
+
+function ContentApprovalCard({ item, businessId }: { item: ContentWithCreator; businessId: string }) {
+  const router = useRouter()
+  const [busy, setBusy] = useState(false)
+  const { content, creator } = item
+  const poster = resolvePosterUrl(content.posterPath)
+
+  async function decide(status: 'active' | 'hidden') {
+    setBusy(true)
+    try {
+      const fd = new FormData()
+      fd.set('contentId', content.id)
+      fd.set('businessId', businessId)
+      fd.set('status', status)
+      await moderateContent(fd)
+      router.refresh()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-card overflow-hidden">
+      <a
+        href={content.contentUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="relative block aspect-[9/16] bg-bridge-media-placeholder"
+      >
+        {poster ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={poster} alt={content.caption ?? ''} className="absolute inset-0 h-full w-full object-cover" />
+        ) : null}
+        <div className="absolute inset-0 bg-overlay-scrim" />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-bridge-heading">
+            <Play size={16} className="ml-0.5 fill-current" />
+          </span>
+        </div>
+        <span className="absolute left-1.5 top-1.5 rounded-badge bg-black/50 px-1.5 py-0.5 text-micro font-semibold text-white">
+          {creator.handle}
+        </span>
+      </a>
+      <div className="flex gap-1.5 p-2">
+        <button
+          onClick={() => decide('hidden')}
+          disabled={busy}
+          className="flex flex-1 items-center justify-center gap-1 rounded-button border border-bridge-border py-1.5 text-caption text-bridge-secondary transition-colors hover:bg-bridge-surface disabled:opacity-50"
+        >
+          <EyeOff size={12} /> Hide
+        </button>
+        <button
+          onClick={() => decide('active')}
+          disabled={busy}
+          className="flex flex-1 items-center justify-center gap-1 rounded-button bg-bridge-accent py-1.5 text-caption text-white transition-colors hover:bg-bridge-accent-dark disabled:opacity-50"
+        >
+          <Check size={12} /> Approve
+        </button>
+      </div>
+    </div>
   )
 }
 

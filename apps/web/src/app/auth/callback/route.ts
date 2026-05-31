@@ -1,16 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAuthServerClient } from '@/lib/supabase-server'
-import { linkAuthUserToRecord } from '@/lib/auth'
+import { createServerClient } from '@/lib/supabase'
+import { linkAuthUserToRecord, PLOI_ACTIVE_ROLE, type UserRole } from '@/lib/auth'
+
+const ONE_YEAR = 60 * 60 * 24 * 365
+
+function parseRole(value: string | null): UserRole | null {
+  return value === 'creator' || value === 'business' ? value : null
+}
+
+/** Redirect helper that also persists the active-role cookie on the response. */
+function redirectWithRole(origin: string, path: string, role: UserRole | null) {
+  const res = NextResponse.redirect(`${origin}${path}`)
+  if (role) {
+    res.cookies.set(PLOI_ACTIVE_ROLE, role, { path: '/', sameSite: 'lax', maxAge: ONE_YEAR })
+  }
+  return res
+}
 
 /**
- * Magic-link callback. Supabase redirects here with `?code=...` after the user clicks the email link.
- * We exchange the code for a session, link the auth user to any existing creator/business/consumer
- * record matched by email, then redirect based on role.
+ * Magic-link callback. Supabase redirects here with `?code=...` (and optionally
+ * `?role=creator|business`) after the user clicks the email link. We exchange the
+ * code for a session, link the auth user to any existing record (role-aware when a
+ * role hint is present), then route to the right dashboard — or into onboarding if
+ * no record exists yet for the requested role.
  */
 export async function GET(req: NextRequest) {
   const { searchParams, origin } = new URL(req.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/'
+  const next = searchParams.get('next')
+  const role = parseRole(searchParams.get('role'))
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`)
@@ -27,35 +46,60 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=no_user`)
   }
 
-  // Link to creator/business record (or create consumer row)
-  const role = await linkAuthUserToRecord(user.id, user.email)
+  // Link an existing record by email (role-aware when we have a hint).
+  await linkAuthUserToRecord(user.id, user.email, role ?? undefined)
 
-  // Decide where to send them
+  // Explicit `next` always wins.
   if (next && next !== '/') {
-    return NextResponse.redirect(`${origin}${next}`)
+    return redirectWithRole(origin, next, role)
   }
 
+  const db = createServerClient()
+
+  // Role-specific entry: go to that dashboard if owned, else into onboarding.
   if (role === 'creator') {
-    // We need the slug — re-query
-    const { createServerClient: admin } = await import('@/lib/supabase')
-    const db = admin()
     const { data } = await db
       .from('creators')
       .select('slug')
       .eq('auth_user_id', user.id)
-      .single()
-    if (data?.slug) return NextResponse.redirect(`${origin}/dashboard/creator/${data.slug}`)
+      .maybeSingle()
+    if (data?.slug) return redirectWithRole(origin, `/dashboard/creator/${data.slug}`, 'creator')
+    return NextResponse.redirect(`${origin}/onboard/creator`)
   }
+
   if (role === 'business') {
-    const { createServerClient: admin } = await import('@/lib/supabase')
-    const db = admin()
     const { data } = await db
       .from('businesses')
       .select('slug')
       .eq('auth_user_id', user.id)
-      .single()
-    if (data?.slug) return NextResponse.redirect(`${origin}/dashboard/business/${data.slug}`)
+      .maybeSingle()
+    if (data?.slug) return redirectWithRole(origin, `/dashboard/business/${data.slug}`, 'business')
+    return NextResponse.redirect(`${origin}/onboard/business`)
   }
+
+  // No role hint — prefer the last-used role from the cookie, then what they own
+  // (business → creator → bookings).
+  const lastUsed = parseRole(req.cookies.get(PLOI_ACTIVE_ROLE)?.value ?? null)
+
+  const { data: biz } = await db
+    .from('businesses')
+    .select('slug')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+  const { data: cre } = await db
+    .from('creators')
+    .select('slug')
+    .eq('auth_user_id', user.id)
+    .maybeSingle()
+
+  if (lastUsed === 'creator' && cre?.slug) {
+    return redirectWithRole(origin, `/dashboard/creator/${cre.slug}`, 'creator')
+  }
+  if (lastUsed === 'business' && biz?.slug) {
+    return redirectWithRole(origin, `/dashboard/business/${biz.slug}`, 'business')
+  }
+  if (biz?.slug) return redirectWithRole(origin, `/dashboard/business/${biz.slug}`, 'business')
+  if (cre?.slug) return redirectWithRole(origin, `/dashboard/creator/${cre.slug}`, 'creator')
 
   return NextResponse.redirect(`${origin}/bookings`)
 }

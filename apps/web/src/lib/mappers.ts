@@ -5,6 +5,14 @@ import type {
   Social,
   Link,
   LinkStatus,
+  CreatorContent,
+  ContentWithCreator,
+  Provider,
+  MediaKind,
+  AspectRatio,
+  PosterSource,
+  FetchStatus,
+  ContentStatus,
 } from './types'
 
 const GRADIENTS: Record<string, [string, string]> = {
@@ -103,6 +111,51 @@ export function rowToCreator(r: any, linkedBusinessSlugs: string[]): Creator {
     avatarColor: color,
     socials,
     linkedBusinessSlugs,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function rowToCreatorContent(r: any): CreatorContent {
+  return {
+    id: r.id,
+    linkId: r.link_id,
+    creatorId: r.creator_id,
+    businessId: r.business_id,
+    provider: r.provider as Provider,
+    contentUrl: r.content_url,
+    externalId: r.external_id ?? null,
+    urlHash: r.url_hash ?? '',
+    mediaKind: (r.media_kind ?? 'video') as MediaKind,
+    aspectRatio: (r.aspect_ratio ?? 'vertical') as AspectRatio,
+    posterSource: (r.poster_source ?? null) as PosterSource | null,
+    posterPath: r.poster_path ?? null,
+    caption: r.caption ?? null,
+    authorName: r.author_name ?? null,
+    fetchStatus: (r.fetch_status ?? 'pending') as FetchStatus,
+    attempts: r.attempts ?? 0,
+    lastAttemptAt: r.last_attempt_at ?? null,
+    posterExpiresAt: r.poster_expires_at ?? null,
+    status: (r.status ?? 'pending') as ContentStatus,
+    sortOrder: r.sort_order ?? 0,
+    createdAt: r.created_at ?? null,
+  }
+}
+
+// Row with an embedded `creators` resource → card-ready content + creator chip.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function rowToContentWithCreator(r: any): ContentWithCreator | null {
+  const c = r.creators
+  if (!c) return null
+  const { initials, color } = avatarFor(c.display_name, c.slug)
+  return {
+    content: rowToCreatorContent(r),
+    creator: {
+      slug: c.slug,
+      handle: c.handle,
+      displayName: c.display_name,
+      avatarInitials: initials,
+      avatarColor: color,
+    },
   }
 }
 

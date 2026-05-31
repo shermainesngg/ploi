@@ -2,74 +2,94 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * PLOI brand tokens — V3 brand guide.
+ * Palette: Ink #0D1117 · Warm White #FAF9F6 · Stone #E8E4DE · Charcoal #6B6B6B
+ * System accent: Coral #E05A47 — used SPARINGLY (actions, CTAs, earnings, highlights, positive states).
+ * Structural CTAs use --bridge-ink (black on light, white on dark), keeping coral rare.
+ */
 :root {
-  --bridge-accent: #DC2751;
-  --bridge-accent-dark: #B81E42;
-  --bridge-accent-light: #F5C6D0;
-  --bridge-accent-soft: #FDF0F3;
-  --bridge-accent-wash: #FAF0F2;
+  /* Coral — the single system accent. Earnings, booking CTAs, highlights, positive states. */
+  --bridge-accent: #E05A47;
+  --bridge-accent-dark: #C8492F;
+  --bridge-accent-light: #F4C8C0;
+  --bridge-accent-soft: #FBEEEB;
+  --bridge-accent-wash: #FCF4F2;
 
   --bridge-pop: var(--bridge-accent);
   --bridge-pop-light: var(--bridge-accent-soft);
   --bridge-pop-soft: var(--bridge-accent);
 
-  --bridge-bg: #faf8f5;
-  --bridge-surface: #f2ede7;
-  --bridge-card: #ffffff;
-  --bridge-border: #e3dbd2;
-  --bridge-border-strong: #d1c7bb;
-  --bridge-muted: #8f8279;
-  --bridge-secondary: #6b5e54;
-  --bridge-text: #3d3530;
-  --bridge-heading: #2a2320;
+  /* Ink — primary structural action color. Sign up, Get started, primary buttons. */
+  --bridge-ink: #0D1117;
+  --bridge-ink-foreground: #FAF9F6;
+  --bridge-ink-hover: #2A2E35;
+  /* Always-dark surface (both themes) — dark banners/heroes with light children. */
+  --bridge-ink-static: #0D1117;
 
-  --bridge-sage: #7a8f72;
-  --bridge-sage-light: #e8ede6;
+  --bridge-bg: #FAF9F6;        /* Warm White */
+  --bridge-surface: #F1EEE9;   /* Stone-tinted surface */
+  --bridge-card: #FFFFFF;
+  --bridge-border: #E8E4DE;    /* Stone */
+  --bridge-border-strong: #D7D1C7;
+  --bridge-muted: #8C887F;
+  --bridge-secondary: #6B6B6B; /* Charcoal */
+  --bridge-text: #2B2F36;
+  --bridge-heading: #0D1117;   /* Ink */
 
-  --bridge-hero-gradient: linear-gradient(135deg, #DC2751, #F97316);
+  --bridge-sage: #6B7A66;
+  --bridge-sage-light: #EEF1EC;
+
+  /* Minimal, infrastructure feel — neutral ink scrim, not a coral wash. */
+  --bridge-hero-gradient: linear-gradient(135deg, #1F242B, #0D1117);
 
   /* media — content posters / overlay (overlay-scrim is theme-independent, defined once) */
   --bridge-media-radius: 1rem;
-  --bridge-media-placeholder: #f2ede7;
-  --bridge-overlay-scrim: linear-gradient(transparent, rgba(0, 0, 0, 0.55));
+  --bridge-media-placeholder: #F1EEE9;
+  --bridge-overlay-scrim: linear-gradient(transparent, rgba(13, 17, 23, 0.55));
 
-  --shadow-card: 0 1px 3px rgba(42, 35, 32, 0.06), 0 1px 2px rgba(42, 35, 32, 0.04);
-  --shadow-card-hover: 0 4px 16px rgba(42, 35, 32, 0.08);
-  --shadow-modal: 0 -4px 24px rgba(42, 35, 32, 0.1);
+  --shadow-card: 0 1px 3px rgba(13, 17, 23, 0.06), 0 1px 2px rgba(13, 17, 23, 0.04);
+  --shadow-card-hover: 0 4px 16px rgba(13, 17, 23, 0.08);
+  --shadow-modal: 0 -4px 24px rgba(13, 17, 23, 0.1);
 }
 
 .dark {
-  --bridge-accent: #E5436B;
-  --bridge-accent-dark: #F06688;
-  --bridge-accent-light: #3A1C24;
-  --bridge-accent-soft: #221418;
-  --bridge-accent-wash: #1C1215;
+  --bridge-accent: #E86B59;
+  --bridge-accent-dark: #EE8170;
+  --bridge-accent-light: #3A1E18;
+  --bridge-accent-soft: #241512;
+  --bridge-accent-wash: #1E120F;
 
   --bridge-pop: var(--bridge-accent);
   --bridge-pop-light: var(--bridge-accent-soft);
   --bridge-pop-soft: var(--bridge-accent);
 
-  --bridge-bg: #161311;
-  --bridge-surface: #1e1a17;
-  --bridge-card: #211d1a;
-  --bridge-border: #332c26;
-  --bridge-border-strong: #443b33;
-  --bridge-muted: #7a7068;
-  --bridge-secondary: #a09488;
-  --bridge-text: #ddd5cc;
-  --bridge-heading: #f0eae4;
+  /* Ink inverts in dark: warm-white button on ink ground. */
+  --bridge-ink: #FAF9F6;
+  --bridge-ink-foreground: #0D1117;
+  --bridge-ink-hover: #E8E4DE;
 
-  --bridge-sage: #8aa080;
-  --bridge-sage-light: #1e2a1c;
+  --bridge-bg: #0D1117;        /* Ink */
+  --bridge-surface: #161B22;
+  --bridge-card: #1A2029;
+  --bridge-border: #2A2F37;
+  --bridge-border-strong: #3A414B;
+  --bridge-muted: #7C8088;
+  --bridge-secondary: #9CA0A8;
+  --bridge-text: #D6D3CC;
+  --bridge-heading: #FAF9F6;   /* Warm White */
+
+  --bridge-sage: #8AA080;
+  --bridge-sage-light: #1A241A;
 
   /* media — only the placeholder differs in dark; overlay-scrim stays theme-independent */
-  --bridge-media-placeholder: #1e1a17;
+  --bridge-media-placeholder: #161B22;
 
-  --bridge-hero-gradient: linear-gradient(135deg, #E5436B, #FB923C);
+  --bridge-hero-gradient: linear-gradient(135deg, #1F242B, #0D1117);
 
-  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
-  --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.35);
-  --shadow-modal: 0 -4px 24px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 -4px 24px rgba(0, 0, 0, 0.45);
 }
 
 * {

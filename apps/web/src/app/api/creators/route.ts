@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CreatorService } from '@/services/creator.service'
+import { createAuthServerClient } from '@/lib/supabase-server'
+import { PLOI_ACTIVE_ROLE } from '@/lib/auth'
 import type { Social, SocialPlatform } from '@/lib/types'
+
+const ONE_YEAR = 60 * 60 * 24 * 365
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,16 +28,28 @@ export async function POST(req: NextRequest) {
           .map((s) => ({ platform: s.platform as SocialPlatform, url: s.url as string }))
       : []
 
+    // If the visitor is signed in, attach the creator profile to their auth user
+    // so it joins their existing account (and default the contact email to theirs).
+    const supabase = await createAuthServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const resolvedEmail =
+      (typeof email === 'string' && email.trim() ? email.trim() : undefined) ?? user?.email
+
     const creator = await CreatorService.create({
       slug,
       handle: cleanHandle,
       displayName,
       bio: bio ?? '',
-      email: typeof email === 'string' && email.trim() ? email.trim() : undefined,
+      email: resolvedEmail,
+      authUserId: user?.id,
       socials: cleanSocials,
     })
 
-    return NextResponse.json({ slug: creator.slug, id: creator.id }, { status: 201 })
+    const res = NextResponse.json({ slug: creator.slug, id: creator.id }, { status: 201 })
+    if (user) {
+      res.cookies.set(PLOI_ACTIVE_ROLE, 'creator', { path: '/', sameSite: 'lax', maxAge: ONE_YEAR })
+    }
+    return res
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error'
     return NextResponse.json({ error: message }, { status: 500 })

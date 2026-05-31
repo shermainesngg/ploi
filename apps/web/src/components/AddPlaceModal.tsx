@@ -326,7 +326,7 @@ export default function AddPlaceModal({
                   disabled={!canSubmit || loading}
                   className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-bridge-accent-dark active:scale-[0.98] transition-all"
                 >
-                  {loading ? 'Generating link…' : 'Generate BRIDGE link'}
+                  {loading ? 'Generating link…' : 'Generate PLOI link'}
                 </button>
               </div>
             )}
@@ -343,7 +343,7 @@ export default function AddPlaceModal({
                 </p>
                 <button
                   onClick={handleClose}
-                  className="w-full py-3.5 rounded-2xl bg-bridge-heading text-white font-semibold text-base hover:bg-bridge-heading/90 transition-all"
+                  className="w-full py-3.5 rounded-2xl bg-bridge-ink text-bridge-ink-foreground font-semibold text-base hover:bg-bridge-ink-hover transition-all"
                 >
                   Done
                 </button>

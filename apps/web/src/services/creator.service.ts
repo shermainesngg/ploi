@@ -84,6 +84,7 @@ export const CreatorService = {
     displayName: string
     bio: string
     email?: string
+    authUserId?: string
     socials?: Social[]
   }) {
     if (!isSupabaseConfigured()) {
@@ -100,6 +101,7 @@ export const CreatorService = {
         display_name: data.displayName,
         bio: data.bio,
         email: data.email ?? null,
+        auth_user_id: data.authUserId ?? null,
         socials: data.socials ?? [],
       })
       .select()

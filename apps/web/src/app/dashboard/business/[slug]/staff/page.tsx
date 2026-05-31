@@ -40,5 +40,5 @@ export default async function Page({ params }: PageProps) {
 
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params
-  return { title: `${slug} · Staff — BRIDGE` }
+  return { title: `${slug} · Staff — PLOI` }
 }

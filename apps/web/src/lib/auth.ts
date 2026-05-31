@@ -1,22 +1,58 @@
+import { cookies } from 'next/headers'
 import { createServerClient, isSupabaseConfigured } from './supabase'
 import { createAuthServerClient } from './supabase-server'
 
 export type UserRole = 'creator' | 'business' | 'consumer'
 
+/** Cookie that remembers which role's dashboard the user is currently viewing. */
+export const PLOI_ACTIVE_ROLE = 'ploi_active_role'
+
+/** Role priority used to pick a default active role when the cookie is absent/invalid. */
+const ROLE_PRIORITY: UserRole[] = ['business', 'creator', 'consumer']
+
 export interface AppUser {
   id: string  // auth user id
   email: string
+  /** Every role this auth user owns a record for. */
+  roles: UserRole[]
+  /** The role whose dashboard is currently active (cookie-driven). */
+  activeRole: UserRole
+  /** Alias of activeRole — kept for existing consumers (NavBar, dashHref, etc.). */
   role: UserRole
-  // For each role, the slug of their owned record (if any)
+  // Slugs of owned records, populated whenever the row exists (independent of activeRole).
   creatorSlug?: string
   businessSlug?: string
+  // Display fields reflect the ACTIVE role.
   displayName?: string
   avatarColor?: string
   avatarInitials?: string
 }
 
+const ROLE_AVATAR_COLOR: Record<UserRole, string> = {
+  creator: '#e11d48',
+  business: '#3b82f6',
+  consumer: '#10b981',
+}
+
+function initialsFromName(name: string): string {
+  return name
+    .split(' ')
+    .map((w) => w[0] ?? '')
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
+/** Read the active-role cookie. Returns null if unset. */
+export async function getActiveRoleCookie(): Promise<UserRole | null> {
+  const store = await cookies()
+  const value = store.get(PLOI_ACTIVE_ROLE)?.value
+  if (value === 'creator' || value === 'business' || value === 'consumer') return value
+  return null
+}
+
 /**
- * Get the current authenticated user + their role.
+ * Get the current authenticated user, all the roles they own, and the active role.
  * Returns null if not logged in or Supabase not configured.
  */
 export async function getCurrentUser(): Promise<AppUser | null> {
@@ -28,122 +64,126 @@ export async function getCurrentUser(): Promise<AppUser | null> {
 
   const admin = createServerClient()
 
-  // Try creator first
-  const { data: creator } = await admin
-    .from('creators')
-    .select('slug, display_name, handle')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
+  const [{ data: creator }, { data: business }, { data: consumer }] = await Promise.all([
+    admin
+      .from('creators')
+      .select('slug, display_name')
+      .eq('auth_user_id', user.id)
+      .maybeSingle(),
+    admin
+      .from('businesses')
+      .select('slug, name')
+      .eq('auth_user_id', user.id)
+      .maybeSingle(),
+    admin
+      .from('consumers')
+      .select('id, name')
+      .eq('auth_user_id', user.id)
+      .maybeSingle(),
+  ])
 
-  if (creator) {
-    const initials = (creator.display_name as string)
-      .split(' ').map((w) => w[0] ?? '').slice(0, 2).join('').toUpperCase()
-    return {
-      id: user.id,
-      email: user.email,
-      role: 'creator',
-      creatorSlug: creator.slug,
-      displayName: creator.display_name,
-      avatarInitials: initials,
-      avatarColor: '#e11d48',
-    }
+  const roles: UserRole[] = []
+  if (creator) roles.push('creator')
+  if (business) roles.push('business')
+  if (consumer) roles.push('consumer')
+
+  // Auth user with no record yet — create a consumer row so they always have a role.
+  let consumerName = consumer?.name as string | null | undefined
+  if (roles.length === 0) {
+    await admin.from('consumers').insert({ auth_user_id: user.id, email: user.email })
+    roles.push('consumer')
+    consumerName = null
   }
 
-  // Try business
-  const { data: business } = await admin
-    .from('businesses')
-    .select('slug, name')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
+  // Pick the active role: cookie value if owned, otherwise first by priority.
+  const cookieRole = await getActiveRoleCookie()
+  const activeRole =
+    cookieRole && roles.includes(cookieRole)
+      ? cookieRole
+      : (ROLE_PRIORITY.find((r) => roles.includes(r)) as UserRole)
 
-  if (business) {
-    return {
-      id: user.id,
-      email: user.email,
-      role: 'business',
-      businessSlug: business.slug,
-      displayName: business.name,
-      avatarInitials: business.name.charAt(0).toUpperCase(),
-      avatarColor: '#3b82f6',
-    }
-  }
-
-  // Try consumer
-  const { data: consumer } = await admin
-    .from('consumers')
-    .select('id, name, email')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (consumer) {
-    const name = consumer.name as string | null
-    return {
-      id: user.id,
-      email: user.email,
-      role: 'consumer',
-      displayName: name ?? user.email,
-      avatarInitials: (name?.charAt(0) ?? user.email.charAt(0)).toUpperCase(),
-      avatarColor: '#10b981',
-    }
-  }
-
-  // Auth user with no record yet — create a consumer row
-  await admin.from('consumers').insert({
-    auth_user_id: user.id,
-    email: user.email,
-  })
-
-  return {
+  const base: AppUser = {
     id: user.id,
     email: user.email,
-    role: 'consumer',
-    displayName: user.email,
-    avatarInitials: user.email.charAt(0).toUpperCase(),
-    avatarColor: '#10b981',
+    roles,
+    activeRole,
+    role: activeRole,
+    creatorSlug: creator?.slug,
+    businessSlug: business?.slug,
+    avatarColor: ROLE_AVATAR_COLOR[activeRole],
   }
+
+  if (activeRole === 'creator' && creator) {
+    base.displayName = creator.display_name
+    base.avatarInitials = initialsFromName(creator.display_name)
+  } else if (activeRole === 'business' && business) {
+    base.displayName = business.name
+    base.avatarInitials = business.name.charAt(0).toUpperCase()
+  } else {
+    const name = consumerName ?? user.email
+    base.displayName = name
+    base.avatarInitials = name.charAt(0).toUpperCase()
+  }
+
+  return base
 }
 
-/** Link an existing creator/business record to an auth user (after they sign in for the first time). */
+/**
+ * Link an existing record to an auth user (after they sign in for the first time).
+ *
+ * When `hint` is provided, only a record of THAT role is linked by email — we never
+ * silently link a different role. Without a hint, falls back to the legacy
+ * creator → business → consumer order for backwards compatibility.
+ */
 export async function linkAuthUserToRecord(
   authUserId: string,
   email: string,
+  hint?: UserRole,
 ): Promise<UserRole | null> {
   if (!isSupabaseConfigured()) return null
   const admin = createServerClient()
 
-  // If a creator record exists with this email, link it
-  const { data: cre } = await admin
-    .from('creators')
-    .select('id')
-    .eq('email', email)
-    .is('auth_user_id', null)
-    .maybeSingle()
-  if (cre) {
-    await admin.from('creators').update({ auth_user_id: authUserId }).eq('id', cre.id)
+  async function linkCreator(): Promise<UserRole | null> {
+    const { data } = await admin
+      .from('creators')
+      .select('id')
+      .eq('email', email)
+      .is('auth_user_id', null)
+      .maybeSingle()
+    if (!data) return null
+    await admin.from('creators').update({ auth_user_id: authUserId }).eq('id', data.id)
     return 'creator'
   }
 
-  const { data: biz } = await admin
-    .from('businesses')
-    .select('id')
-    .eq('email', email)
-    .is('auth_user_id', null)
-    .maybeSingle()
-  if (biz) {
-    await admin.from('businesses').update({ auth_user_id: authUserId }).eq('id', biz.id)
+  async function linkBusiness(): Promise<UserRole | null> {
+    const { data } = await admin
+      .from('businesses')
+      .select('id')
+      .eq('email', email)
+      .is('auth_user_id', null)
+      .maybeSingle()
+    if (!data) return null
+    await admin.from('businesses').update({ auth_user_id: authUserId }).eq('id', data.id)
     return 'business'
   }
 
-  // Otherwise, ensure a consumer row
-  const { data: con } = await admin
-    .from('consumers')
-    .select('id')
-    .eq('email', email)
-    .maybeSingle()
-  if (con) {
-    await admin.from('consumers').update({ auth_user_id: authUserId }).eq('id', con.id)
-  } else {
-    await admin.from('consumers').insert({ auth_user_id: authUserId, email })
+  async function ensureConsumer(): Promise<UserRole> {
+    const { data } = await admin
+      .from('consumers')
+      .select('id')
+      .eq('email', email)
+      .maybeSingle()
+    if (data) {
+      await admin.from('consumers').update({ auth_user_id: authUserId }).eq('id', data.id)
+    } else {
+      await admin.from('consumers').insert({ auth_user_id: authUserId, email })
+    }
+    return 'consumer'
   }
-  return 'consumer'
+
+  if (hint === 'creator') return (await linkCreator()) ?? (await ensureConsumer())
+  if (hint === 'business') return (await linkBusiness()) ?? (await ensureConsumer())
+
+  // No hint — legacy behaviour.
+  return (await linkCreator()) ?? (await linkBusiness()) ?? (await ensureConsumer())
 }

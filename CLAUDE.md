@@ -1,26 +1,26 @@
-# BRIDGE
+# PLOI
 
-Creator-to-commerce booking infrastructure that closes the attribution gap between social media content discovery and local service bookings. A creator posts about a local service, adds a BRIDGE link, a customer taps it, books, and the creator earns commission — with data proving who drove what.
+Creator-to-commerce booking infrastructure that closes the attribution gap between social media content discovery and local service bookings. A creator posts about a local service, adds a PLOI link, a customer taps it, books, and the creator earns commission — with data proving who drove what.
 
 ## Business Model
 
 Commission split on creator-attributed bookings only. Walk-in and direct bookings are free.
 
-| Booking type | Creator | BRIDGE | Business |
+| Booking type | Creator | PLOI | Business |
 |---|---|---|---|
 | First booking via creator link | 10% | 5% | 85% |
 | Repeat booking (6-month window) | 5% | 5% | 90% |
 | Direct / walk-in | 0% | 0% | 100% |
 
-Four entities: **Customer** (books via creator links), **Creator** (earns commission, gets attribution dashboard), **Business** (gets booking system + creator attribution), **BRIDGE** (infrastructure layer, earns 5% platform fee).
+Four entities: **Customer** (books via creator links), **Creator** (earns commission, gets attribution dashboard), **Business** (gets booking system + creator attribution), **PLOI** (infrastructure layer, earns 5% platform fee).
 
 Target market: Bangkok first (beauty & wellness), Singapore for initial testing.
 
 ## Key Architectural Principle: The Discovery Loop
 
-Every page leads to another page: Business page -> Creator chips -> Creator profile -> Other businesses -> repeat. This circular loop is how BRIDGE becomes a discovery platform, not just a booking tool. Every feature should reinforce this loop.
+Every page leads to another page: Business page -> Creator chips -> Creator profile -> Other businesses -> repeat. This circular loop is how PLOI becomes a discovery platform, not just a booking tool. Every feature should reinforce this loop.
 
-The scheduling suite is the trojan horse: businesses adopt BRIDGE because it's a better booking system than their paper diary. Once their schedule lives in BRIDGE, creator attribution is already built in.
+The scheduling suite is the trojan horse: businesses adopt PLOI because it's a better booking system than their paper diary. Once their schedule lives in PLOI, creator attribution is already built in.
 
 ## Tech Stack
 
@@ -167,4 +167,10 @@ NEXT_PUBLIC_SITE_URL            # http://localhost:3000 (update for production)
 
 ## Design Direction
 
-Primary accent: warm terracotta (`#c05636`). Mobile-first, clean sans-serif typography. UX inspired by ClassPass (booking flow), Instagram (creator social layer), Klook (service discovery). Shop Booking Page must load fast — minimal JS, no heavy animations.
+Per the **PLOI Brand Guidelines V3** (see `.impeccable.md` for the full Design Context). Palette: Ink `#0D1117` (60%) · Warm White `#FAF9F6` / Stone `#E8E4DE` (30%) · Charcoal `#6B6B6B` (8%) · **Coral `#E05A47`** as the system accent (2% — actions, booking CTAs, earnings, highlights, positive states only). Structural CTAs use ink (the `--bridge-ink` token: black on light, white on dark), not coral. Typography: **Plus Jakarta Sans** (primary) + **Space Mono** (`font-data` — earnings, prices, IDs, timestamps). Light + dark themes. Logo: P-gem mark + `PLOI` wordmark (`components/ui/Logo.tsx`). Mobile-first; the Shop Booking page loads fast (minimal JS, no heavy animation) and uses the "invisible brand" mode (business is the star, PLOI recedes to a `PoweredByPloi` badge). UX inspired by ClassPass (booking flow), Instagram (creator social layer), Klook (service discovery).
+
+### Design Principles
+1. **Coral is a guest, not the host.** Reserve coral for money, booking CTAs, and positive states. Primary `Button` is ink; the coral booking action is `Button variant="book"`.
+2. **Be invisible when the work isn't yours.** Customer-facing business/creator pages recede to `PoweredByPloi`. Loud PLOI branding belongs only to marketing + dashboards.
+3. **Data wears Space Mono.** Earnings, prices, counts, IDs, timestamps use `font-data` with tight tracking.
+4. **Warm, tinted neutrals — never pure black/white, never off-palette.** No purple/amber/cyan; everything resolves to ink, warm white, stone, charcoal, or coral. (Conventional semantic status colors — green confirmed / amber pending / red cancelled — are retained.)

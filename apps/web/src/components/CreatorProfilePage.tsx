@@ -7,6 +7,7 @@ import type { CreatorBusinessLink } from '@/services/creator.service'
 import { Avatar } from '@/components/ui/Avatar'
 import { Card } from '@/components/ui/Card'
 import { AnimateOnScroll } from '@/components/ui/AnimateOnScroll'
+import { PoweredByPloi } from '@/components/ui/Logo'
 
 function PlatformIcon({ platform, size = 14 }: { platform: SocialPlatform; size?: number }) {
   switch (platform) {
@@ -66,7 +67,7 @@ function CreatorHero({
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1.5 bg-bridge-heading text-white hover:bg-bridge-secondary active:scale-[0.97] transition-all px-4 py-2 rounded-full text-caption font-semibold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent focus-visible:ring-offset-2"
+                className="flex items-center gap-1.5 bg-bridge-ink text-bridge-ink-foreground hover:bg-bridge-ink-hover active:scale-[0.97] transition-all px-4 py-2 rounded-full text-caption font-semibold cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent focus-visible:ring-offset-2"
               >
                 <PlatformIcon platform={s.platform} />
                 {PlatformLabel(s.platform)}
@@ -177,9 +178,9 @@ export default function CreatorProfilePage({
       </div>
 
       <div className="text-center pb-12">
-        <p className="text-caption text-bridge-muted">
-          Powered by <span className="font-display font-bold text-bridge-accent">BRIDGE</span>
-        </p>
+        <div className="flex justify-center">
+          <PoweredByPloi />
+        </div>
         <div className="mt-4 flex items-center justify-center gap-6">
           <Link href="/onboard/business" className="text-caption text-bridge-muted hover:text-bridge-accent transition-colors cursor-pointer">List your business</Link>
           <Link href="/onboard/creator" className="text-caption text-bridge-muted hover:text-bridge-accent transition-colors cursor-pointer">Join as creator</Link>

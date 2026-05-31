@@ -493,7 +493,7 @@ function DoneScreen({ slug }: { slug: string }) {
 
       <Link
         href={`/${slug}`}
-        className="w-full py-4 rounded-2xl bg-bridge-heading text-white font-semibold text-base hover:bg-bridge-text transition-all flex items-center justify-center gap-2"
+        className="w-full py-4 rounded-2xl bg-bridge-ink text-bridge-ink-foreground font-semibold text-base hover:bg-bridge-ink-hover transition-all flex items-center justify-center gap-2"
       >
         Preview my booking page →
       </Link>
@@ -576,12 +576,12 @@ export default function BusinessOnboarding() {
     <div className="min-h-screen bg-bridge-bg">
       <div className="max-w-2xl mx-auto px-5 py-10">
         <div className="mb-8">
-          <Link href="/" className="text-xs font-display font-bold text-bridge-accent tracking-tight">BRIDGE</Link>
+          <Link href="/" className="text-xs font-display font-bold text-bridge-accent tracking-tight">PLOI</Link>
           <h1 className="text-2xl font-display font-bold text-bridge-heading mt-4 leading-tight">
             {step === 'done' ? 'Page created' : 'List your business'}
           </h1>
           {step !== 'done' && (
-            <p className="text-bridge-muted text-sm mt-1">Set up your BRIDGE booking page in under 10 minutes.</p>
+            <p className="text-bridge-muted text-sm mt-1">Set up your PLOI booking page in under 10 minutes.</p>
           )}
         </div>
 

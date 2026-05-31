@@ -17,6 +17,11 @@ const config: Config = {
           'accent-soft': 'var(--bridge-accent-soft)',
           'accent-wash': 'var(--bridge-accent-wash)',
 
+          ink: 'var(--bridge-ink)',
+          'ink-foreground': 'var(--bridge-ink-foreground)',
+          'ink-hover': 'var(--bridge-ink-hover)',
+          'ink-static': 'var(--bridge-ink-static)',
+
           bg: 'var(--bridge-bg)',
           surface: 'var(--bridge-surface)',
           card: 'var(--bridge-card)',
@@ -38,12 +43,13 @@ const config: Config = {
         },
       },
       fontFamily: {
-        display: ['var(--font-display)', 'Georgia', 'serif'],
+        display: ['var(--font-body)', 'system-ui', 'sans-serif'],
         sans: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        data: ['var(--font-data)', 'ui-monospace', 'monospace'],
       },
       fontSize: {
-        display: ['clamp(2.25rem, 5vw, 3.25rem)', { lineHeight: '1.08', fontWeight: '700', letterSpacing: '-0.02em' }],
-        heading: ['clamp(1.5rem, 3.5vw, 2rem)', { lineHeight: '1.15', fontWeight: '700', letterSpacing: '-0.015em' }],
+        display: ['clamp(2.25rem, 5vw, 3.25rem)', { lineHeight: '1.08', fontWeight: '800', letterSpacing: '-0.03em' }],
+        heading: ['clamp(1.5rem, 3.5vw, 2rem)', { lineHeight: '1.15', fontWeight: '800', letterSpacing: '-0.02em' }],
         title: ['1.25rem', { lineHeight: '1.25', fontWeight: '600', letterSpacing: '-0.01em' }],
         'body-lg': ['1.0625rem', { lineHeight: '1.6', fontWeight: '400' }],
         body: ['0.9375rem', { lineHeight: '1.6', fontWeight: '400' }],

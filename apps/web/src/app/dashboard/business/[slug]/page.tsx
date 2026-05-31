@@ -35,14 +35,16 @@ export default async function Page({ params, searchParams }: PageProps) {
   const status = sp.status ?? 'all'
 
   // Always-fetched data (cheap)
-  const [data, pendingRequests, myCreators, stripeStatus, staff, todayAgenda] = await Promise.all([
-    DashboardService.getBusinessDashboard(slug),
-    LinkService.getPendingRequests(slug),
-    LinkService.getMyCreators(slug),
-    BusinessService.getStripeStatus(slug),
-    StaffService.list(slug),
-    DashboardService.getBookingsForDate(slug, today),
-  ])
+  const [data, pendingRequests, myCreators, pendingContent, stripeStatus, staff, todayAgenda] =
+    await Promise.all([
+      DashboardService.getBusinessDashboard(slug),
+      LinkService.getPendingRequests(slug),
+      LinkService.getMyCreators(slug),
+      BusinessService.getPendingContent(slug),
+      BusinessService.getStripeStatus(slug),
+      StaffService.list(slug),
+      DashboardService.getBookingsForDate(slug, today),
+    ])
   if (!data) return notFound()
 
   // Tab-specific
@@ -77,6 +79,7 @@ export default async function Page({ params, searchParams }: PageProps) {
       data={data}
       pendingRequests={pendingRequests}
       myCreators={myCreators}
+      pendingContent={pendingContent}
       stripeConnected={stripeStatus.hasAccount}
       view={view}
       viewDate={tab === 'calendar' && view === 'day' ? baseDate : viewStartDate}
@@ -93,5 +96,5 @@ export default async function Page({ params, searchParams }: PageProps) {
 
 export async function generateMetadata({ params }: PageProps) {
   const { slug } = await params
-  return { title: `${slug} dashboard — BRIDGE` }
+  return { title: `${slug} dashboard — PLOI` }
 }

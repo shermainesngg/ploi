@@ -54,15 +54,15 @@ export default function OverviewTab({
         if (total === 0) return null
         const pct = Math.round((repeats / total) * 100)
         return (
-          <div className="mt-3 bg-purple-50 border border-purple-200 rounded-2xl p-3 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center text-purple-700 flex-shrink-0">
+          <div className="mt-3 bg-bridge-surface border border-bridge-border/60 rounded-2xl p-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-bridge-accent-wash flex items-center justify-center text-bridge-accent flex-shrink-0">
               <Repeat size={16} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-bold text-purple-900 text-sm">
+              <p className="font-bold text-bridge-heading text-sm">
                 {repeats} returning customer{repeats !== 1 ? 's' : ''}
               </p>
-              <p className="text-purple-700 text-xs leading-relaxed">
+              <p className="text-bridge-secondary text-xs leading-relaxed">
                 {pct}% of bookings are repeats — these came from creator-acquired customers coming back.
               </p>
             </div>
@@ -128,14 +128,14 @@ function Kpi({
 }) {
   return (
     <div className={`rounded-2xl border p-4 shadow-card ${
-      highlight ? 'bg-amber-50 border-amber-200' : 'bg-bridge-card border-bridge-border/60'
+      highlight ? 'bg-bridge-accent-wash border-bridge-accent-light' : 'bg-bridge-card border-bridge-border/60'
     }`}>
-      <div className={`flex items-center gap-2 mb-2 ${highlight ? 'text-amber-700' : 'text-bridge-muted'}`}>
+      <div className={`flex items-center gap-2 mb-2 ${highlight ? 'text-bridge-accent' : 'text-bridge-muted'}`}>
         {icon}
         <span className="text-micro uppercase tracking-wide">{label}</span>
       </div>
-      <p className={`text-2xl font-bold leading-none ${highlight ? 'text-amber-900' : 'text-bridge-heading'}`}>{value}</p>
-      {hint && <p className={`text-caption mt-1.5 ${highlight ? 'text-amber-700' : 'text-bridge-muted'}`}>{hint}</p>}
+      <p className={`font-data text-2xl font-bold leading-none tracking-tight ${highlight ? 'text-bridge-accent' : 'text-bridge-heading'}`}>{value}</p>
+      {hint && <p className={`text-caption mt-1.5 ${highlight ? 'text-bridge-secondary' : 'text-bridge-muted'}`}>{hint}</p>}
     </div>
   )
 }

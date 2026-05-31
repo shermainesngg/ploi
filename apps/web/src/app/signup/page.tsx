@@ -3,7 +3,7 @@ import { Megaphone, Store, ArrowRight } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 
 export const metadata = {
-  title: 'Sign up — BRIDGE',
+  title: 'Sign up — PLOI',
 }
 
 export default function SignupPage() {
@@ -11,7 +11,7 @@ export default function SignupPage() {
     <div className="min-h-screen bg-bridge-bg flex flex-col items-center justify-center px-5 py-16">
       <Card className="max-w-sm w-full p-6 sm:p-8">
         <div className="text-center mb-10">
-          <span className="font-display text-sm font-bold text-bridge-heading">BRIDGE</span>
+          <span className="font-display text-sm font-bold text-bridge-heading">PLOI</span>
           <h1 className="font-display text-heading text-bridge-heading mt-6 leading-tight">I am a…</h1>
           <p className="text-bridge-muted text-body mt-2">Pick the path that fits you.</p>
         </div>

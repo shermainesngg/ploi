@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import BookingsList from '@/components/BookingsList'
 
 export const metadata = {
-  title: 'My bookings — BRIDGE',
+  title: 'My bookings — PLOI',
 }
 
 export default async function BookingsPage() {

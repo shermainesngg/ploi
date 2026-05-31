@@ -27,12 +27,22 @@ export default async function Home() {
                 Browse places <ArrowRight size={16} />
               </Button>
             </Link>
-            <Link href="/signup" className="flex-1">
+            <Link href="/onboard/creator" className="flex-1">
               <Button variant="secondary" size="lg" className="w-full cursor-pointer">
                 Join as creator
               </Button>
             </Link>
           </div>
+
+          <p className="text-body text-bridge-secondary mt-5">
+            Run a salon, spa, or studio?{' '}
+            <Link
+              href="/onboard/business"
+              className="inline-flex items-center gap-1 font-semibold text-bridge-accent hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent rounded"
+            >
+              List your business <ArrowRight size={14} />
+            </Link>
+          </p>
         </div>
       </section>
 
@@ -105,7 +115,7 @@ export default async function Home() {
               Are you a business or creator<span className="text-bridge-accent">?</span>
             </h3>
             <p className="text-bridge-secondary text-body mt-3 mb-8">
-              Get on BRIDGE in under ten minutes. No setup fees.
+              Get on PLOI in under ten minutes. No setup fees.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 max-w-md">
               <Link href="/onboard/business" className="flex-1">
@@ -128,7 +138,7 @@ export default async function Home() {
         <div className="border-t border-bridge-border/60 pt-10">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div>
-              <span className="font-display text-lg font-bold text-bridge-heading">BRIDGE<span className="text-bridge-accent">.</span></span>
+              <span className="font-display text-lg font-bold text-bridge-heading">PLOI<span className="text-bridge-accent">.</span></span>
               <p className="text-caption text-bridge-muted mt-1">Bangkok&rsquo;s creator-curated bookings</p>
             </div>
             <div className="flex items-center gap-6 text-caption text-bridge-muted">

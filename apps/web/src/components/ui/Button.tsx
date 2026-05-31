@@ -5,7 +5,11 @@ import { cn } from '@/lib/cn'
 import { Loader2 } from 'lucide-react'
 
 const variants = {
+  // Primary = ink. Structural CTAs (Sign up, Get started, form submits). Black on light, white on dark.
   primary:
+    'bg-bridge-ink text-bridge-ink-foreground hover:bg-bridge-ink-hover',
+  // Book = coral. Reserved for booking CTAs and money actions — the rare, high-intent accent.
+  book:
     'bg-bridge-accent text-white hover:bg-bridge-accent-dark',
   secondary:
     'border border-bridge-border-strong text-bridge-text hover:bg-bridge-surface',

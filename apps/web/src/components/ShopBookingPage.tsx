@@ -29,15 +29,18 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
+import { PoweredByPloi } from '@/components/ui/Logo'
 import type {
   Business,
   Creator,
   Service,
   Link as LinkRecord,
   BusinessCreatorAffiliation,
+  ContentWithCreator,
   SocialPlatform,
   DayKey,
 } from '@/lib/types'
+import { ContentCarousel } from '@/components/ContentCarousel'
 import { getUpcomingDates } from '@/lib/seed-data'
 
 interface AvailabilityResult {
@@ -52,7 +55,22 @@ interface Props {
   creator: Creator | null
   link: LinkRecord | null
   affiliations: BusinessCreatorAffiliation[]
+  content: ContentWithCreator[]
   recentBookings: number
+}
+
+// ── Creator content wall (swimlane of facade cards → bottom-sheet player) ─────
+
+function ContentWall({ content }: { content: ContentWithCreator[] }) {
+  if (content.length === 0) return null
+  return (
+    <div className="px-4 mt-6">
+      <h2 className="text-sm font-semibold text-bridge-muted uppercase tracking-widest mb-3">
+        Creator content
+      </h2>
+      <ContentCarousel items={content} />
+    </div>
+  )
 }
 
 type Step = 'services' | 'date' | 'time' | 'details' | 'confirmed'
@@ -147,7 +165,7 @@ function BusinessHero({
           )}
         </div>
 
-        {/* Trust signals — Klook-style bold pill badges, creators first (BRIDGE differentiator) */}
+        {/* Trust signals — Klook-style bold pill badges, creators first (PLOI differentiator) */}
         <div className="flex flex-wrap items-center gap-2 mt-4">
           {affiliationsCount > 0 && (
             <span className="inline-flex items-center gap-1.5 bg-white/25 backdrop-blur-sm border border-white/10 text-white text-xs font-bold px-3 py-1.5 rounded-full">
@@ -194,9 +212,9 @@ function CreatorBar({ creator, link }: { creator: Creator; link: LinkRecord | nu
           )}
         </div>
       </div>
-      <span className="text-xs font-bold tracking-tight text-bridge-accent bg-bridge-accent-wash px-2.5 py-1 rounded-full flex-shrink-0">
-        BRIDGE
-      </span>
+      {link?.contentUrl && (
+        <ChevronRight size={16} className="text-bridge-muted flex-shrink-0" />
+      )}
     </div>
   )
   if (link?.contentUrl) {
@@ -603,7 +621,7 @@ function CreatorDetailModal({
           <div className="px-5 pb-6">
             <NextLink
               href={`/${creator.slug}`}
-              className="block w-full py-3 rounded-2xl bg-bridge-heading text-white text-center font-semibold text-sm hover:bg-bridge-text transition-all"
+              className="block w-full py-3 rounded-2xl bg-bridge-ink text-bridge-ink-foreground text-center font-semibold text-sm hover:bg-bridge-ink-hover transition-all"
             >
               View full profile →
             </NextLink>
@@ -745,8 +763,8 @@ function ServiceCard({
         </div>
       </div>
       <div className="flex flex-col items-end gap-2 flex-shrink-0">
-        <span className="text-bridge-heading font-bold text-xl leading-none">{formatPrice(service.price)}</span>
-        <Button size="sm" onClick={() => onBook(service)} className="cursor-pointer">
+        <span className="font-data text-bridge-heading font-bold text-xl leading-none tracking-tight">{formatPrice(service.price)}</span>
+        <Button size="sm" variant="book" onClick={() => onBook(service)} className="cursor-pointer">
           Book
         </Button>
       </div>
@@ -821,7 +839,7 @@ function FeaturedServiceCard({
               {formatDuration(service.duration)}
             </span>
             <span className="text-bridge-border-strong">·</span>
-            <span className="font-bold text-bridge-heading text-base">{formatPrice(service.price)}</span>
+            <span className="font-data font-bold text-bridge-heading text-base tracking-tight">{formatPrice(service.price)}</span>
           </div>
 
           <Button onClick={() => onBook(service)} size="lg" className="w-full cursor-pointer shadow-md">
@@ -1248,7 +1266,7 @@ function ConfirmedScreen({
           <span className="font-bold text-bridge-heading text-base">฿{service.price.toLocaleString()}</span>
         </div>
       </div>
-      <Button onClick={onClose} size="lg" variant="secondary" className="w-full bg-bridge-heading text-white border-bridge-heading hover:bg-bridge-text cursor-pointer">
+      <Button onClick={onClose} size="lg" variant="secondary" className="w-full bg-bridge-ink text-bridge-ink-foreground border-bridge-ink hover:bg-bridge-ink-hover cursor-pointer">
         Done
       </Button>
       {creator && (
@@ -1259,7 +1277,7 @@ function ConfirmedScreen({
           See what else {creator.displayName.split(' ')[0]} recommends →
         </NextLink>
       )}
-      <p className="text-xs text-bridge-muted mt-4">Powered by <span className="font-bold text-bridge-accent">BRIDGE</span></p>
+      <PoweredByPloi className="mt-4" />
     </div>
   )
 }
@@ -1282,7 +1300,7 @@ function EmptyServices({ business }: { business: Business }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function ShopBookingPage({ business, creator, link, affiliations, recentBookings }: Props) {
+export default function ShopBookingPage({ business, creator, link, affiliations, content, recentBookings }: Props) {
   const [activeService, setActiveService] = useState<Service | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showServicePicker, setShowServicePicker] = useState(false)
@@ -1336,6 +1354,9 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
         {/* Photo gallery */}
         <PhotoGallery photos={photos} onOpen={(i) => setLightboxIndex(i)} />
 
+        {/* Creator content wall (content-first: photos → creator video → services) */}
+        <ContentWall content={content} />
+
         {/* About section */}
         <AboutSection business={business} />
 
@@ -1377,11 +1398,11 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
             <div className="flex items-center justify-between px-4 py-3">
               <div className="min-w-0">
                 {fromPrice !== null && (
-                  <p className="text-base font-bold text-bridge-heading leading-tight">from {formatPrice(fromPrice)}</p>
+                  <p className="text-base font-bold text-bridge-heading leading-tight">from <span className="font-data tracking-tight">{formatPrice(fromPrice)}</span></p>
                 )}
                 <p className="text-xs text-bridge-muted">{business.services.length} service{business.services.length !== 1 ? 's' : ''} available</p>
               </div>
-              <Button onClick={scrollToServices} size="lg" className="shadow-lg cursor-pointer flex-shrink-0">
+              <Button onClick={scrollToServices} size="lg" variant="book" className="shadow-lg cursor-pointer flex-shrink-0">
                 Book Now
               </Button>
             </div>

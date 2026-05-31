@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@/lib/supabase'
 import { LinkService } from '@/services/link.service'
+import { ContentService } from '@/services/content.service'
 import type { SocialPlatform } from '@/lib/types'
 
 export async function POST(req: NextRequest) {
@@ -46,6 +47,17 @@ export async function POST(req: NextRequest) {
       contentThumbnailUrl,
       featuredServiceId: validFeatured,
     })
+
+    // Best-effort: enroll a supported content URL into the async ingestion
+    // pipeline (creator_content + poster fetch). Never block link creation on it —
+    // unsupported providers (Phase 1 = TikTok only) and pipeline hiccups are swallowed.
+    if (typeof contentUrl === 'string' && contentUrl.trim()) {
+      try {
+        await ContentService.submit({ linkId: link.id, contentUrl: contentUrl.trim() })
+      } catch (err) {
+        console.warn('[links] content enrollment skipped', err instanceof Error ? err.message : err)
+      }
+    }
 
     return NextResponse.json(
       {

@@ -65,7 +65,7 @@ function KpiCard({ label, value, icon, hint }: {
         {icon}
         <span className="text-xs font-semibold uppercase tracking-wide">{label}</span>
       </div>
-      <p className="text-2xl font-bold text-bridge-heading leading-none">{value}</p>
+      <p className="font-data text-2xl font-bold text-bridge-heading leading-none tracking-tight">{value}</p>
       {hint && <p className="text-xs text-bridge-muted mt-1.5">{hint}</p>}
     </div>
   )
@@ -157,15 +157,15 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
           <>
             <div className="grid grid-cols-3 gap-2 text-center">
               <div className="bg-bridge-bg rounded-xl py-2">
-                <p className="text-bridge-heading font-bold text-sm">{link.clicks.toLocaleString()}</p>
+                <p className="font-data text-bridge-heading font-bold text-sm">{link.clicks.toLocaleString()}</p>
                 <p className="text-bridge-muted text-[10px] uppercase tracking-wide mt-0.5">Clicks</p>
               </div>
               <div className="bg-bridge-bg rounded-xl py-2">
-                <p className="text-bridge-heading font-bold text-sm">{link.bookings}</p>
+                <p className="font-data text-bridge-heading font-bold text-sm">{link.bookings}</p>
                 <p className="text-bridge-muted text-[10px] uppercase tracking-wide mt-0.5">Bookings</p>
               </div>
               <div className="bg-bridge-accent-wash rounded-xl py-2">
-                <p className="text-bridge-accent font-bold text-sm">{formatPrice(link.earnings)}</p>
+                <p className="font-data text-bridge-accent font-bold text-sm">{formatPrice(link.earnings)}</p>
                 <p className="text-bridge-accent text-[10px] uppercase tracking-wide mt-0.5">Earned</p>
               </div>
             </div>
@@ -178,7 +178,7 @@ function LinkPerformanceCard({ link, creatorSlug }: { link: LinkPerformance; cre
             )}
 
             {link.customersAcquired > 0 && (
-              <div className="mt-2 text-center text-[11px] text-purple-600 font-medium">
+              <div className="mt-2 text-center text-[11px] text-bridge-secondary font-medium">
                 Acquired {link.customersAcquired} customer{link.customersAcquired !== 1 ? 's' : ''}
                 {link.customersRebooked > 0 && (
                   <> · <span className="font-bold">{link.customersRebooked}</span> rebooked</>
@@ -216,7 +216,7 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
         <p className="text-xs text-bridge-muted">{relativeTime(event.createdAt)}</p>
       </div>
       {isBooking && event.amount !== undefined && (
-        <span className="text-bridge-accent font-bold text-sm flex-shrink-0">
+        <span className="font-data text-bridge-accent font-bold text-sm flex-shrink-0">
           +{formatPrice(event.amount)}
         </span>
       )}
@@ -237,7 +237,7 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
     <div className="min-h-screen bg-bridge-bg">
       <div className="max-w-2xl mx-auto pb-24">
         {/* Header */}
-        <div className="px-5 pt-8 pb-12 bg-bridge-heading text-white">
+        <div className="px-5 pt-8 pb-12 bg-bridge-ink-static text-white">
           <Link
             href={`/${creator.slug}`}
             className="flex items-center gap-1 text-white/60 text-xs mb-4 hover:text-white"
@@ -277,7 +277,7 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
                 <p className="text-xs font-semibold uppercase tracking-wide text-bridge-accent-light">
                   Pending payout
                 </p>
-                <p className="text-2xl font-bold mt-1">{formatPrice(totals.pendingPayout)}</p>
+                <p className="font-data text-2xl font-bold mt-1 tracking-tight">{formatPrice(totals.pendingPayout)}</p>
               </div>
               <p className="text-xs text-bridge-accent-light max-w-[140px] text-right">
                 Paid out monthly. Next: 1st of next month.
@@ -290,17 +290,17 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
             <div className="mt-3 grid grid-cols-2 gap-2">
               <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
                 <p className="text-[10px] uppercase tracking-wide font-bold text-bridge-muted">First bookings</p>
-                <p className="text-lg font-bold text-bridge-heading mt-1 leading-none">
+                <p className="font-data text-lg font-bold text-bridge-heading mt-1 leading-none tracking-tight">
                   {formatPrice(totals.firstBookingEarnings)}
                 </p>
                 <p className="text-[10px] text-bridge-muted mt-1">10% rate</p>
               </div>
-              <div className="bg-bridge-card rounded-2xl border border-purple-200 bg-purple-50/30 p-3 shadow-sm">
-                <p className="text-[10px] uppercase tracking-wide font-bold text-purple-700">Repeat earnings</p>
-                <p className="text-lg font-bold text-purple-900 mt-1 leading-none">
+              <div className="bg-bridge-surface rounded-2xl border border-bridge-border/60 p-3 shadow-sm">
+                <p className="text-[10px] uppercase tracking-wide font-bold text-bridge-secondary">Repeat earnings</p>
+                <p className="font-data text-lg font-bold text-bridge-heading mt-1 leading-none tracking-tight">
                   {formatPrice(totals.repeatEarnings)}
                 </p>
-                <p className="text-[10px] text-purple-600 mt-1">5% residual</p>
+                <p className="text-[10px] text-bridge-muted mt-1">5% residual</p>
               </div>
             </div>
           )}
@@ -316,15 +316,15 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <p className="text-xl font-bold text-bridge-heading leading-none">{totals.customersAcquired}</p>
+                  <p className="font-data text-xl font-bold text-bridge-heading leading-none tracking-tight">{totals.customersAcquired}</p>
                   <p className="text-[10px] text-bridge-muted mt-1">Total</p>
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-bridge-heading leading-none">{totals.customersInWindow}</p>
+                  <p className="font-data text-xl font-bold text-bridge-heading leading-none tracking-tight">{totals.customersInWindow}</p>
                   <p className="text-[10px] text-bridge-muted mt-1">In window</p>
                 </div>
                 <div>
-                  <p className="text-xl font-bold text-bridge-heading leading-none">{formatPrice(totals.lifetimeValue)}</p>
+                  <p className="font-data text-xl font-bold text-bridge-heading leading-none tracking-tight">{formatPrice(totals.lifetimeValue)}</p>
                   <p className="text-[10px] text-bridge-muted mt-1">Spent</p>
                 </div>
               </div>

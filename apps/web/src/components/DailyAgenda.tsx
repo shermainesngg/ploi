@@ -137,7 +137,7 @@ function FilterChip({
     <button
       onClick={onClick}
       className={`flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-caption font-semibold border transition-colors ${
-        active ? 'bg-bridge-heading text-white border-bridge-heading' : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
+        active ? 'bg-bridge-ink text-bridge-ink-foreground border-bridge-ink' : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
       }`}
     >
       {dotClass && <span className={`w-2 h-2 rounded-full ${dotClass}`} />}

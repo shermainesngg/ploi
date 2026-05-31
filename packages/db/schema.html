@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PLOI — Database Schema</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --accent: #c05636;
+    --accent-soft: #f3e3dc;
+    --accent-deep: #8f3d24;
+    --bg: #faf7f4;
+    --card: #ffffff;
+    --ink: #2b211c;
+    --muted: #8a7d74;
+    --line: #ece3dc;
+    --pk: #c05636;
+    --fk: #2f7d6b;
+    --uk: #9a7b1f;
+    --shadow: 0 1px 2px rgba(43,33,28,.04), 0 8px 24px rgba(43,33,28,.06);
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    padding: 40px 32px 28px;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 12px;
+    font-weight: 800; letter-spacing: -0.02em; font-size: 15px;
+    color: var(--accent); text-transform: uppercase;
+  }
+  .brand .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); }
+  h1 { font-size: 34px; letter-spacing: -0.03em; margin: 14px 0 6px; font-weight: 800; }
+  .sub { color: var(--muted); font-size: 15px; max-width: 640px; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .pill {
+    font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 999px;
+    background: var(--card); border: 1px solid var(--line); color: var(--muted);
+  }
+  .pill b { color: var(--ink); }
+  main { max-width: 1240px; margin: 0 auto; padding: 0 32px 80px; }
+  section { margin-top: 40px; }
+  .section-title {
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--accent-deep); margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .section-title::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+
+  /* diagram */
+  .diagram-wrap {
+    background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+    padding: 24px; box-shadow: var(--shadow); overflow-x: auto;
+  }
+  .mermaid { font-size: 14px; }
+
+  /* legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 18px; margin: 14px 2px 0; font-size: 13px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .key-badge {
+    font-size: 10px; font-weight: 800; letter-spacing: .04em; padding: 2px 6px; border-radius: 5px;
+    color: #fff;
+  }
+  .b-pk { background: var(--pk); }
+  .b-fk { background: var(--fk); }
+  .b-uk { background: var(--uk); }
+
+  /* table cards */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
+  .table-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); overflow: hidden; scroll-margin-top: 20px;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .table-card:target { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .table-head {
+    padding: 14px 18px; background: linear-gradient(180deg, #fff, #fdfaf8);
+    border-bottom: 1px solid var(--line); display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .table-head h3 { margin: 0; font-size: 16px; font-weight: 800; letter-spacing: -0.01em; }
+  .table-head .count { font-size: 11px; color: var(--muted); font-weight: 600; }
+  .table-note { font-size: 12px; color: var(--muted); padding: 8px 18px 0; font-style: italic; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 7px 18px; font-size: 13px; border-top: 1px solid #f6f0ea; vertical-align: top; }
+  tr:first-child td { border-top: none; }
+  .col-name { font-weight: 600; font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .col-type { color: var(--muted); font-family: "SF Mono", ui-monospace, Menlo, monospace; font-size: 11.5px; text-align: right; white-space: nowrap; }
+  .badges { display: inline-flex; gap: 4px; margin-left: 6px; }
+  .fk-ref { color: var(--fk); font-weight: 500; font-size: 11px; }
+  a.fk-ref { text-decoration: none; border-bottom: 1px dashed var(--fk); }
+  a.fk-ref:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* rules */
+  .rules { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 8px 24px; box-shadow: var(--shadow); }
+  .rules li { padding: 12px 0; border-top: 1px solid #f6f0ea; font-size: 14px; list-style: none; }
+  .rules li:first-child { border-top: none; }
+  .rules ul { padding: 0; margin: 0; }
+  .rules code { background: var(--accent-soft); color: var(--accent-deep); padding: 1px 6px; border-radius: 5px; font-size: 12.5px; }
+  .rules b { color: var(--ink); }
+  footer { max-width: 1240px; margin: 0 auto; padding: 0 32px 60px; color: var(--muted); font-size: 12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot"></span> PLOI</div>
+  <h1>Database Schema</h1>
+  <p class="sub">Creator-to-commerce booking infrastructure. The attribution spine — <b>creators → links → bookings</b> — sits at the center; scheduling and payouts hang off it.</p>
+  <div class="meta-row">
+    <span class="pill"><b>14</b> tables</span>
+    <span class="pill"><b>PostgreSQL</b> / Supabase</span>
+    <span class="pill">schema.sql + <b>6</b> migrations</span>
+    <span class="pill">RLS enabled on all tables</span>
+  </div>
+</header>
+
+<main>
+  <section>
+    <div class="section-title">Entity Relationships</div>
+    <div class="diagram-wrap">
+      <pre class="mermaid">
+erDiagram
+    businesses ||--o{ services : has
+    businesses ||--o{ links : receives
+    businesses ||--o{ bookings : owns
+    businesses ||--o{ staff : employs
+    businesses ||--o{ time_blocks : blocks
+    businesses ||--o{ customer_acquisitions : acquires
+    creators ||--o{ links : creates
+    creators ||--o{ customer_acquisitions : drives
+    creators ||--o{ payouts : earns
+    services ||--o{ bookings : "booked as"
+    services ||--o{ staff_services : "offered by"
+    services |o--o{ links : "featured in"
+    links |o--o{ bookings : attributes
+    links ||--o{ attribution_events : tracks
+    links |o--o{ customer_acquisitions : "first touch"
+    staff |o--o{ bookings : assigned
+    staff ||--o{ staff_services : performs
+    staff ||--o{ staff_schedules : works
+    consumers |o--o{ bookings : places
+    consumers |o--o{ customer_acquisitions : is
+    customer_acquisitions |o--o{ bookings : "repeat link"
+    bookings ||--o{ attribution_events : generates
+    bookings ||--o{ payout_line_items : "earns on"
+    bookings |o--o| customer_acquisitions : "first booking"
+    payouts ||--o{ payout_line_items : "consists of"
+      </pre>
+    </div>
+    <div class="legend">
+      <span><span class="key-badge b-pk">PK</span> Primary key</span>
+      <span><span class="key-badge b-fk">FK</span> Foreign key</span>
+      <span><span class="key-badge b-uk">UK</span> Unique</span>
+      <span>||--o{ &nbsp;one-to-many &nbsp;·&nbsp; |o &nbsp;optional &nbsp;·&nbsp; o| &nbsp;zero-or-one</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-title">Core Entities</div>
+    <div class="grid" id="grid-core"></div>
+  </section>
+  <section>
+    <div class="section-title">Attribution Spine</div>
+    <div class="grid" id="grid-attr"></div>
+  </section>
+  <section>
+    <div class="section-title">Bookings &amp; Customers</div>
+    <div class="grid" id="grid-book"></div>
+  </section>
+  <section>
+    <div class="section-title">Scheduling</div>
+    <div class="grid" id="grid-sched"></div>
+  </section>
+  <section>
+    <div class="section-title">Payouts</div>
+    <div class="grid" id="grid-pay"></div>
+  </section>
+
+  <section>
+    <div class="section-title">Key Constraints &amp; Business Rules</div>
+    <div class="rules">
+      <ul>
+        <li><b>Repeat-attribution lock.</b> <code>customer_acquisitions (customer_phone, business_id)</code> is unique — one active acquisition per phone+business, with <code>expires_at</code> enforcing the 6-month residual window.</li>
+        <li><b>One link per pair.</b> <code>links (creator_id, business_id)</code> is unique — a creator gets exactly one trackable link per business.</li>
+        <li><b>No double-counting payouts.</b> <code>payout_line_items (payout_id, booking_id)</code> is unique.</li>
+        <li><b>One schedule row per weekday.</b> <code>staff_schedules (staff_id, day_of_week)</code> is unique.</li>
+        <li><b>Junction PK.</b> <code>staff_services</code> uses a composite primary key <code>(staff_id, service_id)</code> — the only table without a UUID id.</li>
+        <li><b>Cascade on ownership, restrict on money.</b> services/links/staff cascade-delete from their owner; <code>bookings</code> FKs do <i>not</i> cascade, protecting financial records.</li>
+        <li><b>⚠️ Missing FK.</b> <code>time_blocks.staff_id</code> is a bare <code>uuid</code> with no foreign-key constraint to <code>staff(id)</code> — unlike <code>bookings.staff_id</code>. Likely an oversight.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer>Generated from <code>packages/db/schema.sql</code> + migrations 001–006. Open this file in any browser.</footer>
+
+<script>
+  // PK = primary key, FK = [target table, anchor], UK = unique
+  const tables = {
+    core: [
+      { name: "businesses", note: "The merchant. Owns services, staff, bookings.", cols: [
+        ["id","uuid","PK"],["slug","text","UK"],["name","text"],["category","text"],["location","text"],
+        ["email","text","UK"],["auth_user_id","uuid","UK"],["stripe_account_id","text"],
+        ["default_currency","text"],["opening_hours","jsonb"],["photos","jsonb"],
+        ["rating","numeric"],["is_active","bool"],["google_calendar_id","text"],["created_at","timestamptz"],
+      ]},
+      { name: "services", note: "What a business sells. Priced in integer minor units.", cols: [
+        ["id","uuid","PK"],["business_id","uuid",["businesses","businesses"]],["name","text"],
+        ["duration","int"],["price","int"],["buffer_minutes","int"],["currency","text"],
+        ["sort_order","int"],["is_active","bool"],["created_at","timestamptz"],
+      ]},
+      { name: "creators", note: "Earns commission, gets attribution dashboard.", cols: [
+        ["id","uuid","PK"],["slug","text","UK"],["handle","text","UK"],["display_name","text"],
+        ["bio","text"],["socials","jsonb"],["email","text","UK"],["auth_user_id","uuid","UK"],
+        ["stripe_account_id","text"],["is_active","bool"],["created_at","timestamptz"],
+      ]},
+    ],
+    attr: [
+      { name: "links", note: "Trackable creator → business link. The attribution key.", cols: [
+        ["id","uuid","PK"],["creator_id","uuid",["creators","creators"]],["business_id","uuid",["businesses","businesses"]],
+        ["featured_service_id","uuid",["services","services"]],["short_code","text","UK"],
+        ["content_url","text"],["platform","text"],["status","text"],["click_count","int"],["created_at","timestamptz"],
+      ]},
+      { name: "attribution_events", note: "Funnel log: click → started → confirmed.", cols: [
+        ["id","uuid","PK"],["link_id","uuid",["links","links"]],["booking_id","uuid",["bookings","bookings"]],
+        ["event_type","text"],["metadata","jsonb"],["created_at","timestamptz"],
+      ]},
+      { name: "customer_acquisitions", note: "Repeat-attribution ledger. 6-month residual window.", cols: [
+        ["id","uuid","PK"],["customer_phone","text"],["business_id","uuid",["businesses","businesses"]],
+        ["creator_id","uuid",["creators","creators"]],["link_id","uuid",["links","links"]],
+        ["first_booking_id","uuid",["bookings","bookings"]],["consumer_id","uuid",["consumers","consumers"]],
+        ["acquired_at","timestamptz"],["expires_at","timestamptz"],["is_active","bool"],
+      ]},
+    ],
+    book: [
+      { name: "bookings", note: "The transaction. Hub of attribution, scheduling & payouts.", cols: [
+        ["id","uuid","PK"],["service_id","uuid",["services","services"]],["business_id","uuid",["businesses","businesses"]],
+        ["link_id","uuid",["links","links"]],["staff_id","uuid",["staff","staff"]],
+        ["acquisition_id","uuid",["customer_acquisitions","customer_acquisitions"]],["consumer_id","uuid",["consumers","consumers"]],
+        ["customer_name","text"],["customer_phone","text"],["customer_email","text"],
+        ["booking_date","date"],["booking_time","time"],["status","text"],
+        ["payment_status","text"],["commission_rate","numeric"],["is_repeat","bool"],["currency","text"],
+        ["stripe_session_id","text"],["cancelled_by","text"],["google_event_id","text"],["created_at","timestamptz"],
+      ]},
+      { name: "consumers", note: "The end customer. Optional auth-linked identity.", cols: [
+        ["id","uuid","PK"],["auth_user_id","uuid","UK"],["email","text","UK"],["name","text"],
+        ["phone","text"],["created_at","timestamptz"],
+      ]},
+    ],
+    sched: [
+      { name: "staff", note: "A business's bookable team members.", cols: [
+        ["id","uuid","PK"],["business_id","uuid",["businesses","businesses"]],["name","text"],
+        ["role","text"],["photo_url","text"],["is_active","bool"],["created_at","timestamptz"],
+      ]},
+      { name: "staff_services", note: "Junction: which staff perform which services.", cols: [
+        ["staff_id","uuid",["staff","staff"],"PK"],["service_id","uuid",["services","services"],"PK"],
+      ]},
+      { name: "staff_schedules", note: "Weekly working hours per staff member.", cols: [
+        ["id","uuid","PK"],["staff_id","uuid",["staff","staff"]],["day_of_week","int"],
+        ["start_time","time"],["end_time","time"],["is_available","bool"],
+      ]},
+      { name: "time_blocks", note: "Breaks / holidays / blocked time. One-off or recurring.", cols: [
+        ["id","uuid","PK"],["business_id","uuid",["businesses","businesses"]],["staff_id","uuid"],
+        ["block_date","date"],["recurring_dow","int"],["start_time","time"],["end_time","time"],["reason","text"],
+      ]},
+    ],
+    pay: [
+      { name: "payouts", note: "A creator's earnings batch for a period.", cols: [
+        ["id","uuid","PK"],["creator_id","uuid",["creators","creators"]],["amount","int"],["currency","text"],
+        ["period_start","date"],["period_end","date"],["status","text"],["stripe_transfer_id","text"],["paid_at","timestamptz"],
+      ]},
+      { name: "payout_line_items", note: "Per-booking commission inside a payout.", cols: [
+        ["id","uuid","PK"],["payout_id","uuid",["payouts","payouts"]],["booking_id","uuid",["bookings","bookings"]],
+        ["amount","int"],["is_repeat","bool"],["created_at","timestamptz"],
+      ]},
+    ],
+  };
+
+  function badge(kind) {
+    const map = { PK: "b-pk", FK: "b-fk", UK: "b-uk" };
+    return `<span class="key-badge ${map[kind]}">${kind}</span>`;
+  }
+
+  function renderCard(t) {
+    const rows = t.cols.map(c => {
+      const [name, type, ...rest] = c;
+      let badges = [];
+      let fkRef = "";
+      rest.forEach(r => {
+        if (r === "PK" || r === "UK") badges.push(badge(r));
+        else if (Array.isArray(r)) {
+          badges.push(badge("FK"));
+          fkRef = ` <a class="fk-ref" href="#tbl-${r[1]}">→ ${r[0]}</a>`;
+        }
+      });
+      const badgeHtml = badges.length ? `<span class="badges">${badges.join("")}</span>` : "";
+      return `<tr><td class="col-name">${name}${badgeHtml}${fkRef}</td><td class="col-type">${type}</td></tr>`;
+    }).join("");
+    return `<div class="table-card" id="tbl-${t.name}">
+      <div class="table-head"><h3>${t.name}</h3><span class="count">${t.cols.length} cols shown</span></div>
+      ${t.note ? `<div class="table-note">${t.note}</div>` : ""}
+      <table>${rows}</table>
+    </div>`;
+  }
+
+  const groups = { "grid-core": "core", "grid-attr": "attr", "grid-book": "book", "grid-sched": "sched", "grid-pay": "pay" };
+  for (const [elId, key] of Object.entries(groups)) {
+    document.getElementById(elId).innerHTML = tables[key].map(renderCard).join("");
+  }
+
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "base",
+    themeVariables: {
+      primaryColor: "#fdf6f2", primaryBorderColor: "#c05636", primaryTextColor: "#2b211c",
+      lineColor: "#b08a78", fontFamily: "-apple-system, Inter, sans-serif",
+    },
+  });
+</script>
+</body>
+</html>

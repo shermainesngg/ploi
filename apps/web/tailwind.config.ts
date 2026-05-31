@@ -33,6 +33,8 @@ const config: Config = {
 
           sage: 'var(--bridge-sage)',
           'sage-light': 'var(--bridge-sage-light)',
+
+          'media-placeholder': 'var(--bridge-media-placeholder)',
         },
       },
       fontFamily: {
@@ -66,9 +68,11 @@ const config: Config = {
         input: '0.5rem',
         modal: '1.25rem',
         badge: '9999px',
+        media: 'var(--bridge-media-radius)',
       },
       backgroundImage: {
         'hero-gradient': 'var(--bridge-hero-gradient)',
+        'overlay-scrim': 'var(--bridge-overlay-scrim)',
       },
       animation: {
         'slide-up': 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',

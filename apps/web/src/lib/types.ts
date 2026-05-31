@@ -62,6 +62,45 @@ export interface Link {
   featuredServiceId: string | null
 }
 
+// ── Creator content (1:many, behind the provider-adapter registry) ────────────
+
+export type Provider = SocialPlatform // 'tiktok' | 'instagram' | 'youtube' | 'x' | 'other'
+export type MediaKind = 'video' | 'image' | 'carousel'
+export type AspectRatio = 'square' | 'portrait' | 'vertical' | 'video'
+export type PosterSource = 'oembed' | 'predictable' | 'og' | 'upload' | 'branded'
+export type FetchStatus = 'pending' | 'fetching' | 'ok' | 'failed' | 'unavailable'
+export type ContentStatus = 'pending' | 'active' | 'hidden'
+
+export interface CreatorContent {
+  id: string
+  linkId: string
+  creatorId: string
+  businessId: string
+  provider: Provider
+  contentUrl: string
+  externalId: string | null
+  urlHash: string
+  mediaKind: MediaKind
+  aspectRatio: AspectRatio
+  posterSource: PosterSource | null
+  posterPath: string | null
+  caption: string | null
+  authorName: string | null
+  fetchStatus: FetchStatus
+  attempts: number
+  lastAttemptAt: string | null
+  posterExpiresAt: string | null
+  status: ContentStatus
+  sortOrder: number
+  createdAt: string | null
+}
+
+export interface ContentWithCreator {
+  content: CreatorContent
+  // Creator has no avatarUrl in this codebase — uses avatarInitials/avatarColor.
+  creator: Pick<Creator, 'slug' | 'handle' | 'displayName' | 'avatarInitials' | 'avatarColor'>
+}
+
 export interface Booking {
   id: string
   serviceId: string

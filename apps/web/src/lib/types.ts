@@ -43,6 +43,7 @@ export interface Creator {
   bio: string
   avatarInitials: string
   avatarColor: string
+  avatarUrl?: string | null  // optional uploaded profile photo; falls back to initials/color
   socials: Social[]
   linkedBusinessSlugs: string[]
 }

@@ -1,5 +1,6 @@
 import { CreatorService } from '@/services/creator.service'
 import CreatorProfilePage from '@/components/CreatorProfilePage'
+import { getCurrentUser } from '@/lib/auth'
 import { notFound } from 'next/navigation'
 
 interface PageProps {
@@ -12,7 +13,10 @@ export default async function Page({ params }: PageProps) {
 
   if (!creatorData) return notFound()
 
-  return <CreatorProfilePage creator={creatorData} entries={entries} />
+  const me = await getCurrentUser()
+  const isOwner = !!me && me.creatorSlug === creatorData.slug
+
+  return <CreatorProfilePage creator={creatorData} entries={entries} isOwner={isOwner} />
 }
 
 export async function generateMetadata({ params }: PageProps) {

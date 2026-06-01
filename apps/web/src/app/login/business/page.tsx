@@ -1,20 +1,12 @@
-import { Store } from 'lucide-react'
-import LoginForm from '@/components/LoginForm'
+import { redirect } from 'next/navigation'
 
-export const metadata = {
-  title: 'Business login — PLOI',
+interface PageProps {
+  searchParams: Promise<{ next?: string }>
 }
 
-export default function BusinessLoginPage() {
-  return (
-    <LoginForm
-      role="business"
-      heading="Sign in to manage your bookings"
-      subcopy="Access your schedule, services, and creator attribution. We'll email you a magic link — no passwords."
-      icon={<Store size={20} />}
-      iconClassName="bg-bridge-surface text-bridge-secondary"
-      signupHref="/onboard/business"
-      signupLabel="List your business"
-    />
-  )
+// Login is unified — role is inferred from the account email. Keep this path alive
+// for old bookmarks/links and forward it to the single sign-in page.
+export default async function BusinessLoginPage({ searchParams }: PageProps) {
+  const { next } = await searchParams
+  redirect(next ? `/login?next=${encodeURIComponent(next)}` : '/login')
 }

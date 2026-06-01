@@ -1,20 +1,12 @@
-import { Megaphone } from 'lucide-react'
-import LoginForm from '@/components/LoginForm'
+import { redirect } from 'next/navigation'
 
-export const metadata = {
-  title: 'Creator login — PLOI',
+interface PageProps {
+  searchParams: Promise<{ next?: string }>
 }
 
-export default function CreatorLoginPage() {
-  return (
-    <LoginForm
-      role="creator"
-      heading="Welcome back, creator"
-      subcopy="Sign in to track your links and earnings. We'll email you a magic link — no passwords."
-      icon={<Megaphone size={20} />}
-      iconClassName="bg-bridge-accent-wash text-bridge-accent"
-      signupHref="/onboard/creator"
-      signupLabel="Join as a creator"
-    />
-  )
+// Login is unified — role is inferred from the account email. Keep this path alive
+// for old bookmarks/links and forward it to the single sign-in page.
+export default async function CreatorLoginPage({ searchParams }: PageProps) {
+  const { next } = await searchParams
+  redirect(next ? `/login?next=${encodeURIComponent(next)}` : '/login')
 }

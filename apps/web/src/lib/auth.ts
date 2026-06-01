@@ -129,6 +129,33 @@ export async function getCurrentUser(): Promise<AppUser | null> {
 }
 
 /**
+ * Decide which dashboard a freshly-authenticated user lands on, based purely on the
+ * records they own (role is inferred from email/auth_user_id — no role chooser needed).
+ *
+ * Order: last-used role (cookie) if they own it → owned business → owned creator →
+ * the customer bookings page as a fallback. Used by both /auth/callback (magic link +
+ * OAuth) and /auth/post-login (password sign-in).
+ */
+export async function pickDashboardPath(
+  authUserId: string,
+  lastUsed: UserRole | null,
+): Promise<{ path: string; role: UserRole | null }> {
+  if (!isSupabaseConfigured()) return { path: '/bookings', role: null }
+  const db = createServerClient()
+
+  const [{ data: biz }, { data: cre }] = await Promise.all([
+    db.from('businesses').select('slug').eq('auth_user_id', authUserId).maybeSingle(),
+    db.from('creators').select('slug').eq('auth_user_id', authUserId).maybeSingle(),
+  ])
+
+  if (lastUsed === 'creator' && cre?.slug) return { path: `/dashboard/creator/${cre.slug}`, role: 'creator' }
+  if (lastUsed === 'business' && biz?.slug) return { path: `/dashboard/business/${biz.slug}`, role: 'business' }
+  if (biz?.slug) return { path: `/dashboard/business/${biz.slug}`, role: 'business' }
+  if (cre?.slug) return { path: `/dashboard/creator/${cre.slug}`, role: 'creator' }
+  return { path: '/bookings', role: null }
+}
+
+/**
  * Link an existing record to an auth user (after they sign in for the first time).
  *
  * When `hint` is provided, only a record of THAT role is linked by email — we never

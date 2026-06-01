@@ -5,9 +5,11 @@ import { MapPin, Music, Instagram, Youtube, Twitter, Globe, Play } from 'lucide-
 import type { Creator, Business, Link as LinkRecord, SocialPlatform } from '@/lib/types'
 import type { CreatorBusinessLink } from '@/services/creator.service'
 import { Avatar } from '@/components/ui/Avatar'
+import { EditableAvatar } from '@/components/EditableAvatar'
 import { Card } from '@/components/ui/Card'
 import { AnimateOnScroll } from '@/components/ui/AnimateOnScroll'
 import { PoweredByPloi } from '@/components/ui/Logo'
+import { cn } from '@/lib/cn'
 
 function PlatformIcon({ platform, size = 14 }: { platform: SocialPlatform; size?: number }) {
   switch (platform) {
@@ -26,23 +28,38 @@ function PlatformLabel(p: SocialPlatform) {
 function CreatorHero({
   creator,
   placesCount,
+  isOwner,
 }: {
   creator: Creator
   placesCount: number
+  isOwner: boolean
 }) {
   const cityMatch = creator.bio.match(/\b(Bangkok|Chiang Mai|Phuket|Pattaya)\b/i)
   const city = cityMatch ? cityMatch[0] : null
+
+  const avatarRing = 'shadow-md ring-4 ring-bridge-card ring-offset-2 ring-offset-bridge-bg'
 
   return (
     <div className="border-b border-bridge-border/40">
       <div className="relative px-5 pt-16 pb-12 sm:pt-24 sm:pb-14 max-w-lg mx-auto text-center">
 
-        <Avatar
-          initials={creator.avatarInitials}
-          color={creator.avatarColor}
-          size="lg"
-          className="w-24 h-24 rounded-full text-3xl shadow-md mx-auto ring-4 ring-bridge-card ring-offset-2 ring-offset-bridge-bg"
-        />
+        {isOwner ? (
+          <EditableAvatar
+            slug={creator.slug}
+            initials={creator.avatarInitials}
+            color={creator.avatarColor}
+            imageUrl={creator.avatarUrl}
+            className={avatarRing}
+          />
+        ) : (
+          <Avatar
+            initials={creator.avatarInitials}
+            color={creator.avatarColor}
+            imageUrl={creator.avatarUrl}
+            size="lg"
+            className={cn('w-24 h-24 text-3xl mx-auto', avatarRing)}
+          />
+        )}
 
         <h1 className="font-display text-heading text-bridge-heading leading-tight mt-5">{creator.displayName}</h1>
         <p className="text-bridge-accent font-semibold text-label mt-1">{creator.handle}</p>
@@ -145,13 +162,15 @@ function ContentGridCard({
 export default function CreatorProfilePage({
   creator,
   entries,
+  isOwner = false,
 }: {
   creator: Creator
   entries: CreatorBusinessLink[]
+  isOwner?: boolean
 }) {
   return (
     <div className="min-h-screen bg-bridge-bg">
-      <CreatorHero creator={creator} placesCount={entries.length} />
+      <CreatorHero creator={creator} placesCount={entries.length} isOwner={isOwner} />
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 mt-10 pb-24">
         <AnimateOnScroll>

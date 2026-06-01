@@ -6,22 +6,23 @@ import { cn } from '@/lib/cn'
  * Uses currentColor so it inverts with the theme (ink on light, warm white on dark).
  */
 export function PloiMark({ className, size = 24 }: { className?: string; size?: number }) {
+  // Natural artwork is portrait (89 × 122 viewBox); `size` drives the height
+  // and the width follows the aspect ratio so the mark never distorts.
+  const aspect = 89 / 122
   return (
     <svg
-      width={size}
+      width={size * aspect}
       height={size}
-      viewBox="0 0 32 32"
+      viewBox="-5 -5 89 122"
       fill="currentColor"
       aria-hidden="true"
       className={className}
     >
-      {/* Stem of the P */}
-      <rect x="6" y="3.5" width="5.4" height="25" rx="0.6" />
-      {/* Bowl as a faceted gem (outer diamond with a cut-out counter) */}
+      {/* The P stem + faceted gem counter, as a single even-odd path */}
       <path
         fillRule="evenodd"
         clipRule="evenodd"
-        d="M16 2 L26 12 L16 22 L6 12 Z M16 7.6 L20.4 12 L16 16.4 L11.6 12 Z"
+        d="M0 6 Q0 0 6 0 L50 0 C66 0 79 16 79 38 C79 57 68 70 52 76 L13 76 L13 112 L0 112 Z M38 8 L64 24 L64 50 L38 70 L12 50 L12 24 Z"
       />
     </svg>
   )

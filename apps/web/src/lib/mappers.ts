@@ -109,6 +109,7 @@ export function rowToCreator(r: any, linkedBusinessSlugs: string[]): Creator {
     bio: r.bio ?? '',
     avatarInitials: initials,
     avatarColor: color,
+    avatarUrl: r.avatar_url ?? null,
     socials,
     linkedBusinessSlugs,
   }

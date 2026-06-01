@@ -23,6 +23,15 @@ export const CreatorRepo = {
     return data?.id ?? null
   },
 
+  async updateAvatar(slug: string, avatarUrl: string) {
+    const db = createServerClient()
+    const { error } = await db
+      .from('creators')
+      .update({ avatar_url: avatarUrl })
+      .eq('slug', slug)
+    if (error) throw new Error(error.message)
+  },
+
   async insert(data: {
     slug: string
     handle: string

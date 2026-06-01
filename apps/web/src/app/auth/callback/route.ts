@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAuthServerClient } from '@/lib/supabase-server'
 import { createServerClient } from '@/lib/supabase'
-import { linkAuthUserToRecord, PLOI_ACTIVE_ROLE, type UserRole } from '@/lib/auth'
+import { linkAuthUserToRecord, pickDashboardPath, PLOI_ACTIVE_ROLE, type UserRole } from '@/lib/auth'
 
 const ONE_YEAR = 60 * 60 * 24 * 365
 
@@ -77,29 +77,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${origin}/onboard/business`)
   }
 
-  // No role hint — prefer the last-used role from the cookie, then what they own
-  // (business → creator → bookings).
+  // No role hint (the common path now that login is unified, and how Google OAuth
+  // returns) — infer the destination from the records this email owns.
   const lastUsed = parseRole(req.cookies.get(PLOI_ACTIVE_ROLE)?.value ?? null)
-
-  const { data: biz } = await db
-    .from('businesses')
-    .select('slug')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-  const { data: cre } = await db
-    .from('creators')
-    .select('slug')
-    .eq('auth_user_id', user.id)
-    .maybeSingle()
-
-  if (lastUsed === 'creator' && cre?.slug) {
-    return redirectWithRole(origin, `/dashboard/creator/${cre.slug}`, 'creator')
-  }
-  if (lastUsed === 'business' && biz?.slug) {
-    return redirectWithRole(origin, `/dashboard/business/${biz.slug}`, 'business')
-  }
-  if (biz?.slug) return redirectWithRole(origin, `/dashboard/business/${biz.slug}`, 'business')
-  if (cre?.slug) return redirectWithRole(origin, `/dashboard/creator/${cre.slug}`, 'creator')
-
-  return NextResponse.redirect(`${origin}/bookings`)
+  const { path, role: dest } = await pickDashboardPath(user.id, lastUsed)
+  return redirectWithRole(origin, path, dest)
 }

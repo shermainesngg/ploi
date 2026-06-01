@@ -173,7 +173,7 @@ export const DashboardService = {
         id, customer_name, booking_date, booking_time, status, created_at, is_repeat, commission_rate,
         services ( name, price ),
         links ( creators ( slug, handle, display_name ) ),
-        customer_acquisitions ( creators ( slug, handle ) )
+        customer_acquisitions!bookings_acquisition_id_fkey ( creators ( slug, handle ) )
       `)
       .eq('business_id', bizRow.id)
       .order('created_at', { ascending: false })
@@ -380,7 +380,7 @@ export const DashboardService = {
         services ( name, price, duration ),
         links ( creators ( slug, handle ) ),
         staff ( id, name ),
-        customer_acquisitions ( creators ( slug, handle ) )
+        customer_acquisitions!bookings_acquisition_id_fkey ( creators ( slug, handle ) )
       `)
       .eq('business_id', bizRow.id)
       .eq('booking_date', dateISO)
@@ -405,7 +405,7 @@ export const DashboardService = {
         services ( name, price, duration ),
         links ( creators ( slug, handle ) ),
         staff ( id, name ),
-        customer_acquisitions ( creators ( slug, handle ) )
+        customer_acquisitions!bookings_acquisition_id_fkey ( creators ( slug, handle ) )
       `)
       .eq('business_id', bizRow.id)
       .order('booking_date', { ascending: false })

@@ -16,6 +16,7 @@ import {
   Globe,
 } from 'lucide-react'
 import type { Social, SocialPlatform } from '@/lib/types'
+import { signUpWithPassword } from '@/lib/auth-client'
 
 type Step = 'profile' | 'socials' | 'done'
 
@@ -65,16 +66,18 @@ function ProfileStep({
   handle, setHandle,
   displayName, setDisplayName,
   email, setEmail,
+  password, setPassword,
   bio, setBio,
   onNext,
 }: {
   handle: string; setHandle: (v: string) => void
   displayName: string; setDisplayName: (v: string) => void
   email: string; setEmail: (v: string) => void
+  password: string; setPassword: (v: string) => void
   bio: string; setBio: (v: string) => void
   onNext: () => void
 }) {
-  const canContinue = handle.trim() && displayName.trim() && email.trim()
+  const canContinue = handle.trim() && displayName.trim() && email.trim() && password.length >= 8
 
   function handleHandleChange(v: string) {
     const clean = v.replace(/^@/, '').replace(/[^a-zA-Z0-9_]/g, '')
@@ -131,6 +134,21 @@ function ProfileStep({
           className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
         />
         <p className="text-xs text-bridge-muted mt-1.5">For payouts and login.</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Password <span className="text-bridge-accent">*</span>
+        </label>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="At least 8 characters"
+          autoCapitalize="none" autoCorrect="off"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
+        />
+        <p className="text-xs text-bridge-muted mt-1.5">You can also sign in with a magic link or Google later.</p>
       </div>
 
       <div>
@@ -326,6 +344,7 @@ export default function CreatorOnboarding() {
   const [handle, setHandle] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [bio, setBio] = useState('')
   const [socials, setSocials] = useState<SocialDraft[]>([
     { id: uid(), platform: 'tiktok', url: '' },
@@ -339,6 +358,13 @@ export default function CreatorOnboarding() {
     setLoading(true)
     setError(null)
     try {
+      // Create the auth account first so the new creator record links to it
+      // immediately (no "confirm by email before you can manage anything" gap).
+      const { hasSession, alreadyRegistered } = await signUpWithPassword(email, password)
+      if (alreadyRegistered) {
+        throw new Error('That email already has an account. Please log in instead.')
+      }
+
       const cleanSocials: Social[] = socials
         .filter((s) => s.url.trim().length > 0)
         .map((s) => ({ platform: s.platform, url: s.url.trim() }))
@@ -350,6 +376,12 @@ export default function CreatorOnboarding() {
       })
       const creatorData = await creatorRes.json()
       if (!creatorRes.ok) throw new Error(creatorData.error ?? 'Could not create creator')
+
+      // Logged in already (email confirmation off) → drop them straight into the dashboard.
+      if (hasSession) {
+        window.location.href = `/dashboard/creator/${creatorData.slug}`
+        return
+      }
 
       setCreatedSlug(creatorData.slug)
       setStep('done')
@@ -382,6 +414,7 @@ export default function CreatorOnboarding() {
             handle={handle} setHandle={setHandle}
             displayName={displayName} setDisplayName={setDisplayName}
             email={email} setEmail={setEmail}
+            password={password} setPassword={setPassword}
             bio={bio} setBio={setBio}
             onNext={() => setStep('socials')}
           />

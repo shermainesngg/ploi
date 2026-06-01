@@ -7,6 +7,7 @@ import {
   Phone, MessageCircle, Image as ImageIcon, Copy,
 } from 'lucide-react'
 import type { DayKey } from '@/lib/types'
+import { signUpWithPassword } from '@/lib/auth-client'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -75,16 +76,18 @@ function StepBar({ step }: { step: Step }) {
 
 function InfoStep({
   name, setName, category, setCategory, location, setLocation,
-  description, setDescription, email, setEmail, onNext,
+  description, setDescription, email, setEmail, password, setPassword, onNext,
 }: {
   name: string; setName: (v: string) => void
   category: string; setCategory: (v: string) => void
   location: string; setLocation: (v: string) => void
   description: string; setDescription: (v: string) => void
   email: string; setEmail: (v: string) => void
+  password: string; setPassword: (v: string) => void
   onNext: () => void
 }) {
-  const canContinue = name.trim() && category && location.trim() && email.trim()
+  const canContinue =
+    name.trim() && category && location.trim() && email.trim() && password.length >= 8
 
   return (
     <div className="space-y-5">
@@ -139,6 +142,19 @@ function InfoStep({
           className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
         />
         <p className="text-xs text-bridge-muted mt-1.5">For login and Stripe payouts.</p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-semibold text-bridge-text mb-1.5">
+          Password <span className="text-bridge-accent">*</span>
+        </label>
+        <input
+          type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+          placeholder="At least 8 characters"
+          autoCapitalize="none" autoCorrect="off"
+          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
+        />
+        <p className="text-xs text-bridge-muted mt-1.5">You can also sign in with a magic link or Google later.</p>
       </div>
 
       <div>
@@ -517,6 +533,7 @@ export default function BusinessOnboarding() {
   const [location, setLocation] = useState('')
   const [description, setDescription] = useState('')
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
   const [services, setServices] = useState<ServiceDraft[]>([
     { id: uid(), name: '', description: '', duration: 60, price: '' },
@@ -544,6 +561,13 @@ export default function BusinessOnboarding() {
     setLoading(true)
     setError(null)
     try {
+      // Create the auth account first so the new business record links to it
+      // immediately (no "confirm by email before you can manage anything" gap).
+      const { hasSession, alreadyRegistered } = await signUpWithPassword(email, password)
+      if (alreadyRegistered) {
+        throw new Error('That email already has an account. Please log in instead.')
+      }
+
       const cleanPhotos = photos.map((p) => p.trim()).filter((p) => p.length > 0)
       const res = await fetch('/api/businesses', {
         method: 'POST',
@@ -563,6 +587,13 @@ export default function BusinessOnboarding() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong')
+
+      // Logged in already (email confirmation off) → drop them straight into the dashboard.
+      if (hasSession) {
+        window.location.href = `/dashboard/business/${data.slug}`
+        return
+      }
+
       setCreatedSlug(data.slug)
       setStep('done')
     } catch (err) {
@@ -594,6 +625,7 @@ export default function BusinessOnboarding() {
             location={location} setLocation={setLocation}
             description={description} setDescription={setDescription}
             email={email} setEmail={setEmail}
+            password={password} setPassword={setPassword}
             onNext={() => setStep('services')}
           />
         )}

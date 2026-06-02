@@ -85,7 +85,7 @@ export default function BusinessDashboard(props: Props) {
           )}
           <div className="relative px-5 pt-8 pb-8">
             <NextLink
-              href={`/glowwithsara/${business.slug}`}
+              href={`/shop/${business.slug}`}
               className="flex items-center gap-1 text-white/80 text-xs mb-4 hover:text-white transition-colors"
             >
               <ArrowLeft size={12} /> Back to booking page

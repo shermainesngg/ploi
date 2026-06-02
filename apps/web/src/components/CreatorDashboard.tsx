@@ -27,6 +27,22 @@ import type {
 } from '@/lib/types'
 import AddPlaceModal from './AddPlaceModal'
 
+// Request lifecycle filters. "Accepted" is an active (live) link; "declined" is rejected.
+type RequestFilter = 'all' | 'pending' | 'accepted' | 'declined'
+
+const FILTER_STATUS: Record<Exclude<RequestFilter, 'all'>, LinkPerformance['status']> = {
+  pending: 'pending',
+  accepted: 'active',
+  declined: 'declined',
+}
+
+const REQUEST_FILTERS: { key: RequestFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'accepted', label: 'Accepted' },
+  { key: 'declined', label: 'Declined' },
+]
+
 function formatPrice(thb: number) {
   return `฿${thb.toLocaleString()}`
 }
@@ -224,14 +240,112 @@ function ActivityRow({ event }: { event: ActivityEvent }) {
   )
 }
 
+// ── Activity feed (filterable, paginated) ─────────────────────────────────────
+
+type ActivityFilter = 'all' | 'click' | 'first' | 'repeat'
+
+const PAGE_SIZE = 10
+
+function matchesFilter(e: ActivityEvent, filter: ActivityFilter): boolean {
+  if (filter === 'all') return true
+  if (filter === 'click') return e.type === 'click'
+  return e.type === 'booking' && e.bookingKind === filter
+}
+
+function ActivityFeed({ events }: { events: ActivityEvent[] }) {
+  const [filter, setFilter] = useState<ActivityFilter>('all')
+  const [visible, setVisible] = useState(PAGE_SIZE)
+
+  const filters: { value: ActivityFilter; label: string; count: number }[] = [
+    { value: 'all', label: 'All', count: events.length },
+    { value: 'click', label: 'Link clicks', count: events.filter((e) => e.type === 'click').length },
+    { value: 'first', label: 'First bookings', count: events.filter((e) => e.bookingKind === 'first').length },
+    { value: 'repeat', label: 'Repeat bookings', count: events.filter((e) => e.bookingKind === 'repeat').length },
+  ]
+
+  const filtered = events.filter((e) => matchesFilter(e, filter))
+  const shown = filtered.slice(0, visible)
+  const remaining = filtered.length - shown.length
+
+  function selectFilter(next: ActivityFilter) {
+    setFilter(next)
+    setVisible(PAGE_SIZE)
+  }
+
+  return (
+    <div>
+      {/* Filter chips */}
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 mb-3">
+        {filters.map((f) => {
+          const active = filter === f.value
+          return (
+            <button
+              key={f.value}
+              onClick={() => selectFilter(f.value)}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                active
+                  ? 'border-bridge-ink bg-bridge-ink text-bridge-ink-foreground'
+                  : 'border-bridge-border text-bridge-secondary bg-bridge-card hover:border-bridge-border-strong'
+              }`}
+            >
+              {f.label}
+              <span className={`ml-1.5 font-data ${active ? 'text-bridge-ink-foreground/70' : 'text-bridge-muted'}`}>
+                {f.count}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-bridge-muted text-sm text-center py-8">
+          No {filter === 'all' ? 'activity' : 'matching activity'} yet.
+        </p>
+      ) : (
+        <>
+          <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 px-4 shadow-sm">
+            {shown.map((e) => (
+              <ActivityRow key={e.id} event={e} />
+            ))}
+          </div>
+          {remaining > 0 && (
+            <button
+              onClick={() => setVisible((v) => v + PAGE_SIZE)}
+              className="w-full mt-3 py-2.5 rounded-xl border border-bridge-border text-bridge-secondary text-sm font-semibold hover:border-bridge-border-strong hover:text-bridge-heading transition-all"
+            >
+              Show {Math.min(PAGE_SIZE, remaining)} more
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function CreatorDashboard({ data }: { data: CreatorDashboardData }) {
   const { creator, totals, links, recentActivity } = data
   const router = useRouter()
   const [showAddPlace, setShowAddPlace] = useState(false)
+  const [tab, setTab] = useState<'overview' | 'requests'>('overview')
+  const [requestFilter, setRequestFilter] = useState<RequestFilter>('all')
 
-  const pendingCount = links.filter((l) => l.status === 'pending').length
+  // Requests = content requests the creator sent to businesses, across their
+  // whole lifecycle. "Accepted" maps to an active (live) link.
+  const pendingRequests = links.filter((l) => l.status === 'pending')
+  const activeLinks = links.filter((l) => l.status !== 'pending')
+  const pendingCount = pendingRequests.length
+
+  const requestCounts: Record<Exclude<RequestFilter, 'all'>, number> = {
+    pending: pendingCount,
+    accepted: links.filter((l) => l.status === 'active').length,
+    declined: links.filter((l) => l.status === 'declined').length,
+  }
+  const filteredRequests =
+    requestFilter === 'all'
+      ? links
+      : links.filter((l) => l.status === FILTER_STATUS[requestFilter])
 
   return (
     <div className="min-h-screen bg-bridge-bg">
@@ -263,8 +377,97 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
           </div>
         </div>
 
+        {/* Tab navigation */}
+        <div className="px-4 mt-5">
+          <div className="flex gap-1 bg-bridge-surface rounded-xl p-1">
+            <button
+              onClick={() => setTab('overview')}
+              className={`flex-1 text-center py-2 rounded-lg text-sm font-semibold transition-colors ${
+                tab === 'overview'
+                  ? 'bg-bridge-card text-bridge-heading shadow-sm'
+                  : 'text-bridge-muted hover:text-bridge-text'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setTab('requests')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                tab === 'requests'
+                  ? 'bg-bridge-card text-bridge-heading shadow-sm'
+                  : 'text-bridge-muted hover:text-bridge-text'
+              }`}
+            >
+              Requests
+              {pendingCount > 0 && (
+                <span className="text-[10px] font-bold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full leading-none">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {tab === 'requests' ? (
+          <div className="px-4 mt-6">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-sm font-semibold text-bridge-muted uppercase tracking-widest">
+                Requests
+              </h2>
+              <button
+                onClick={() => setShowAddPlace(true)}
+                className="flex items-center gap-1 text-xs font-semibold text-bridge-accent hover:underline"
+              >
+                <Plus size={13} /> New
+              </button>
+            </div>
+
+            {/* Lifecycle filter chips */}
+            <div className="flex gap-1.5 mb-4 overflow-x-auto -mx-1 px-1 pb-1">
+              {REQUEST_FILTERS.map(({ key, label }) => {
+                const active = requestFilter === key
+                const count = key === 'all' ? links.length : requestCounts[key]
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setRequestFilter(key)}
+                    className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
+                      active
+                        ? 'bg-bridge-ink-static text-white'
+                        : 'bg-bridge-surface text-bridge-muted hover:text-bridge-text'
+                    }`}
+                  >
+                    {label}
+                    <span className={active ? 'text-white/70' : 'text-bridge-muted'}>{count}</span>
+                  </button>
+                )
+              })}
+            </div>
+
+            {filteredRequests.length === 0 ? (
+              <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-6 text-center">
+                <p className="text-bridge-muted text-sm mb-3">
+                  {requestFilter === 'all' ? 'No requests yet.' : `No ${requestFilter} requests.`}
+                </p>
+                <button
+                  onClick={() => setShowAddPlace(true)}
+                  className="text-bridge-accent font-semibold text-sm hover:underline"
+                >
+                  Send a request to a business →
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredRequests.map((l) => (
+                  <LinkPerformanceCard key={l.linkId} link={l} creatorSlug={creator.slug} />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+        <>
         {/* KPIs */}
-        <div className="px-4 -mt-7 relative z-10">
+        <div className="px-4 mt-5 relative z-10">
           <div className="grid grid-cols-3 gap-2">
             <KpiCard label="Clicks" value={totals.totalClicks.toLocaleString()} icon={<MousePointerClick size={13} />} />
             <KpiCard label="Bookings" value={String(totals.totalBookings)} icon={<CalendarCheck size={13} />} />
@@ -341,7 +544,7 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
             onClick={() => setShowAddPlace(true)}
             className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base hover:bg-bridge-accent-dark active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm"
           >
-            <Plus size={18} /> Add a new place
+            <Plus size={18} /> Make a request
           </button>
         </div>
 
@@ -352,15 +555,18 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
               Your Links
             </h2>
             {pendingCount > 0 && (
-              <span className="text-[10px] font-semibold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full uppercase">
+              <button
+                onClick={() => setTab('requests')}
+                className="text-[10px] font-semibold bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full uppercase hover:bg-amber-100 transition-colors"
+              >
                 {pendingCount} pending
-              </span>
+              </button>
             )}
           </div>
 
-          {links.length === 0 ? (
+          {activeLinks.length === 0 ? (
             <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 p-6 text-center">
-              <p className="text-bridge-muted text-sm mb-3">No links yet.</p>
+              <p className="text-bridge-muted text-sm mb-3">No active links yet.</p>
               <button
                 onClick={() => setShowAddPlace(true)}
                 className="text-bridge-accent font-semibold text-sm hover:underline"
@@ -370,7 +576,7 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
             </div>
           ) : (
             <div className="space-y-3">
-              {links.map((l) => (
+              {activeLinks.map((l) => (
                 <LinkPerformanceCard key={l.linkId} link={l} creatorSlug={creator.slug} />
               ))}
             </div>
@@ -387,13 +593,11 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
               Nothing yet. Activity shows up here as people click and book.
             </p>
           ) : (
-            <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 px-4 shadow-sm">
-              {recentActivity.map((e) => (
-                <ActivityRow key={e.id} event={e} />
-              ))}
-            </div>
+            <ActivityFeed events={recentActivity} />
           )}
         </div>
+        </>
+        )}
       </div>
 
       {/* Add place modal */}

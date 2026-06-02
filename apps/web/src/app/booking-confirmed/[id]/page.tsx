@@ -158,7 +158,7 @@ export default async function Page({ params, searchParams }: PageProps) {
             View my bookings
           </Link>
           <Link
-            href={biz?.slug ? `/glowwithsara/${biz.slug}` : '/'}
+            href={biz?.slug ? `/shop/${biz.slug}` : '/'}
             className="block text-center w-full py-3 rounded-2xl border border-bridge-border text-bridge-text text-body font-semibold hover:bg-bridge-surface transition-colors"
           >
             Book another service

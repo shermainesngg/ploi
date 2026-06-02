@@ -139,17 +139,43 @@ Schema in `packages/db/schema.sql`. Migrations run in order in Supabase SQL Edit
 - `migration_003` — Auth user IDs, Stripe account IDs, consumers, payment fields
 - `migration_004` — Staff, availability, business hours, time slots, booking actions
 - `migration_005` — Featured service on links, customer acquisitions for repeat attribution
+- `migration_006_pre_launch` — Payout ledger, currency (THB/SGD), consumer↔booking FK, `updated_at` triggers, cancellation metadata, Google Calendar prep, **Row Level Security**
+- `migration_007`–`009` — Creator content embeds + backfill, avatars storage bucket
+- `migration_010_multi_featured` — Multiple featured services per link (`featured_service_ids uuid[]`); supersedes the single `featured_service_id` from 005, kept for back-compat
+
+`packages/db/setup.sql` is the **consolidated schema** (core tables + all migrations in one file) — run it for a fresh project instead of applying migrations one by one.
+
+## Environments
+
+Two separate Supabase projects, each with its own URL + keys:
+
+- **Staging** — what local dev points at via `.env.local`. Safe to seed with demo data.
+- **Production** — its own project; **never seed with demo data**. Always confirm which project `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` resolves to before running any write/seed.
+
+> Network note: the direct Postgres host (`db.<ref>.supabase.co`) is **IPv6-only** and unreachable from some networks. Use the **session pooler** connection string (`aws-0-<region>.pooler.supabase.com`, IPv4) for `psql`/CLI access, or the REST-based seed runner below (HTTPS, always reachable).
+
+## Seeding
+
+- **Canonical SQL seed**: `packages/db/seed.sql` — idempotent (safe to re-run; never deletes FK-referenced rows). Run it in the Supabase **SQL Editor** after `setup.sql`. This is the source of truth for demo data.
+- **REST seed runner**: `apps/web/scripts/seed-staging.mjs` — seeds the same demo businesses/creators/links over the REST API using `SUPABASE_SERVICE_ROLE_KEY` (bypasses RLS), for when Postgres isn't directly reachable. Idempotent (upsert by id / `(creator_id, business_id)`; services insert-if-missing). Run from repo root:
+  ```bash
+  node apps/web/scripts/seed-staging.mjs   # reads .env.local — confirm it points at STAGING first
+  ```
+  Keep `seed.sql` and the runner in sync when adding demo data so both paths produce the same result.
 
 ## Environment Variables
 
+Each environment (staging / prod) has its own values. `.env.local` holds the active set — by default, staging.
+
 ```
-NEXT_PUBLIC_SUPABASE_URL        # Supabase project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY   # Supabase public key
-SUPABASE_SERVICE_ROLE_KEY       # Supabase server-side key (bypasses RLS)
-STRIPE_SECRET_KEY               # Stripe test secret key (sk_test_...)
+NEXT_PUBLIC_SUPABASE_URL            # Supabase project URL (determines staging vs prod)
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY # Supabase public/anon key
+SUPABASE_SERVICE_ROLE_KEY           # Server-side secret key (sb_secret_...), bypasses RLS — never expose to browser
+SUPABASE_DB_URL                     # Postgres connection string (use the session-pooler host for IPv4 access)
+STRIPE_SECRET                       # Stripe test secret key (sk_test_...)
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY  # Stripe test publishable key (pk_test_...)
-STRIPE_WEBHOOK_SECRET           # From Stripe CLI (whsec_...)
-NEXT_PUBLIC_SITE_URL            # http://localhost:3000 (update for production)
+STRIPE_WEBHOOK_SECRET               # From Stripe CLI (whsec_...)
+NEXT_PUBLIC_SITE_URL                # http://localhost:3000 (update for production)
 ```
 
 ## Key Routes
@@ -157,13 +183,22 @@ NEXT_PUBLIC_SITE_URL            # http://localhost:3000 (update for production)
 | Route | Purpose |
 |---|---|
 | `/[creator]/[shop]` | Shop Booking Page via creator link (most important page) |
-| `/[creator]` | Creator Profile Page |
+| `/[creator]` | **Shared `/[slug]` namespace** — resolves creator-first, falls back to a standalone business page (see below) |
+| `/shop/[slug]` | Standalone business booking page — direct/organic discovery, no creator attribution |
+| `/search` | Site-wide search (separate Creators / Businesses tabs) |
 | `/dashboard/business/[slug]` | Business dashboard |
-| `/dashboard/creator/[slug]` | Creator dashboard |
+| `/dashboard/creator/[slug]` | Creator dashboard (Overview + Requests tabs) |
 | `/onboard/business` | Business signup |
 | `/onboard/creator` | Creator signup |
 | `/bookings` | Customer booking history |
 | `/staff/[id]/schedule` | Staff schedule (shareable) |
+
+### Discovery & Search
+
+- **Shared `/[slug]` namespace.** A single segment resolves to a creator profile if one exists, otherwise to a standalone business booking page (`creator: null` → direct booking, no attribution). Because creators and businesses share one URL namespace, **slugs must be globally unique across both** — `BusinessService.create` and `CreatorService.create` each reject a slug already claimed by the other type. `/shop/[slug]` is the dedicated, unambiguous direct-booking route (used by home/search links and `BusinessService.getBySlug`); the bare `/[slug]` fallback also resolves businesses. Reserved static routes (`/search`, `/login`, `/bookings`, `/dashboard`, etc.) shadow `/[slug]`, so they can't be valid slugs.
+- **Search.** `/search` is a client page with two separate searches toggled by tab. Backed by `GET /api/businesses/search` and `GET /api/creators/search`, which call `BusinessService.search` / `CreatorService.search` (name/handle/slug `ilike`, seed-data fallback). Business results link to `/shop/[slug]`, creator results to `/[creator]`. The NavBar search icon opens `/search`.
+- **Home page.** `components/HomeExperiences.tsx` owns the hero + explore. Hero is a large, copy-forward landing band that states what PLOI is. Explore is Fresha-style: a "Browse by category" image-tile row (tap to filter), then three curated horizontal carousels — **Recommended** (top rated), **Newly added** (newest from `BusinessService.list()`, which is `created_at desc`), **Trending** (most-reviewed, a popularity proxy until real engagement is tracked). Searching or selecting a category swaps the carousels for a results grid.
+- **NavBar menu** (`components/NavBar.tsx`) is role-aware: a **Creator** and/or **Business** section (each linking that dashboard, shown per owned slug), a **regular** section for any non-business identity (My bookings, Saved content, Saved businesses), and onboarding links only shown to visitors who don't already own that role. Note: **Saved content / Saved businesses are nav placeholders** (`/saved/content`, `/saved/businesses`) — the pages and underlying save/bookmark model are not built yet.
 
 ## Design Direction
 

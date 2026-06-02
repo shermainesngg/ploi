@@ -7,7 +7,7 @@ import type { SocialPlatform } from '@/lib/types'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { creatorSlug, businessSlug, contentUrl, platform, contentThumbnailUrl, featuredServiceId } = body
+    const { creatorSlug, businessSlug, contentUrl, platform, contentThumbnailUrl, featuredServiceIds } = body
 
     if (!creatorSlug || !businessSlug) {
       return NextResponse.json({ error: 'creatorSlug and businessSlug are required' }, { status: 400 })
@@ -26,16 +26,21 @@ export async function POST(req: NextRequest) {
     const cleanPlatform: SocialPlatform | undefined =
       platform && validPlatforms.includes(platform) ? (platform as SocialPlatform) : undefined
 
-    // Validate featured service belongs to this business if provided
-    let validFeatured: string | null = null
-    if (typeof featuredServiceId === 'string' && featuredServiceId.length > 0) {
-      const { data: svc } = await db
+    // Validate featured services all belong to this business. An empty/absent
+    // array means "talked about the place only" — no service highlighted.
+    let validFeatured: string[] = []
+    const requestedIds = Array.isArray(featuredServiceIds)
+      ? featuredServiceIds.filter((id): id is string => typeof id === 'string' && id.length > 0)
+      : []
+    if (requestedIds.length > 0) {
+      const { data: svcs } = await db
         .from('services')
         .select('id')
-        .eq('id', featuredServiceId)
+        .in('id', requestedIds)
         .eq('business_id', business.id)
-        .maybeSingle()
-      if (svc) validFeatured = svc.id
+      const ownedIds = new Set((svcs ?? []).map((s) => s.id))
+      // Preserve the creator's selection order, dropping any that aren't this business's.
+      validFeatured = requestedIds.filter((id) => ownedIds.has(id))
     }
 
     const link = await LinkService.create({
@@ -45,7 +50,7 @@ export async function POST(req: NextRequest) {
       contentUrl,
       platform: cleanPlatform,
       contentThumbnailUrl,
-      featuredServiceId: validFeatured,
+      featuredServiceIds: validFeatured,
     })
 
     // Best-effort: enroll a supported content URL into the async ingestion

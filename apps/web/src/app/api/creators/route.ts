@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CreatorService } from '@/services/creator.service'
 import { createAuthServerClient } from '@/lib/supabase-server'
+import { isReservedSlug } from '@/lib/constants'
 import { PLOI_ACTIVE_ROLE } from '@/lib/auth'
 import type { Social, SocialPlatform } from '@/lib/types'
 
@@ -16,6 +17,14 @@ export async function POST(req: NextRequest) {
     }
 
     const slug = handle.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30)
+
+    if (!slug) {
+      return NextResponse.json({ error: 'Please choose a handle with at least one letter or number.' }, { status: 400 })
+    }
+    if (isReservedSlug(slug)) {
+      return NextResponse.json({ error: 'That handle is reserved. Please choose a different one.' }, { status: 400 })
+    }
+
     const cleanHandle = `@${slug}`
 
     // Validate socials shape

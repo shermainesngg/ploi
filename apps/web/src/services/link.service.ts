@@ -26,7 +26,7 @@ export const LinkService = {
     contentUrl?: string
     platform?: SocialPlatform
     contentThumbnailUrl?: string
-    featuredServiceId?: string | null
+    featuredServiceIds?: string[]
   }) {
     if (!isSupabaseConfigured()) throw new Error('Supabase not configured.')
     const db = createServerClient()
@@ -39,7 +39,10 @@ export const LinkService = {
         content_url: opts.contentUrl ?? null,
         platform: opts.platform ?? null,
         content_thumbnail_url: opts.contentThumbnailUrl ?? null,
-        featured_service_id: opts.featuredServiceId ?? null,
+        featured_service_ids: opts.featuredServiceIds ?? [],
+        // Keep the legacy single column in sync (first featured service) for
+        // backward compatibility with anything still reading it.
+        featured_service_id: opts.featuredServiceIds?.[0] ?? null,
         status: 'pending',
       })
       .select()

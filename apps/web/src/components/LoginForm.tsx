@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, Suspense, type ReactNode } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Mail, Lock, Check, ArrowLeft } from 'lucide-react'
@@ -11,11 +11,15 @@ import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
 
 interface LoginFormProps {
+  /** 'signin' (default) signs into an existing account; 'signup' creates a new one. */
+  mode?: 'signin' | 'signup'
   heading?: string
   subcopy?: string
-  /** Where the "New here?" link points. */
+  /** Where the footer "New here? / Already have an account?" link points. */
   signupHref?: string
   signupLabel?: string
+  /** Extra links rendered in the card footer — e.g. "become a creator" / "list a business". */
+  secondary?: ReactNode
 }
 
 type Method = 'password' | 'magic'
@@ -32,14 +36,25 @@ function GoogleIcon() {
 }
 
 function LoginFormInner({
-  heading = 'Welcome back',
-  subcopy = 'Sign in to your PLOI account.',
-  signupHref = '/signup',
-  signupLabel = 'Get started',
+  mode = 'signin',
+  heading,
+  subcopy,
+  signupHref,
+  signupLabel,
+  secondary,
 }: LoginFormProps) {
+  const isSignup = mode === 'signup'
   const params = useSearchParams()
   const next = params.get('next') ?? '/'
   const errorParam = params.get('error')
+
+  // Sensible defaults per mode — callers can still override any of these.
+  const resolvedHeading = heading ?? (isSignup ? 'Create your account' : 'Welcome back')
+  const resolvedSubcopy =
+    subcopy ?? (isSignup ? 'Sign up to browse and book experiences you’ll love.' : 'Sign in to your PLOI account.')
+  const resolvedSignupHref = signupHref ?? (isSignup ? '/login' : '/signup')
+  const resolvedSignupLabel = signupLabel ?? (isSignup ? 'Log in' : 'Get started')
+  const footerPrompt = isSignup ? 'Already have an account?' : 'New here?'
 
   const [method, setMethod] = useState<Method>('password')
   const [email, setEmail] = useState('')
@@ -47,6 +62,7 @@ function LoginFormInner({
   const [busy, setBusy] = useState(false)
   const [magicSent, setMagicSent] = useState(false)
   const [resetSent, setResetSent] = useState(false)
+  const [confirmSent, setConfirmSent] = useState(false)
   const [error, setError] = useState<string | null>(
     errorParam === 'no_user' || errorParam === 'missing_code'
       ? 'That sign-in link expired or was already used. Please request a new one.'
@@ -59,23 +75,44 @@ function LoginFormInner({
     }
   }
 
-  async function signInPassword() {
+  function goToPostLogin() {
+    // Session is set client-side; let the server route the user to the right dashboard.
+    const dest = new URL(`${window.location.origin}/auth/post-login`)
+    if (next && next !== '/') dest.searchParams.set('next', next)
+    window.location.href = dest.toString()
+  }
+
+  async function submitPassword() {
     setBusy(true)
     setError(null)
     try {
       assertConfigured()
       const supabase = createAuthBrowserClient()
+
+      if (isSignup) {
+        const callback = new URL(`${window.location.origin}/auth/callback`)
+        if (next && next !== '/') callback.searchParams.set('next', next)
+        const { data, error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { emailRedirectTo: callback.toString() },
+        })
+        if (error) throw new Error(error.message)
+        // If email confirmation is enabled there's no session yet — tell them to check
+        // their inbox. Otherwise we have a live session and can route straight in.
+        if (data.session) goToPostLogin()
+        else setConfirmSent(true)
+        return
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
       })
       if (error) throw new Error(error.message)
-      // Session is set client-side; let the server route the user to the right dashboard.
-      const dest = new URL(`${window.location.origin}/auth/post-login`)
-      if (next && next !== '/') dest.searchParams.set('next', next)
-      window.location.href = dest.toString()
+      goToPostLogin()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not sign in')
+      setError(err instanceof Error ? err.message : isSignup ? 'Could not create account' : 'Could not sign in')
       setBusy(false)
     }
   }
@@ -152,8 +189,15 @@ function LoginFormInner({
           <ConfirmScreen
             email={email}
             title="Check your inbox"
-            body="Click it to sign in."
+            body={isSignup ? 'Click it to finish signing up.' : 'Click it to sign in.'}
             onReset={() => setMagicSent(false)}
+          />
+        ) : confirmSent ? (
+          <ConfirmScreen
+            email={email}
+            title="Confirm your email"
+            body="Click it to activate your account, then come back to book."
+            onReset={() => setConfirmSent(false)}
           />
         ) : resetSent ? (
           <ConfirmScreen
@@ -164,8 +208,8 @@ function LoginFormInner({
           />
         ) : (
           <>
-            <h1 className="font-display text-heading text-bridge-heading mt-6 leading-tight">{heading}</h1>
-            <p className="text-bridge-muted text-body mt-1.5 mb-7">{subcopy}</p>
+            <h1 className="font-display text-heading text-bridge-heading mt-6 leading-tight">{resolvedHeading}</h1>
+            <p className="text-bridge-muted text-body mt-1.5 mb-7">{resolvedSubcopy}</p>
 
             <Button
               variant="secondary"
@@ -174,7 +218,7 @@ function LoginFormInner({
               loading={busy}
               className="w-full cursor-pointer gap-2"
             >
-              <GoogleIcon /> Continue with Google
+              <GoogleIcon /> {isSignup ? 'Sign up with Google' : 'Continue with Google'}
             </Button>
 
             <div className="flex items-center gap-3 my-6">
@@ -207,25 +251,29 @@ function LoginFormInner({
                     icon={<Lock size={14} />}
                     error={error ?? undefined}
                   />
-                  <button
-                    type="button"
-                    onClick={sendReset}
-                    disabled={!email.trim() || busy}
-                    className="mt-2 text-bridge-muted text-caption hover:text-bridge-accent transition-colors cursor-pointer disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent rounded"
-                  >
-                    Forgot password?
-                  </button>
+                  {!isSignup && (
+                    <button
+                      type="button"
+                      onClick={sendReset}
+                      disabled={!email.trim() || busy}
+                      className="mt-2 text-bridge-muted text-caption hover:text-bridge-accent transition-colors cursor-pointer disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent rounded"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
                 </div>
               )}
 
               <Button
                 disabled={!canSubmit}
                 loading={busy}
-                onClick={method === 'password' ? signInPassword : sendMagicLink}
+                onClick={method === 'password' ? submitPassword : sendMagicLink}
                 size="lg"
                 className="w-full cursor-pointer"
               >
-                {method === 'password' ? 'Sign in' : 'Send magic link'}
+                {method === 'password'
+                  ? isSignup ? 'Create account' : 'Sign in'
+                  : isSignup ? 'Email me a sign-up link' : 'Send magic link'}
               </Button>
             </div>
 
@@ -237,16 +285,19 @@ function LoginFormInner({
               }}
               className="mt-5 w-full text-center text-bridge-secondary text-label hover:text-bridge-accent transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-bridge-accent rounded"
             >
-              {method === 'password' ? 'Email me a magic link instead' : 'Sign in with a password instead'}
+              {method === 'password'
+                ? 'Email me a link instead'
+                : isSignup ? 'Sign up with a password instead' : 'Sign in with a password instead'}
             </button>
 
             <div className="mt-8 pt-6 border-t border-bridge-border/60 text-center">
               <p className="text-bridge-muted text-body">
-                New here?{' '}
-                <Link href={signupHref} className="text-bridge-accent font-semibold hover:underline cursor-pointer">
-                  {signupLabel}
+                {footerPrompt}{' '}
+                <Link href={resolvedSignupHref} className="text-bridge-accent font-semibold hover:underline cursor-pointer">
+                  {resolvedSignupLabel}
                 </Link>
               </p>
+              {secondary && <div className="mt-4">{secondary}</div>}
             </div>
           </>
         )}

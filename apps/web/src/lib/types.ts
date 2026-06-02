@@ -60,7 +60,7 @@ export interface Link {
   contentThumbnailUrl: string | null
   status: LinkStatus
   clickCount: number
-  featuredServiceId: string | null
+  featuredServiceIds: string[]
 }
 
 // ── Creator content (1:many, behind the provider-adapter registry) ────────────
@@ -188,6 +188,8 @@ export interface LinkPerformance {
 export interface ActivityEvent {
   id: string
   type: 'click' | 'booking'
+  /** For bookings: whether this was a first-time acquisition (10%) or a repeat (5% residual). */
+  bookingKind?: 'first' | 'repeat'
   label: string
   amount?: number
   createdAt: string  // ISO

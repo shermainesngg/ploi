@@ -5,7 +5,7 @@ import {
   links as seedLinks,
 } from '@/lib/seed-data'
 import { rowToBusiness, rowToCreator, rowToLink } from '@/lib/mappers'
-import type { Business, Link, Social, SocialPlatform } from '@/lib/types'
+import type { Business, Creator, Link, Social, SocialPlatform } from '@/lib/types'
 
 export interface CreatorBusinessLink {
   business: Business
@@ -78,6 +78,28 @@ export const CreatorService = {
     return { creator, entries }
   },
 
+  // Site-wide creator search — matches display name, handle, or slug.
+  async search(query: string): Promise<Creator[]> {
+    if (!isSupabaseConfigured()) {
+      const q = query.toLowerCase()
+      return Object.values(seedCreators).filter(
+        (c) =>
+          c.displayName.toLowerCase().includes(q) ||
+          c.handle.toLowerCase().includes(q) ||
+          c.slug.includes(q),
+      )
+    }
+    const db = createServerClient()
+    const { data } = await db
+      .from('creators')
+      .select('*')
+      .eq('is_active', true)
+      .or(`display_name.ilike.%${query}%,handle.ilike.%${query}%,slug.ilike.%${query}%`)
+      .limit(10)
+    // Search results don't need linked businesses — pass an empty list.
+    return (data ?? []).map((r) => rowToCreator(r, []))
+  },
+
   async create(data: {
     slug: string
     handle: string
@@ -92,6 +114,17 @@ export const CreatorService = {
     }
 
     const db = createServerClient()
+
+    // Slugs are shared across the /[slug] namespace — a creator can't claim a
+    // slug already taken by a business.
+    const { data: bizClash } = await db
+      .from('businesses')
+      .select('id')
+      .eq('slug', data.slug)
+      .maybeSingle()
+    if (bizClash) {
+      throw new Error('That handle is already taken by a business on PLOI. Please choose a different handle.')
+    }
 
     const { data: creator, error } = await db
       .from('creators')

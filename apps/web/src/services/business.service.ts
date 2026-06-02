@@ -39,6 +39,21 @@ export const BusinessService = {
     return (data ?? []).map(rowToBusiness)
   },
 
+  // Direct (non-creator) lookup for organic discovery — no attribution.
+  async getBySlug(businessSlug: string): Promise<Business | null> {
+    if (!isSupabaseConfigured()) {
+      return seedBusinesses[businessSlug] ?? null
+    }
+    const db = createServerClient()
+    const { data: bizRow } = await db
+      .from('businesses')
+      .select('*, services(*)')
+      .eq('slug', businessSlug)
+      .eq('is_active', true)
+      .single()
+    return bizRow ? rowToBusiness(bizRow) : null
+  },
+
   async getPageData(creatorSlug: string, businessSlug: string) {
     if (!isSupabaseConfigured()) {
       const business = seedBusinesses[businessSlug] ?? null
@@ -115,6 +130,17 @@ export const BusinessService = {
     const coverPhoto = data.coverPhotoUrl ?? photos[0] ?? null
 
     const db = createServerClient()
+
+    // Slugs are shared across the /[slug] namespace — a business can't claim a
+    // slug already taken by a creator.
+    const { data: creatorClash } = await db
+      .from('creators')
+      .select('id')
+      .eq('slug', data.slug)
+      .maybeSingle()
+    if (creatorClash) {
+      throw new Error('That name is already taken by a creator on PLOI. Please choose a different name.')
+    }
 
     const { data: biz, error: bizErr } = await db
       .from('businesses')

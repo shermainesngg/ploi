@@ -43,34 +43,33 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             exit={{ opacity: 0 }}
             onClick={onClose}
           />
-          <motion.div
-            className={cn(
-              'fixed bottom-0 left-0 right-0 z-50 bg-bridge-card rounded-t-modal shadow-modal max-h-[85vh] overflow-y-auto',
-              className,
-            )}
-            initial={{ y: '100%' }}
-            animate={{ y: 0 }}
-            exit={{ y: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          >
-            <div className="sticky top-0 bg-bridge-card rounded-t-modal z-10">
-              <div className="flex justify-center pt-3 pb-1">
-                <div className="w-10 h-1 rounded-full bg-bridge-border-strong" />
-              </div>
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <motion.div
+              className={cn(
+                'w-full max-w-md bg-bridge-card rounded-modal shadow-modal max-h-[85vh] overflow-y-auto pointer-events-auto',
+                className,
+              )}
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
               {title && (
-                <div className="flex items-center justify-between px-card-padding pb-3">
-                  <h2 className="text-title text-bridge-heading">{title}</h2>
-                  <button
-                    onClick={onClose}
-                    className="p-1 rounded-full hover:bg-bridge-surface transition-colors"
-                  >
-                    <X size={20} className="text-bridge-muted" />
-                  </button>
+                <div className="sticky top-0 bg-bridge-card rounded-t-modal z-10">
+                  <div className="flex items-center justify-between px-card-padding pt-card-padding pb-3">
+                    <h2 className="text-title text-bridge-heading">{title}</h2>
+                    <button
+                      onClick={onClose}
+                      className="p-1 rounded-full hover:bg-bridge-surface transition-colors"
+                    >
+                      <X size={20} className="text-bridge-muted" />
+                    </button>
+                  </div>
                 </div>
               )}
-            </div>
-            <div className="px-card-padding pb-card-padding">{children}</div>
-          </motion.div>
+              <div className={cn('px-card-padding pb-card-padding', !title && 'pt-card-padding')}>{children}</div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

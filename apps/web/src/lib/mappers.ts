@@ -172,6 +172,11 @@ export function rowToLink(r: any, creatorSlug: string, businessSlug: string): Li
     contentThumbnailUrl: r.content_thumbnail_url ?? null,
     status: (r.status ?? 'pending') as LinkStatus,
     clickCount: r.click_count ?? 0,
-    featuredServiceId: r.featured_service_id ?? null,
+    featuredServiceIds:
+      Array.isArray(r.featured_service_ids) && r.featured_service_ids.length > 0
+        ? r.featured_service_ids
+        : r.featured_service_id
+          ? [r.featured_service_id]
+          : [],
   }
 }

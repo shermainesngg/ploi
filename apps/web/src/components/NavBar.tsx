@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useTransition } from 'react'
-import { Search, Menu, X, LogOut, LayoutDashboard, Calendar, Sun, Moon, Check, Megaphone, Store } from 'lucide-react'
+import { Search, Menu, X, LogOut, LayoutDashboard, Calendar, Sun, Moon, Check, Megaphone, Store, Bookmark, Heart } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import type { AppUser, UserRole } from '@/lib/auth'
 import { setActiveRole } from '@/actions/auth.actions'
@@ -70,10 +70,9 @@ export default function NavBar({ user }: { user: AppUser | null }) {
     })
   }
 
-  const dashHref =
-    user?.role === 'creator' && user.creatorSlug ? `/dashboard/creator/${user.creatorSlug}` :
-    user?.role === 'business' && user.businessSlug ? `/dashboard/business/${user.businessSlug}` :
-    '/bookings'
+  // The consumer-style section (bookings, saved items) shows for everyone who
+  // owns a non-business identity. A business-only account never sees it.
+  const showRegular = !!user && user.roles.some((r) => r !== 'business')
 
   return (
     <>
@@ -91,7 +90,7 @@ export default function NavBar({ user }: { user: AppUser | null }) {
               type="button"
               className="w-9 h-9 flex items-center justify-center text-bridge-muted hover:text-bridge-text transition-colors rounded-full hover:bg-bridge-surface"
               aria-label="Search"
-              onClick={() => router.push('/')}
+              onClick={() => router.push('/search')}
             >
               <Search size={17} />
             </button>
@@ -196,24 +195,55 @@ export default function NavBar({ user }: { user: AppUser | null }) {
             )}
 
             <div className="flex-1 overflow-y-auto px-2 py-3">
-              <NavLink href="/" label="Home" onClick={() => setOpen(false)} />
-
-              {user && user.role !== 'consumer' && (
-                <NavLink
-                  href={dashHref}
-                  label="Dashboard"
-                  icon={<LayoutDashboard size={15} />}
-                  onClick={() => setOpen(false)}
-                />
+              {user?.creatorSlug && (
+                <div className="pb-1">
+                  <p className="px-3 pb-1.5 text-micro text-bridge-muted uppercase tracking-wide">Creator</p>
+                  <NavLink
+                    href={`/dashboard/creator/${user.creatorSlug}`}
+                    label="Dashboard"
+                    icon={<LayoutDashboard size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                </div>
               )}
 
-              {user && (
-                <NavLink
-                  href="/bookings"
-                  label="My bookings"
-                  icon={<Calendar size={15} />}
-                  onClick={() => setOpen(false)}
-                />
+              {user?.businessSlug && (
+                <div className="pb-1">
+                  <p className="px-3 pb-1.5 text-micro text-bridge-muted uppercase tracking-wide">Business</p>
+                  <NavLink
+                    href={`/dashboard/business/${user.businessSlug}`}
+                    label="Dashboard"
+                    icon={<LayoutDashboard size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                </div>
+              )}
+
+              {showRegular && (user?.creatorSlug || user?.businessSlug) && (
+                <div className="my-2 border-t border-bridge-border/40" />
+              )}
+
+              {showRegular && (
+                <div className="pb-1">
+                  <NavLink
+                    href="/bookings"
+                    label="My bookings"
+                    icon={<Calendar size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                  <NavLink
+                    href="/saved/content"
+                    label="Saved content"
+                    icon={<Bookmark size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                  <NavLink
+                    href="/saved/businesses"
+                    label="Saved businesses"
+                    icon={<Heart size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                </div>
               )}
 
               {!user && (
@@ -225,8 +255,12 @@ export default function NavBar({ user }: { user: AppUser | null }) {
 
               <div className="my-2 border-t border-bridge-border/40" />
 
-              <NavLink href="/onboard/creator" label="Join as creator" onClick={() => setOpen(false)} />
-              <NavLink href="/onboard/business" label="List your business" onClick={() => setOpen(false)} />
+              {!user?.creatorSlug && (
+                <NavLink href="/onboard/creator" label="Join as creator" onClick={() => setOpen(false)} />
+              )}
+              {!user && (
+                <NavLink href="/onboard/business" label="List your business" onClick={() => setOpen(false)} />
+              )}
             </div>
 
             {user && (

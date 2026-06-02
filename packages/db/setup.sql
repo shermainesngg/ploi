@@ -365,6 +365,18 @@ alter table links
 
 create index if not exists idx_links_featured_service on links(featured_service_id);
 
+-- Migration 006: multiple featured services per link (supersedes the single
+-- featured_service_id above, which is retained for backward compatibility).
+alter table links
+  add column if not exists featured_service_ids uuid[] not null default '{}';
+
+update links
+set featured_service_ids = array[featured_service_id]
+where featured_service_id is not null
+  and (featured_service_ids is null or featured_service_ids = '{}');
+
+create index if not exists idx_links_featured_services on links using gin (featured_service_ids);
+
 -- ── Customer acquisitions ───────────────────────────────────────────────────
 create table if not exists customer_acquisitions (
   id                uuid primary key default uuid_generate_v4(),

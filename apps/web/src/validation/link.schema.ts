@@ -8,7 +8,7 @@ export const createLinkSchema = z.object({
   contentUrl: z.string().url().optional().or(z.literal('')),
   platform: socialPlatformSchema.optional(),
   contentThumbnailUrl: z.string().url().optional().or(z.literal('')),
-  featuredServiceId: z.string().uuid().optional().or(z.literal('')),
+  featuredServiceIds: z.array(z.string().uuid()).optional(),
 })
 
 export const updateLinkStatusSchema = z.object({

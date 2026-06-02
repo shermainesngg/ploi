@@ -13,7 +13,7 @@ export async function createLink(formData: FormData) {
     return { error: parsed.error.flatten().fieldErrors }
   }
 
-  const { creatorSlug, businessSlug, contentUrl, platform, contentThumbnailUrl, featuredServiceId } = parsed.data
+  const { creatorSlug, businessSlug, contentUrl, platform, contentThumbnailUrl, featuredServiceIds } = parsed.data
 
   const db = createServerClient()
   const [{ data: creator }, { data: business }] = await Promise.all([
@@ -24,15 +24,16 @@ export async function createLink(formData: FormData) {
   if (!creator) return { error: 'Creator not found' }
   if (!business) return { error: 'Business not found' }
 
-  let validFeatured: string | null = null
-  if (featuredServiceId) {
-    const { data: svc } = await db
+  // Keep only the featured services that actually belong to this business.
+  let validFeatured: string[] = []
+  if (featuredServiceIds && featuredServiceIds.length > 0) {
+    const { data: svcs } = await db
       .from('services')
       .select('id')
-      .eq('id', featuredServiceId)
+      .in('id', featuredServiceIds)
       .eq('business_id', business.id)
-      .maybeSingle()
-    if (svc) validFeatured = svc.id
+    const ownedIds = new Set((svcs ?? []).map((s) => s.id))
+    validFeatured = featuredServiceIds.filter((id) => ownedIds.has(id))
   }
 
   try {
@@ -43,7 +44,7 @@ export async function createLink(formData: FormData) {
       contentUrl: contentUrl || undefined,
       platform: platform as SocialPlatform | undefined,
       contentThumbnailUrl: contentThumbnailUrl || undefined,
-      featuredServiceId: validFeatured,
+      featuredServiceIds: validFeatured,
     })
     return { success: true, id: link.id, shortCode: link.short_code, status: link.status }
   } catch (err) {

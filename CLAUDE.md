@@ -165,18 +165,30 @@ Two separate Supabase projects, each with its own URL + keys:
 
 ## Environment Variables
 
-Each environment (staging / prod) has its own values. `.env.local` holds the active set — by default, staging.
+```
+NEXT_PUBLIC_SUPABASE_URL             # Supabase project URL (determines staging vs prod)
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY # Supabase public key. The code also accepts the legacy
+                                     #   name NEXT_PUBLIC_SUPABASE_ANON_KEY (publishable preferred).
+SUPABASE_SERVICE_ROLE_KEY            # Server-side secret key (sb_secret_...), bypasses RLS — never expose to browser
+                                     #   (SUPABASE_SECRET_KEY is also accepted as an alias)
+SUPABASE_DB_URL                      # Postgres connection string (use the session-pooler host for IPv4 access)
+STRIPE_SECRET_KEY                    # Stripe secret key (sk_test_... / sk_live_...)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY   # Stripe publishable key (pk_test_... / pk_live_...)
+STRIPE_WEBHOOK_SECRET                # From Stripe CLI / webhook endpoint (whsec_...)
+NEXT_PUBLIC_SITE_URL                 # http://localhost:3000 (update for production)
+```
 
-```
-NEXT_PUBLIC_SUPABASE_URL            # Supabase project URL (determines staging vs prod)
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY # Supabase public/anon key
-SUPABASE_SERVICE_ROLE_KEY           # Server-side secret key (sb_secret_...), bypasses RLS — never expose to browser
-SUPABASE_DB_URL                     # Postgres connection string (use the session-pooler host for IPv4 access)
-STRIPE_SECRET                       # Stripe test secret key (sk_test_...)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY  # Stripe test publishable key (pk_test_...)
-STRIPE_WEBHOOK_SECRET               # From Stripe CLI (whsec_...)
-NEXT_PUBLIC_SITE_URL                # http://localhost:3000 (update for production)
-```
+> **Key-name tolerance.** `lib/supabase.ts` / `supabase-server.ts` / `middleware.ts` resolve the public key from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` **or** `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and the secret key from `SUPABASE_SERVICE_ROLE_KEY` **or** `SUPABASE_SECRET_KEY`. If neither public key is set, `isSupabaseConfigured()` is false and the app **silently falls back to the in-memory `seed-data.ts`** (one demo business/creator) instead of the real DB — the usual cause of "I don't see my seeded data" on a deployment.
+
+### Env files & where each is loaded
+
+| File | Loaded by | Points at |
+|---|---|---|
+| `apps/web/.env.local` | the Next app (`next dev/build/start`, cwd is `apps/web`) | **staging** |
+| `.env.local` (repo root) | the seed runner `scripts/seed-staging.mjs` (run from root) | **staging** |
+| `.env.prod` (repo root) | nothing automatically — reference for Vercel **Production** vars / deliberate prod scripts (`node --env-file=.env.prod …`) | **prod** |
+
+All `.env*` files are gitignored. Production app config lives in **Vercel env vars**, not a file. On Vercel, **staging deploys are Preview deployments** — their env vars must be set under the **Preview** scope (pointing at the staging Supabase project); Production-scope vars don't apply to them. After changing Vercel env vars, **redeploy** — existing deployments don't pick them up.
 
 ## Key Routes
 

@@ -1,13 +1,14 @@
 import 'server-only'
 import { createServerClient as createSsrServer } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase'
 
 /** Server component / API route — reads session from cookies. */
 export async function createAuthServerClient() {
   const cookieStore = await cookies()
   return createSsrServer(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL!,
+    SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {

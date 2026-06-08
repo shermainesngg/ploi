@@ -91,8 +91,8 @@ export default function RescheduleModal({
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto animate-slide-up">
-        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-[480px] bg-bridge-card rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col animate-scale-in pointer-events-auto">
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-bridge-border/60">
             <div>
               {step === 'time' && (

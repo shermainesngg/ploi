@@ -25,6 +25,7 @@ import {
   Play,
   TrendingUp,
   Zap,
+  LayoutDashboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -57,6 +58,8 @@ interface Props {
   affiliations: BusinessCreatorAffiliation[]
   content: ContentWithCreator[]
   recentBookings: number
+  /** Signed-in user owns this business — show the dashboard shortcut bar. */
+  isOwner?: boolean
 }
 
 // ── Creator content wall (swimlane of facade cards → bottom-sheet player) ─────
@@ -520,8 +523,8 @@ function CreatorDetailModal({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
-        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-2xl bg-bridge-card rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto animate-scale-in pointer-events-auto">
           {/* Close */}
           <div className="flex justify-end p-4 pb-0">
             <button
@@ -964,8 +967,8 @@ function BookingModal({
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
-        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-2xl bg-bridge-card rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto animate-scale-in pointer-events-auto">
           {step === 'confirmed' ? (
             <ConfirmedScreen
               service={service} business={business} creator={creator}
@@ -1300,7 +1303,7 @@ function EmptyServices({ business }: { business: Business }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function ShopBookingPage({ business, creator, link, affiliations, content, recentBookings }: Props) {
+export default function ShopBookingPage({ business, creator, link, affiliations, content, recentBookings, isOwner = false }: Props) {
   const [activeService, setActiveService] = useState<Service | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showServicePicker, setShowServicePicker] = useState(false)
@@ -1316,13 +1319,17 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
     fetch(`/api/links/${encodeURIComponent(link.shortCode)}/click`, { method: 'POST' }).catch(() => {})
   }, [creator, link])
 
-  // Content-first: featured service hero (if link has one + creator is present)
-  const featuredService =
-    creator && link?.featuredServiceId
-      ? business.services.find((s) => s.id === link.featuredServiceId)
-      : null
-  const otherServices = featuredService
-    ? business.services.filter((s) => s.id !== featuredService.id)
+  // Content-first: featured service heroes (if link has any + creator is present).
+  // Preserves the creator's selection order.
+  const featuredServices =
+    creator && link?.featuredServiceIds.length
+      ? link.featuredServiceIds
+          .map((id) => business.services.find((s) => s.id === id))
+          .filter((s): s is Service => !!s)
+      : []
+  const featuredIds = new Set(featuredServices.map((s) => s.id))
+  const otherServices = featuredServices.length
+    ? business.services.filter((s) => !featuredIds.has(s.id))
     : business.services
   const hasServices = business.services.length > 0
   const fromPrice = hasServices ? Math.min(...business.services.map(s => s.price)) : null
@@ -1340,6 +1347,19 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
   return (
     <div className="min-h-screen bg-bridge-bg">
       <div className="max-w-2xl mx-auto relative">
+        {/* Owner shortcut — only the signed-in owner sees this */}
+        {isOwner && (
+          <div className="bg-bridge-ink-static text-white px-4 py-2.5 flex items-center justify-between gap-3">
+            <span className="text-xs text-white/70">This is your public listing</span>
+            <NextLink
+              href="/business"
+              className="flex items-center gap-1.5 text-xs font-semibold text-white hover:text-white/80 transition-colors"
+            >
+              <LayoutDashboard size={12} /> Go to dashboard
+            </NextLink>
+          </div>
+        )}
+
         <BusinessHero business={business} recentBookings={recentBookings} affiliationsCount={affiliations.length} />
 
         {creator && (
@@ -1360,27 +1380,28 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
         {/* About section */}
         <AboutSection business={business} />
 
-        {/* Featured service (content-first hero) */}
-        {featuredService && creator && (
+        {/* Featured services (content-first heroes) */}
+        {creator && featuredServices.map((service) => (
           <FeaturedServiceCard
-            service={featuredService}
+            key={service.id}
+            service={service}
             business={business}
             creator={creator}
             link={link}
             onBook={setActiveService}
           />
-        )}
+        ))}
 
         {/* Services */}
         <div className="px-4 mt-6 pb-2" ref={servicesRef}>
           {hasServices ? (
             <>
               <h2 className="text-sm font-semibold text-bridge-muted uppercase tracking-widest mb-4">
-                {featuredService ? 'Or explore other services' : 'Our Services'}
+                {featuredServices.length ? 'Or explore other services' : 'Our Services'}
               </h2>
               <div className="space-y-3">
                 {otherServices.map((service, i) => (
-                  <ServiceCard key={service.id} service={service} onBook={setActiveService} isPopular={i === 0 && !featuredService} />
+                  <ServiceCard key={service.id} service={service} onBook={setActiveService} isPopular={i === 0 && !featuredServices.length} />
                 ))}
               </div>
             </>
@@ -1413,8 +1434,8 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
         {showServicePicker && (
           <>
             <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={() => setShowServicePicker(false)} />
-            <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
-              <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+              <div className="w-full max-w-2xl bg-bridge-card rounded-3xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto animate-scale-in pointer-events-auto">
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-bridge-border/60">
                   <h2 className="font-bold text-bridge-heading text-lg">Pick a service</h2>
                   <button

@@ -501,17 +501,43 @@ function DoneScreen({ slug }: { slug: string }) {
         Your booking page is ready. Share it with a creator to start getting attributed bookings.
       </p>
 
-      <div className="w-full bg-bridge-bg rounded-2xl p-5 text-left mb-8">
+      <div className="w-full bg-bridge-bg rounded-2xl p-5 text-left mb-5">
         <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-2">Your page slug</p>
         <p className="font-mono text-bridge-accent font-semibold text-sm break-all">{slug}</p>
         <p className="text-bridge-muted text-xs mt-3">A creator can link to you at: <span className="text-bridge-secondary">{url}</span></p>
       </div>
 
+      {/* Next steps — set up the rest from the dashboard */}
+      <div className="w-full bg-bridge-bg rounded-2xl p-5 text-left mb-8">
+        <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-3">Next, from your dashboard</p>
+        <div className="space-y-2.5">
+          <div className="flex gap-2.5 items-start">
+            <span className="font-mono text-xs text-bridge-accent mt-0.5">1</span>
+            <p className="text-sm text-bridge-secondary">
+              <span className="font-semibold text-bridge-heading">Connect payments</span> — accept cards with Stripe so bookings can be paid online.
+            </p>
+          </div>
+          <div className="flex gap-2.5 items-start">
+            <span className="font-mono text-xs text-bridge-accent mt-0.5">2</span>
+            <p className="text-sm text-bridge-secondary">
+              <span className="font-semibold text-bridge-heading">Add your staff</span> — set who does what and when, so customers book the right person.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <Link
-        href={`/${slug}`}
+        href={`/dashboard/business/${slug}`}
         className="w-full py-4 rounded-2xl bg-bridge-ink text-bridge-ink-foreground font-semibold text-base hover:bg-bridge-ink-hover transition-all flex items-center justify-center gap-2"
       >
-        Preview my booking page →
+        Open my dashboard →
+      </Link>
+
+      <Link
+        href={`/${slug}`}
+        className="w-full mt-3 py-3.5 rounded-2xl border border-bridge-border text-bridge-secondary font-semibold text-sm hover:border-bridge-border-strong hover:text-bridge-heading transition-all flex items-center justify-center"
+      >
+        Preview my booking page
       </Link>
 
       <div className="mt-4 flex gap-4 text-sm">

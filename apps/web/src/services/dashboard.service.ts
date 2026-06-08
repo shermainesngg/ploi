@@ -235,13 +235,21 @@ export const DashboardService = {
       const totalEarnings = links.reduce((s, l) => s + l.earnings, 0)
 
       const recentActivity: ActivityEvent[] = []
-      for (let i = 0; i < 8; i++) {
+      for (let i = 0; i < 16; i++) {
         const isBooking = i % 3 === 1
         const created = new Date(Date.now() - i * 9 * 60 * 60 * 1000)
         if (isBooking) {
           const biz = linkedBusinesses[0]
           const svc = biz.services[i % biz.services.length]
-          recentActivity.push({ id: `act_${i}`, type: 'booking', label: `Booking · ${svc.name}`, amount: calculateCreatorEarnings(svc.price), createdAt: created.toISOString() })
+          const isRepeat = i % 6 === 1
+          recentActivity.push({
+            id: `act_${i}`,
+            type: 'booking',
+            bookingKind: isRepeat ? 'repeat' : 'first',
+            label: `${isRepeat ? 'Repeat booking' : 'Booking'} · ${svc.name}`,
+            amount: calculateCreatorEarnings(svc.price),
+            createdAt: created.toISOString(),
+          })
         } else {
           recentActivity.push({ id: `act_${i}`, type: 'click', label: `Link click · ${linkedBusinesses[0].name}`, createdAt: created.toISOString() })
         }
@@ -346,13 +354,21 @@ export const DashboardService = {
     const customersInWindow = (acqRows ?? []).filter((a: any) => a.is_active && new Date(a.expires_at) > now).length
 
     const { data: activityRows } = linkIds.length
-      ? await db.from('attribution_events').select(`id, event_type, created_at, links ( businesses ( name ) ), bookings ( services ( name, price ) )`).in('link_id', linkIds).order('created_at', { ascending: false }).limit(20)
+      ? await db.from('attribution_events').select(`id, event_type, created_at, links ( businesses ( name ) ), bookings ( is_repeat, services ( name, price ) )`).in('link_id', linkIds).order('created_at', { ascending: false }).limit(50)
       : { data: [] }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const recentActivity: ActivityEvent[] = (activityRows ?? []).map((a: any) => {
       if (a.event_type === 'booking_confirmed' && a.bookings?.services) {
-        return { id: a.id, type: 'booking' as const, label: `Booking · ${a.bookings.services.name}`, amount: calculateCreatorEarnings(a.bookings.services.price ?? 0), createdAt: a.created_at }
+        const isRepeat = !!a.bookings.is_repeat
+        return {
+          id: a.id,
+          type: 'booking' as const,
+          bookingKind: isRepeat ? ('repeat' as const) : ('first' as const),
+          label: `${isRepeat ? 'Repeat booking' : 'Booking'} · ${a.bookings.services.name}`,
+          amount: calculateCreatorEarnings(a.bookings.services.price ?? 0),
+          createdAt: a.created_at,
+        }
       }
       return { id: a.id, type: 'click' as const, label: `Link click · ${a.links?.businesses?.name ?? 'Unknown'}`, createdAt: a.created_at }
     })

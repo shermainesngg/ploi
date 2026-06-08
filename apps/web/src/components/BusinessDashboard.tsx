@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import NextLink from 'next/link'
-import { ArrowLeft, Wallet, LayoutGrid, Calendar, Inbox, Users, Plus } from 'lucide-react'
+import { Eye, Wallet, LayoutGrid, Calendar, Inbox, Users, Plus, Settings } from 'lucide-react'
 import type { BusinessDashboardData, ContentWithCreator } from '@/lib/types'
 import type { PendingLinkRequest, MyCreatorEntry } from '@/services/link.service'
 import type { AgendaBooking } from '@/services/dashboard.service'
@@ -14,8 +14,9 @@ import WalkinModal from './WalkinModal'
 import OverviewTab from './dashboard/OverviewTab'
 import BookingsTab from './dashboard/BookingsTab'
 import CreatorsTab from './dashboard/CreatorsTab'
+import SettingsTab from './dashboard/SettingsTab'
 
-type Tab = 'overview' | 'calendar' | 'bookings' | 'creators'
+type Tab = 'overview' | 'calendar' | 'bookings' | 'creators' | 'settings'
 type ScheduleView = 'day' | 'week' | 'month'
 
 interface Props {
@@ -24,6 +25,7 @@ interface Props {
   pendingRequests: PendingLinkRequest[]
   myCreators: MyCreatorEntry[]
   pendingContent: ContentWithCreator[]
+  activeContent: ContentWithCreator[]
   stripeConnected: boolean
   view: ScheduleView
   viewDate: string
@@ -41,11 +43,12 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'calendar', label: 'Calendar', icon: <Calendar size={14} /> },
   { key: 'bookings', label: 'Bookings', icon: <Inbox size={14} /> },
   { key: 'creators', label: 'Creators', icon: <Users size={14} /> },
+  { key: 'settings', label: 'Settings', icon: <Settings size={14} /> },
 ]
 
 export default function BusinessDashboard(props: Props) {
   const {
-    tab, data, pendingRequests, myCreators, pendingContent, stripeConnected,
+    tab, data, pendingRequests, myCreators, pendingContent, activeContent, stripeConnected,
     view, viewDate, agenda, rangeBookings, todayAgenda,
     bookingsList, bookingsStatus, services, staff,
   } = props
@@ -85,10 +88,10 @@ export default function BusinessDashboard(props: Props) {
           )}
           <div className="relative px-5 pt-8 pb-8">
             <NextLink
-              href={`/glowwithsara/${business.slug}`}
+              href={`/shop/${business.slug}`}
               className="flex items-center gap-1 text-white/80 text-xs mb-4 hover:text-white transition-colors"
             >
-              <ArrowLeft size={12} /> Back to booking page
+              <Eye size={12} /> View your listing
             </NextLink>
             <span className="text-micro font-bold tracking-wide text-white/90 bg-white/20 px-2 py-0.5 rounded-full uppercase">
               Dashboard
@@ -110,7 +113,7 @@ export default function BusinessDashboard(props: Props) {
               return (
                 <NextLink
                   key={t.key}
-                  href={`/dashboard/business/${business.slug}?tab=${t.key}`}
+                  href={`?tab=${t.key}`}
                   scroll={false}
                   className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-micro font-semibold border transition-colors ${
                     active ? 'bg-bridge-ink text-bridge-ink-foreground border-bridge-ink' : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
@@ -119,9 +122,7 @@ export default function BusinessDashboard(props: Props) {
                   {t.icon}
                   {t.label}
                   {badge !== null && (
-                    <span className={`text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 ${
-                      active ? 'bg-bridge-card text-bridge-heading' : 'bg-amber-100 text-amber-800'
-                    }`}>
+                    <span className="text-[10px] font-bold rounded-full min-w-[16px] h-[16px] flex items-center justify-center px-1 bg-bridge-accent text-white">
                       {badge}
                     </span>
                   )}
@@ -159,7 +160,8 @@ export default function BusinessDashboard(props: Props) {
             <OverviewTab
               data={data}
               todayAgenda={todayAgenda}
-              pendingRequestsCount={pendingRequests.length}
+              pendingBookingCount={pendingBookingCount}
+              creatorActionCount={creatorActionCount}
               staff={staff}
               businessSlug={business.slug}
             />
@@ -191,7 +193,7 @@ export default function BusinessDashboard(props: Props) {
                 {(['day', 'week', 'month'] as ScheduleView[]).map((v) => (
                   <NextLink
                     key={v}
-                    href={`/dashboard/business/${business.slug}?tab=calendar&view=${v}&date=${viewDate}`}
+                    href={`?tab=calendar&view=${v}&date=${viewDate}`}
                     scroll={false}
                     className={`flex-1 text-center py-1.5 rounded-button text-caption font-semibold capitalize transition-colors ${
                       view === v ? 'bg-bridge-card text-bridge-heading shadow-card' : 'text-bridge-muted hover:text-bridge-text'
@@ -206,10 +208,10 @@ export default function BusinessDashboard(props: Props) {
                 <DailyAgenda agenda={agenda} date={viewDate} businessSlug={business.slug} staff={staff} />
               )}
               {view === 'week' && (
-                <WeeklyAgenda bookings={rangeBookings} weekStart={viewDate} businessSlug={business.slug} />
+                <WeeklyAgenda bookings={rangeBookings} weekStart={viewDate} />
               )}
               {view === 'month' && (
-                <MonthlyAgenda bookings={rangeBookings} monthStart={viewDate} businessSlug={business.slug} />
+                <MonthlyAgenda bookings={rangeBookings} monthStart={viewDate} />
               )}
             </>
           )}
@@ -229,9 +231,13 @@ export default function BusinessDashboard(props: Props) {
               myCreators={myCreators}
               creatorRollups={data.creatorRollups}
               pendingContent={pendingContent}
+              activeContent={activeContent}
               businessId={business.id}
+              services={services}
             />
           )}
+
+          {tab === 'settings' && <SettingsTab business={business} />}
         </div>
 
         {showWalkin && (

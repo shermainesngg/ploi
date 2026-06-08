@@ -42,7 +42,7 @@ export default function DailyAgenda({ agenda, date, businessSlug, staff }: Props
   const isToday = date === today
 
   function go(toDate: string) {
-    router.push(`/dashboard/business/${businessSlug}?tab=calendar&view=day&date=${toDate}`)
+    router.push(`?tab=calendar&view=day&date=${toDate}`)
   }
 
   const filtered = agenda.filter((b) => {

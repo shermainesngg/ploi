@@ -3,6 +3,7 @@
 import { createLinkSchema, updateLinkStatusSchema } from '@/validation/link.schema'
 import { LinkService } from '@/services/link.service'
 import { createServerClient } from '@/lib/supabase'
+import { decideAccess, getAuthIdentity } from '@/lib/ownership'
 import type { SocialPlatform } from '@/lib/types'
 
 export async function createLink(formData: FormData) {
@@ -13,7 +14,7 @@ export async function createLink(formData: FormData) {
     return { error: parsed.error.flatten().fieldErrors }
   }
 
-  const { creatorSlug, businessSlug, contentUrl, platform, contentThumbnailUrl, featuredServiceId } = parsed.data
+  const { creatorSlug, businessSlug, contentUrl, platform, contentThumbnailUrl, featuredServiceIds } = parsed.data
 
   const db = createServerClient()
   const [{ data: creator }, { data: business }] = await Promise.all([
@@ -24,15 +25,16 @@ export async function createLink(formData: FormData) {
   if (!creator) return { error: 'Creator not found' }
   if (!business) return { error: 'Business not found' }
 
-  let validFeatured: string | null = null
-  if (featuredServiceId) {
-    const { data: svc } = await db
+  // Keep only the featured services that actually belong to this business.
+  let validFeatured: string[] = []
+  if (featuredServiceIds && featuredServiceIds.length > 0) {
+    const { data: svcs } = await db
       .from('services')
       .select('id')
-      .eq('id', featuredServiceId)
+      .in('id', featuredServiceIds)
       .eq('business_id', business.id)
-      .maybeSingle()
-    if (svc) validFeatured = svc.id
+    const ownedIds = new Set((svcs ?? []).map((s) => s.id))
+    validFeatured = featuredServiceIds.filter((id) => ownedIds.has(id))
   }
 
   try {
@@ -43,7 +45,7 @@ export async function createLink(formData: FormData) {
       contentUrl: contentUrl || undefined,
       platform: platform as SocialPlatform | undefined,
       contentThumbnailUrl: contentThumbnailUrl || undefined,
-      featuredServiceId: validFeatured,
+      featuredServiceIds: validFeatured,
     })
     return { success: true, id: link.id, shortCode: link.short_code, status: link.status }
   } catch (err) {
@@ -59,6 +61,22 @@ export async function updateLinkStatus(formData: FormData) {
 
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors }
+  }
+
+  // Ownership: only the link's business can approve/decline.
+  const db = createServerClient()
+  const [{ data: link }, user] = await Promise.all([
+    db
+      .from('links')
+      .select('id, businesses ( auth_user_id )')
+      .eq('id', parsed.data.linkId)
+      .maybeSingle(),
+    getAuthIdentity(),
+  ])
+  if (!link) return { error: 'Link not found' }
+  const biz = Array.isArray(link.businesses) ? link.businesses[0] : link.businesses
+  if (!biz || decideAccess(user, biz) !== 'granted') {
+    return { error: 'Not authorized to update this link' }
   }
 
   try {

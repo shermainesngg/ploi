@@ -42,6 +42,23 @@ export const BookingRepo = {
     return data
   },
 
+  /** Booking + the related rows needed to compose notification emails. */
+  async findForNotification(id: string) {
+    const db = createServerClient()
+    const { data, error } = await db
+      .from('bookings')
+      .select(`
+        id, customer_name, customer_email, booking_date, booking_time,
+        status, payment_status, is_walkin,
+        services ( name, price ),
+        businesses ( name, slug, email, location )
+      `)
+      .eq('id', id)
+      .maybeSingle()
+    if (error) throw new Error(error.message)
+    return data
+  },
+
   async updateStatus(id: string, status: string) {
     const db = createServerClient()
     const { error } = await db

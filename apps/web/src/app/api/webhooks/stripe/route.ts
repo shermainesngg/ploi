@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getStripe, isStripeConfigured } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
+import { NotificationService } from '@/services/notification.service'
 
 export async function POST(req: NextRequest) {
   if (!isStripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
@@ -54,6 +55,27 @@ export async function POST(req: NextRequest) {
           event_type: 'booking_confirmed',
         })
       }
+
+      // Payment received: tell the business it has a confirmed booking and
+      // send the customer their confirmation. Both are fire-safe no-ops when
+      // email isn't configured.
+      await NotificationService.notifyBusinessNewBooking(bookingId, { paid: true })
+      await NotificationService.notifyCustomerStatusChange(bookingId, 'confirmed')
+    }
+  }
+
+  // Refunds issued outside the app (Stripe dashboard, support) still land on
+  // the booking — match by payment intent.
+  if (event.type === 'charge.refunded') {
+    const charge = event.data.object as Stripe.Charge
+    const intentId = typeof charge.payment_intent === 'string'
+      ? charge.payment_intent
+      : charge.payment_intent?.id
+    if (intentId && charge.refunded) {
+      await db
+        .from('bookings')
+        .update({ payment_status: 'refunded' })
+        .eq('stripe_payment_intent_id', intentId)
     }
   }
 

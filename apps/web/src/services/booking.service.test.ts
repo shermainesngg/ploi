@@ -23,6 +23,14 @@ vi.mock('./attribution.service', () => ({
   },
 }))
 
+vi.mock('./notification.service', () => ({
+  NotificationService: {
+    notifyBusinessNewBooking: vi.fn(),
+    notifyCustomerStatusChange: vi.fn(),
+    notifyBusinessCancellation: vi.fn(),
+  },
+}))
+
 import { BookingRepo } from '@/repositories/booking.repo'
 import { LinkRepo } from '@/repositories/link.repo'
 import { AttributionService } from './attribution.service'

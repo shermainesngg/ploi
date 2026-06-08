@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { CreatorService } from '@/services/creator.service'
 import { createAuthServerClient } from '@/lib/supabase-server'
-import { PLOI_ACTIVE_ROLE } from '@/lib/auth'
+import { isReservedSlug } from '@/lib/constants'
+import { ownsBusiness, PLOI_ACTIVE_ROLE } from '@/lib/auth'
 import type { Social, SocialPlatform } from '@/lib/types'
 
 const ONE_YEAR = 60 * 60 * 24 * 365
@@ -16,6 +17,14 @@ export async function POST(req: NextRequest) {
     }
 
     const slug = handle.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30)
+
+    if (!slug) {
+      return NextResponse.json({ error: 'Please choose a handle with at least one letter or number.' }, { status: 400 })
+    }
+    if (isReservedSlug(slug)) {
+      return NextResponse.json({ error: 'That handle is reserved. Please choose a different one.' }, { status: 400 })
+    }
+
     const cleanHandle = `@${slug}`
 
     // Validate socials shape
@@ -32,6 +41,16 @@ export async function POST(req: NextRequest) {
     // so it joins their existing account (and default the contact email to theirs).
     const supabase = await createAuthServerClient()
     const { data: { user } } = await supabase.auth.getUser()
+
+    // Business identities are exclusive — a business account can never also
+    // join as a creator.
+    if (user && (await ownsBusiness(user.id, user.email))) {
+      return NextResponse.json(
+        { error: 'A business account can’t also join as a creator. Use a separate account for creator activity.' },
+        { status: 403 },
+      )
+    }
+
     const resolvedEmail =
       (typeof email === 'string' && email.trim() ? email.trim() : undefined) ?? user?.email
 

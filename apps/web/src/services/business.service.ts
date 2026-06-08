@@ -1,4 +1,5 @@
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
+import { BusinessRepo } from '@/repositories/business.repo'
 import {
   businesses as seedBusinesses,
   creators as seedCreators,
@@ -37,6 +38,21 @@ export const BusinessService = {
       .or(`name.ilike.%${query}%,slug.ilike.%${query}%`)
       .limit(10)
     return (data ?? []).map(rowToBusiness)
+  },
+
+  // Direct (non-creator) lookup for organic discovery — no attribution.
+  async getBySlug(businessSlug: string): Promise<Business | null> {
+    if (!isSupabaseConfigured()) {
+      return seedBusinesses[businessSlug] ?? null
+    }
+    const db = createServerClient()
+    const { data: bizRow } = await db
+      .from('businesses')
+      .select('*, services(*)')
+      .eq('slug', businessSlug)
+      .eq('is_active', true)
+      .single()
+    return bizRow ? rowToBusiness(bizRow) : null
   },
 
   async getPageData(creatorSlug: string, businessSlug: string) {
@@ -116,6 +132,66 @@ export const BusinessService = {
 
     const db = createServerClient()
 
+    // Slugs are shared across the /[slug] namespace — a business can't claim a
+    // slug already taken by a creator.
+    const { data: creatorClash } = await db
+      .from('creators')
+      .select('id')
+      .eq('slug', data.slug)
+      .maybeSingle()
+    if (creatorClash) {
+      throw new Error('That name is already taken by a creator on PLOI. Please choose a different name.')
+    }
+
+    // Business identities are exclusive — an account or email already used as
+    // a creator (or as a customer with booking history) can't sign up a
+    // business. An EMPTY consumer row doesn't count: one is auto-minted for any
+    // signed-in visitor (including mid business-signup), and the businesses API
+    // route deletes it again after creation.
+    async function consumerHasBookings(consumerId: string): Promise<boolean> {
+      const { count } = await db
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('consumer_id', consumerId)
+      return (count ?? 0) > 0
+    }
+    if (data.authUserId) {
+      const { data: creByUser } = await db
+        .from('creators')
+        .select('id')
+        .eq('auth_user_id', data.authUserId)
+        .maybeSingle()
+      if (creByUser) {
+        throw new Error('This account is already a creator on PLOI. Use a separate account for your business.')
+      }
+      const { data: conByUser } = await db
+        .from('consumers')
+        .select('id')
+        .eq('auth_user_id', data.authUserId)
+        .maybeSingle()
+      if (conByUser && (await consumerHasBookings(conByUser.id))) {
+        throw new Error('This account is already a customer on PLOI. Use a separate account for your business.')
+      }
+    }
+    if (data.email) {
+      const { data: creByEmail } = await db
+        .from('creators')
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle()
+      if (creByEmail) {
+        throw new Error('That email already belongs to a creator on PLOI. Use a separate email for your business.')
+      }
+      const { data: conByEmail } = await db
+        .from('consumers')
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle()
+      if (conByEmail && (await consumerHasBookings(conByEmail.id))) {
+        throw new Error('That email already belongs to a customer account on PLOI. Use a separate email for your business.')
+      }
+    }
+
     const { data: biz, error: bizErr } = await db
       .from('businesses')
       .insert({
@@ -151,6 +227,42 @@ export const BusinessService = {
     if (svcErr) throw new Error(svcErr.message)
 
     return { slug: biz.slug, id: biz.id }
+  },
+
+  /**
+   * Update the editable profile fields from the dashboard Settings tab.
+   * Slug, email, auth linkage, Stripe, and services are not touched here.
+   * The cover photo follows the first gallery photo (same rule as create).
+   */
+  async updateSettings(slug: string, data: {
+    name: string
+    category: string
+    location: string
+    description: string
+    contactPhone?: string
+    contactWhatsapp?: string
+    contactLine?: string
+    photos: string[]
+    openingHours?: Record<string, string>
+  }) {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase not configured. Add env vars to .env.local to save data.')
+    }
+
+    const photos = data.photos.filter((p) => p.trim().length > 0)
+
+    await BusinessRepo.updateBySlug(slug, {
+      name: data.name,
+      category: data.category,
+      location: data.location,
+      description: data.description,
+      cover_photo_url: photos[0] ?? null,
+      photos,
+      opening_hours: data.openingHours ?? null,
+      contact_phone: data.contactPhone?.trim() || null,
+      contact_whatsapp: data.contactWhatsapp?.trim() || null,
+      contact_line: data.contactLine?.trim() || null,
+    })
   },
 
   async getStripeStatus(businessSlug: string) {

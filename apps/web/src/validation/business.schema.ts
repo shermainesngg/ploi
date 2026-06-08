@@ -22,3 +22,26 @@ export const createBusinessSchema = z.object({
 })
 
 export type CreateBusinessInput = z.infer<typeof createBusinessSchema>
+
+/**
+ * Settings update — profile fields only. Slug (shared namespace), email
+ * (login identity), and services are deliberately not editable here.
+ */
+export const updateBusinessSchema = z
+  .object({
+    name: z.string().min(1).max(100),
+    category: z.string().min(1).max(50),
+    location: z.string().min(1).max(200),
+    description: z.string().max(1000).default(''),
+    contactPhone: z.string().max(50).optional().or(z.literal('')),
+    contactWhatsapp: z.string().max(50).optional().or(z.literal('')),
+    contactLine: z.string().max(50).optional().or(z.literal('')),
+    photos: z.array(z.string().url()).max(8).default([]),
+    openingHours: z.record(z.string(), z.string()).optional(),
+  })
+  .refine(
+    (d) => `${d.contactPhone ?? ''}${d.contactWhatsapp ?? ''}${d.contactLine ?? ''}`.trim().length > 0,
+    { message: 'At least one contact method is required' },
+  )
+
+export type UpdateBusinessInput = z.infer<typeof updateBusinessSchema>

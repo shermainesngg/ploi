@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
       .select('slug')
       .eq('auth_user_id', user.id)
       .maybeSingle()
-    if (data?.slug) return redirectWithRole(origin, `/dashboard/business/${data.slug}`, 'business')
+    if (data?.slug) return redirectWithRole(origin, '/business', 'business')
     return NextResponse.redirect(`${origin}/onboard/business`)
   }
 

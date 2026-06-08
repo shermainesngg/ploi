@@ -324,10 +324,30 @@ function ActivityFeed({ events }: { events: ActivityEvent[] }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function CreatorDashboard({ data }: { data: CreatorDashboardData }) {
+export default function CreatorDashboard({
+  data,
+  payoutsConnected = true,
+}: {
+  data: CreatorDashboardData
+  payoutsConnected?: boolean
+}) {
   const { creator, totals, links, recentActivity } = data
   const router = useRouter()
   const [showAddPlace, setShowAddPlace] = useState(false)
+  const [connectingPayouts, setConnectingPayouts] = useState(false)
+
+  async function connectPayouts() {
+    setConnectingPayouts(true)
+    try {
+      const res = await fetch(`/api/creators/${creator.slug}/connect-stripe`, { method: 'POST' })
+      const d = await res.json()
+      if (!res.ok) throw new Error(d.error ?? 'Failed')
+      window.location.href = d.url
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to start payout setup')
+      setConnectingPayouts(false)
+    }
+  }
   const [tab, setTab] = useState<'overview' | 'requests'>('overview')
   const [requestFilter, setRequestFilter] = useState<RequestFilter>('all')
 
@@ -485,6 +505,27 @@ export default function CreatorDashboard({ data }: { data: CreatorDashboardData 
               <p className="text-xs text-bridge-accent-light max-w-[140px] text-right">
                 Paid out monthly. Next: 1st of next month.
               </p>
+            </div>
+          )}
+
+          {/* Payout account setup — earnings can't move until this is done */}
+          {!payoutsConnected && (
+            <div className="mt-3 bg-bridge-card rounded-2xl border border-bridge-border/60 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="font-bold text-sm text-bridge-heading">Set up payouts</p>
+                  <p className="text-xs text-bridge-muted mt-0.5">
+                    Connect a payout account so your commission can reach your bank.
+                  </p>
+                </div>
+                <button
+                  onClick={connectPayouts}
+                  disabled={connectingPayouts}
+                  className="flex-shrink-0 px-3.5 py-2 rounded-xl bg-bridge-ink text-bridge-ink-foreground text-xs font-semibold hover:bg-bridge-ink-hover disabled:opacity-50 transition-colors"
+                >
+                  {connectingPayouts ? 'Opening…' : 'Connect'}
+                </button>
+              </div>
             </div>
           )}
 

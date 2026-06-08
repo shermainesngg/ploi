@@ -142,6 +142,7 @@ Schema in `packages/db/schema.sql`. Migrations run in order in Supabase SQL Edit
 - `migration_006_pre_launch` — Payout ledger, currency (THB/SGD), consumer↔booking FK, `updated_at` triggers, cancellation metadata, Google Calendar prep, **Row Level Security**
 - `migration_007`–`009` — Creator content embeds + backfill, avatars storage bucket
 - `migration_010_multi_featured` — Multiple featured services per link (`featured_service_ids uuid[]`); supersedes the single `featured_service_id` from 005, kept for back-compat
+- `migration_011_business_photos_bucket` — Public `business-photos` Storage bucket for dashboard Settings photo uploads (already created in staging; run in prod)
 
 `packages/db/setup.sql` is the **consolidated schema** (core tables + all migrations in one file) — run it for a fresh project instead of applying migrations one by one.
 
@@ -176,6 +177,11 @@ STRIPE_SECRET_KEY                    # Stripe secret key (sk_test_... / sk_live_
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY   # Stripe publishable key (pk_test_... / pk_live_...)
 STRIPE_WEBHOOK_SECRET                # From Stripe CLI / webhook endpoint (whsec_...)
 NEXT_PUBLIC_SITE_URL                 # http://localhost:3000 (update for production)
+RESEND_API_KEY                       # Resend API key (re_...) for booking notification emails.
+                                     #   Optional — without it emails are silent no-ops.
+EMAIL_FROM                           # Sender, e.g. "PLOI <bookings@ploi.app>" (domain must be
+                                     #   verified in Resend). Defaults to Resend's test sender,
+                                     #   which only delivers to the Resend account owner.
 ```
 
 > **Key-name tolerance.** `lib/supabase.ts` / `supabase-server.ts` / `middleware.ts` resolve the public key from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` **or** `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and the secret key from `SUPABASE_SERVICE_ROLE_KEY` **or** `SUPABASE_SECRET_KEY`. If neither public key is set, `isSupabaseConfigured()` is false and the app **silently falls back to the in-memory `seed-data.ts`** (one demo business/creator) instead of the real DB — the usual cause of "I don't see my seeded data" on a deployment.
@@ -198,7 +204,8 @@ All `.env*` files are gitignored. Production app config lives in **Vercel env va
 | `/[creator]` | **Shared `/[slug]` namespace** — resolves creator-first, falls back to a standalone business page (see below) |
 | `/shop/[slug]` | Standalone business booking page — direct/organic discovery, no creator attribution |
 | `/search` | Site-wide search (separate Creators / Businesses tabs) |
-| `/dashboard/business/[slug]` | Business dashboard |
+| `/business` | Business home — signed-in owners see their dashboard (post-login landing for businesses); visitors see the marketing landing page |
+| `/dashboard/business/[slug]` | Business dashboard (canonical slugged URL; renders the same `BusinessDashboardScreen` as `/business`) |
 | `/dashboard/creator/[slug]` | Creator dashboard (Overview + Requests tabs) |
 | `/onboard/business` | Business signup |
 | `/onboard/creator` | Creator signup |

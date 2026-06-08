@@ -7,7 +7,6 @@ import type { AgendaBooking } from '@/services/dashboard.service'
 interface Props {
   bookings: AgendaBooking[]
   monthStart: string  // YYYY-MM-01
-  businessSlug: string
 }
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
@@ -21,7 +20,7 @@ function shiftMonth(monthStart: string, delta: number): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-01`
 }
 
-export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Props) {
+export default function MonthlyAgenda({ bookings, monthStart }: Props) {
   const router = useRouter()
   const today = new Date().toISOString().split('T')[0]
 
@@ -73,10 +72,10 @@ export default function MonthlyAgenda({ bookings, monthStart, businessSlug }: Pr
   while (cells.length % 7 !== 0) cells.push({ date: null, count: 0, isToday: false, revenue: 0 })
 
   function nav(toMonthStart: string) {
-    router.push(`/dashboard/business/${businessSlug}?view=month&date=${toMonthStart}`)
+    router.push(`?tab=calendar&view=month&date=${toMonthStart}`)
   }
   function goToDay(date: string) {
-    router.push(`/dashboard/business/${businessSlug}?view=day&date=${date}`)
+    router.push(`?tab=calendar&view=day&date=${date}`)
   }
 
   function densityClass(count: number) {

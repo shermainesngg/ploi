@@ -32,6 +32,15 @@ export const BusinessRepo = {
     return data
   },
 
+  async updateBySlug(slug: string, updates: Record<string, unknown>) {
+    const db = createServerClient()
+    const { error } = await db
+      .from('businesses')
+      .update(updates)
+      .eq('slug', slug)
+    if (error) throw new Error(error.message)
+  },
+
   async findServiceById(serviceId: string) {
     const db = createServerClient()
     const { data } = await db

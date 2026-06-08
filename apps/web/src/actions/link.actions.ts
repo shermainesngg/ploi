@@ -3,6 +3,7 @@
 import { createLinkSchema, updateLinkStatusSchema } from '@/validation/link.schema'
 import { LinkService } from '@/services/link.service'
 import { createServerClient } from '@/lib/supabase'
+import { decideAccess, getAuthIdentity } from '@/lib/ownership'
 import type { SocialPlatform } from '@/lib/types'
 
 export async function createLink(formData: FormData) {
@@ -60,6 +61,22 @@ export async function updateLinkStatus(formData: FormData) {
 
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors }
+  }
+
+  // Ownership: only the link's business can approve/decline.
+  const db = createServerClient()
+  const [{ data: link }, user] = await Promise.all([
+    db
+      .from('links')
+      .select('id, businesses ( auth_user_id )')
+      .eq('id', parsed.data.linkId)
+      .maybeSingle(),
+    getAuthIdentity(),
+  ])
+  if (!link) return { error: 'Link not found' }
+  const biz = Array.isArray(link.businesses) ? link.businesses[0] : link.businesses
+  if (!biz || decideAccess(user, biz) !== 'granted') {
+    return { error: 'Not authorized to update this link' }
   }
 
   try {

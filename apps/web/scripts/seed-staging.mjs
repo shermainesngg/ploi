@@ -1,7 +1,8 @@
-// One-off staging seed: adds 6 businesses + services, a 2nd creator, and creator
-// links — over the REST API (the direct Postgres host is IPv6-only / unreachable
-// here). Idempotent: businesses/creators upsert by id, links upsert by
-// (creator_id, business_id), services insert-if-missing (no unique constraint).
+// One-off staging seed: adds 6 businesses + services, extra creators, creator
+// links, and pending video requests to Glow Studio — over the REST API (the
+// direct Postgres host is IPv6-only / unreachable here). Idempotent:
+// businesses/creators upsert by id, links upsert by (creator_id, business_id),
+// services + pending requests insert-if-missing.
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
@@ -21,6 +22,8 @@ const die = (label, error) => {
 const B = (n) => `a1b2c3d4-0000-0000-0000-00000000000${n}`
 const SARA = 'b1b2c3d4-0000-0000-0000-000000000001'
 const MAI = 'b1b2c3d4-0000-0000-0000-000000000002'
+const NINA = 'b1b2c3d4-0000-0000-0000-000000000003'
+const PLOY = 'b1b2c3d4-0000-0000-0000-000000000004'
 
 const businesses = [
   { id: B(2), slug: 'lumierehair', name: 'Lumière Hair Atelier', category: 'Hair & Barber',
@@ -101,6 +104,12 @@ const creators = [
   { id: MAI, slug: 'maiwellness', handle: '@maiwellness', display_name: 'Mai Tan',
     bio: 'Bangkok wellness & self-care. Massages, movement, and the little rituals that keep this city livable.',
     socials: [{ platform: 'tiktok', url: 'https://www.tiktok.com/@maiwellness' }, { platform: 'instagram', url: 'https://www.instagram.com/maiwellness' }] },
+  { id: NINA, slug: 'ninaglows', handle: '@ninaglows', display_name: 'Nina Patel',
+    bio: 'Skincare-obsessed and chronically online. Honest reviews of Bangkok facials, one glow at a time.',
+    socials: [{ platform: 'instagram', url: 'https://www.instagram.com/ninaglows' }, { platform: 'tiktok', url: 'https://www.tiktok.com/@ninaglows' }] },
+  { id: PLOY, slug: 'skinbyploy', handle: '@skinbyploy', display_name: 'Ploy Srisuk',
+    bio: 'Bangkok skin diaries — facials, treatments, and what actually works for hot-and-humid skin.',
+    socials: [{ platform: 'tiktok', url: 'https://www.tiktok.com/@skinbyploy' }, { platform: 'instagram', url: 'https://www.instagram.com/skinbyploy' }] },
 ]
 
 const links = [
@@ -109,6 +118,25 @@ const links = [
   { creator_id: MAI, business_id: B(2), short_code: 'maiwellness/lumierehair', content_url: 'https://www.tiktok.com/@maiwellness/video/7298765432109800002', platform: 'tiktok', status: 'active', feature: 'Korean Glaze Colour' },
   { creator_id: MAI, business_id: B(5), short_code: 'maiwellness/vitalflowyoga', content_url: 'https://www.tiktok.com/@maiwellness/video/7298765432109800003', platform: 'tiktok', status: 'active', feature: 'Drop-In Vinyasa Class' },
   { creator_id: MAI, business_id: B(4), short_code: 'maiwellness/polishednails', content_url: 'https://www.instagram.com/p/Cmaiwellness0004', platform: 'instagram', status: 'active', feature: null },
+]
+
+// Connected videos (creator_content) for the active links. Live embeds:
+// status 'active' + fetch_status 'ok' so they render on the shop page and
+// count as "connected videos" in the dashboard. Insert-if-missing by url_hash.
+const content = [
+  { short_code: 'glowwithsara/glowstudio', provider: 'tiktok', content_url: 'https://www.tiktok.com/@glowwithsara/video/7298765432109876543', external_id: '7298765432109876543', url_hash: 'seed-cc-sara-glow-1', poster_path: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400', caption: 'The Signature Glow Facial that broke my FYP ✨', author_name: 'Sara Chen', sort_order: 0 },
+  { short_code: 'glowwithsara/glowstudio', provider: 'tiktok', content_url: 'https://www.tiktok.com/@glowwithsara/video/7298765432109876544', external_id: '7298765432109876544', url_hash: 'seed-cc-sara-glow-2', poster_path: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400', caption: 'Before & after: 3 weeks of LED therapy', author_name: 'Sara Chen', sort_order: 1 },
+  { short_code: 'glowwithsara/serenityspa', provider: 'tiktok', content_url: 'https://www.tiktok.com/@glowwithsara/video/7298765432109800001', external_id: '7298765432109800001', url_hash: 'seed-cc-sara-serenity-1', poster_path: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400', caption: 'The aromatherapy massage I think about weekly', author_name: 'Sara Chen', sort_order: 0 },
+  { short_code: 'maiwellness/lumierehair', provider: 'tiktok', content_url: 'https://www.tiktok.com/@maiwellness/video/7298765432109800002', external_id: '7298765432109800002', url_hash: 'seed-cc-mai-lumiere-1', poster_path: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400', caption: 'Korean glaze colour — zero regrets', author_name: 'Mai Tan', sort_order: 0 },
+  { short_code: 'maiwellness/vitalflowyoga', provider: 'tiktok', content_url: 'https://www.tiktok.com/@maiwellness/video/7298765432109800003', external_id: '7298765432109800003', url_hash: 'seed-cc-mai-yoga-1', poster_path: 'https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=400', caption: 'Sunrise vinyasa in an Ari shophouse', author_name: 'Mai Tan', sort_order: 0 },
+]
+
+// Pending video requests → Glow Studio (B(1), seeded by seed.sql). Insert-if-missing,
+// NOT upsert: approving/declining a request in the demo must survive a re-seed.
+const pendingLinks = [
+  { creator_id: MAI, business_id: B(1), short_code: 'maiwellness/glowstudio', content_url: 'https://www.tiktok.com/@maiwellness/video/7298765432109800010', platform: 'tiktok', content_thumbnail_url: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400', status: 'pending', feature: 'Hydra Boost Treatment' },
+  { creator_id: NINA, business_id: B(1), short_code: 'ninaglows/glowstudio', content_url: 'https://www.instagram.com/reel/Cninaglows0001', platform: 'instagram', content_thumbnail_url: 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400', status: 'pending', feature: 'Signature Glow Facial' },
+  { creator_id: PLOY, business_id: B(1), short_code: 'skinbyploy/glowstudio', content_url: 'https://www.tiktok.com/@skinbyploy/video/7298765432109800011', platform: 'tiktok', content_thumbnail_url: 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400', status: 'pending', feature: 'Deep Cleanse Facial' },
 ]
 
 // 0. Connectivity / auth check
@@ -165,10 +193,73 @@ const links = [
   console.log(`✓ links upserted: ${rows.length}`)
 }
 
-// 5. Final tallies
+// 5. Pending requests → Glow Studio — insert only those missing (never reset
+//    an approved/declined request back to pending)
+{
+  const { data: existing, error } = await db
+    .from('links').select('creator_id, business_id')
+    .eq('business_id', B(1))
+    .in('creator_id', pendingLinks.map((l) => l.creator_id))
+  die('select existing glowstudio links', error)
+  const seen = new Set((existing ?? []).map((l) => `${l.creator_id}|${l.business_id}`))
+  const missing = pendingLinks.filter((l) => !seen.has(`${l.creator_id}|${l.business_id}`))
+
+  if (missing.length) {
+    const { data: svc, error: svcErr } = await db.from('services').select('id, name').eq('business_id', B(1))
+    die('select glowstudio services', svcErr)
+    const rows = missing.map(({ feature, ...l }) => ({
+      ...l,
+      featured_service_id: feature ? ((svc ?? []).find((s) => s.name === feature)?.id ?? null) : null,
+    }))
+    const { error: insErr } = await db.from('links').insert(rows)
+    die('insert pending glowstudio requests', insErr)
+  }
+  console.log(`✓ pending glowstudio requests: ${missing.length} inserted, ${pendingLinks.length - missing.length} already present`)
+}
+
+// 6. Connected videos — insert only those missing (by url_hash)
+{
+  const { data: linkRows, error } = await db
+    .from('links').select('id, short_code, creator_id, business_id')
+    .in('short_code', [...new Set(content.map((c) => c.short_code))])
+  die('select links for content', error)
+  const linkBySC = new Map((linkRows ?? []).map((l) => [l.short_code, l]))
+
+  const { data: existing, error: exErr } = await db
+    .from('creator_content').select('url_hash')
+    .in('url_hash', content.map((c) => c.url_hash))
+  die('select existing creator_content', exErr)
+  const seen = new Set((existing ?? []).map((r) => r.url_hash))
+
+  const rows = content
+    .filter((c) => !seen.has(c.url_hash))
+    .map(({ short_code, ...c }) => {
+      const link = linkBySC.get(short_code)
+      if (!link) return null
+      return {
+        ...c,
+        link_id: link.id,
+        creator_id: link.creator_id,
+        business_id: link.business_id,
+        media_kind: 'video',
+        aspect_ratio: 'vertical',
+        poster_source: 'og',
+        fetch_status: 'ok',
+        status: 'active',
+      }
+    })
+    .filter(Boolean)
+  if (rows.length) {
+    const { error: insErr } = await db.from('creator_content').insert(rows)
+    die('insert creator_content', insErr)
+  }
+  console.log(`✓ connected videos: ${rows.length} inserted, ${content.length - rows.length} already present`)
+}
+
+// 7. Final tallies
 {
   const counts = {}
-  for (const t of ['businesses', 'services', 'creators', 'links']) {
+  for (const t of ['businesses', 'services', 'creators', 'links', 'creator_content']) {
     const { count } = await db.from(t).select('id', { count: 'exact', head: true })
     counts[t] = count
   }

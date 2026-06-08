@@ -4,7 +4,10 @@ import { createServerClient } from '@/lib/supabase'
 /** Public Storage bucket holding creator profile photos. */
 export const AVATAR_BUCKET = 'avatars'
 
-/** Image types we accept for a profile photo. */
+/** Public Storage bucket holding business gallery photos (migration_011). */
+export const BUSINESS_PHOTOS_BUCKET = 'business-photos'
+
+/** Image types we accept for an uploaded photo. */
 const ALLOWED_TYPES: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -19,11 +22,12 @@ export function isAllowedAvatarType(contentType: string): boolean {
 }
 
 /**
- * Upload a creator's profile photo to Supabase Storage and return its public URL.
- * Keyed per-creator with a unique suffix so the CDN never serves a stale image
- * after a re-upload. Uses the service-role client (bypasses RLS).
+ * Upload an image to a public Storage bucket and return its public URL.
+ * Keys carry a unique suffix so the CDN never serves a stale image after a
+ * re-upload. Uses the service-role client (bypasses RLS).
  */
-export async function storeAvatar(
+export async function storePublicImage(
+  bucket: string,
   slug: string,
   buffer: Buffer,
   contentType: string,
@@ -33,10 +37,19 @@ export async function storeAvatar(
 
   const db = createServerClient()
   const { error } = await db.storage
-    .from(AVATAR_BUCKET)
+    .from(bucket)
     .upload(key, buffer, { contentType, upsert: true })
   if (error) throw new Error(error.message)
 
-  const { data } = db.storage.from(AVATAR_BUCKET).getPublicUrl(key)
+  const { data } = db.storage.from(bucket).getPublicUrl(key)
   return data.publicUrl
+}
+
+/** Upload a creator's profile photo and return its public URL. */
+export async function storeAvatar(
+  slug: string,
+  buffer: Buffer,
+  contentType: string,
+): Promise<string> {
+  return storePublicImage(AVATAR_BUCKET, slug, buffer, contentType)
 }

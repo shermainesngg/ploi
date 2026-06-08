@@ -363,3 +363,135 @@ on conflict (creator_id, business_id) do update set
   platform              = excluded.platform,
   status                = excluded.status,
   featured_service_id   = excluded.featured_service_id;
+
+-- ── Connected videos (creator_content) for the active links ──────────────────
+-- Live embeds: status 'active' + fetch_status 'ok' so they render on the shop
+-- page and count as "connected videos" in the business dashboard.
+-- Idempotent via bare ON CONFLICT DO NOTHING (covers both unique constraints:
+-- url_hash and (business_id, provider, external_id)).
+insert into creator_content (
+  link_id, creator_id, business_id,
+  provider, content_url, external_id, url_hash,
+  media_kind, aspect_ratio, poster_source, poster_path,
+  caption, author_name, fetch_status, status, sort_order
+)
+select l.id, l.creator_id, l.business_id,
+       v.provider, v.content_url, v.external_id, v.url_hash,
+       'video', 'vertical', 'og', v.poster_path,
+       v.caption, v.author_name, 'ok', 'active', v.sort_order
+from (values
+  -- Sara → Glow Studio (2 videos)
+  ('glowwithsara/glowstudio', 'tiktok',
+   'https://www.tiktok.com/@glowwithsara/video/7298765432109876543', '7298765432109876543',
+   'seed-cc-sara-glow-1',
+   'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400',
+   'The Signature Glow Facial that broke my FYP ✨', 'Sara Chen', 0),
+  ('glowwithsara/glowstudio', 'tiktok',
+   'https://www.tiktok.com/@glowwithsara/video/7298765432109876544', '7298765432109876544',
+   'seed-cc-sara-glow-2',
+   'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
+   'Before & after: 3 weeks of LED therapy', 'Sara Chen', 1),
+  -- Sara → Serenity Spa
+  ('glowwithsara/serenityspa', 'tiktok',
+   'https://www.tiktok.com/@glowwithsara/video/7298765432109800001', '7298765432109800001',
+   'seed-cc-sara-serenity-1',
+   'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=400',
+   'The aromatherapy massage I think about weekly', 'Sara Chen', 0),
+  -- Mai → Lumière Hair
+  ('maiwellness/lumierehair', 'tiktok',
+   'https://www.tiktok.com/@maiwellness/video/7298765432109800002', '7298765432109800002',
+   'seed-cc-mai-lumiere-1',
+   'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400',
+   'Korean glaze colour — zero regrets', 'Mai Tan', 0),
+  -- Mai → Vital Flow Yoga
+  ('maiwellness/vitalflowyoga', 'tiktok',
+   'https://www.tiktok.com/@maiwellness/video/7298765432109800003', '7298765432109800003',
+   'seed-cc-mai-yoga-1',
+   'https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=400',
+   'Sunrise vinyasa in an Ari shophouse', 'Mai Tan', 0)
+) as v(short_code, provider, content_url, external_id, url_hash,
+       poster_path, caption, author_name, sort_order)
+join links l on l.short_code = v.short_code
+on conflict do nothing;
+
+-- ╔══════════════════════════════════════════════════════════════════════════╗
+-- ║  PENDING CREATOR REQUESTS — Glow Studio (demo for the Creators tab)        ║
+-- ║  Creators who posted a video about Glow Studio and requested a link.       ║
+-- ║  status = 'pending' → they appear as requests in the business dashboard.   ║
+-- ╚══════════════════════════════════════════════════════════════════════════╝
+
+-- ── Requesting creators ───────────────────────────────────────────────────────
+insert into creators (id, slug, handle, display_name, bio, socials)
+values
+  (
+    'b1b2c3d4-0000-0000-0000-000000000003',
+    'ninaglows',
+    '@ninaglows',
+    'Nina Patel',
+    'Skincare-obsessed and chronically online. Honest reviews of Bangkok facials, one glow at a time.',
+    '[
+      {"platform":"instagram","url":"https://www.instagram.com/ninaglows"},
+      {"platform":"tiktok","url":"https://www.tiktok.com/@ninaglows"}
+    ]'::jsonb
+  ),
+  (
+    'b1b2c3d4-0000-0000-0000-000000000004',
+    'skinbyploy',
+    '@skinbyploy',
+    'Ploy Srisuk',
+    'Bangkok skin diaries — facials, treatments, and what actually works for hot-and-humid skin.',
+    '[
+      {"platform":"tiktok","url":"https://www.tiktok.com/@skinbyploy"},
+      {"platform":"instagram","url":"https://www.instagram.com/skinbyploy"}
+    ]'::jsonb
+  )
+on conflict (id) do update set
+  slug = excluded.slug,
+  handle = excluded.handle,
+  display_name = excluded.display_name,
+  bio = excluded.bio,
+  socials = excluded.socials;
+
+-- ── Pending link requests → Glow Studio ──────────────────────────────────────
+-- Insert-if-missing (NOT upsert): if the owner approves/declines a request in
+-- the demo, re-running the seed must not flip it back to 'pending'.
+insert into links (
+  creator_id, business_id, short_code,
+  content_url, platform, content_thumbnail_url, status, featured_service_id
+)
+select v.creator_id, v.business_id, v.short_code,
+       v.content_url, v.platform, v.content_thumbnail_url, v.status,
+       (select id from services
+          where business_id = v.business_id and name = v.featured_service
+          order by created_at asc, id asc limit 1)
+from (values
+  -- Mai (existing creator) → Glow Studio, featuring Hydra Boost Treatment
+  (
+    'b1b2c3d4-0000-0000-0000-000000000002'::uuid, 'a1b2c3d4-0000-0000-0000-000000000001'::uuid,
+    'maiwellness/glowstudio',
+    'https://www.tiktok.com/@maiwellness/video/7298765432109800010', 'tiktok',
+    'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
+    'pending', 'Hydra Boost Treatment'
+  ),
+  -- Nina → Glow Studio, featuring Signature Glow Facial
+  (
+    'b1b2c3d4-0000-0000-0000-000000000003'::uuid, 'a1b2c3d4-0000-0000-0000-000000000001'::uuid,
+    'ninaglows/glowstudio',
+    'https://www.instagram.com/reel/Cninaglows0001', 'instagram',
+    'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400',
+    'pending', 'Signature Glow Facial'
+  ),
+  -- Ploy → Glow Studio, featuring Deep Cleanse Facial
+  (
+    'b1b2c3d4-0000-0000-0000-000000000004'::uuid, 'a1b2c3d4-0000-0000-0000-000000000001'::uuid,
+    'skinbyploy/glowstudio',
+    'https://www.tiktok.com/@skinbyploy/video/7298765432109800011', 'tiktok',
+    'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400',
+    'pending', 'Deep Cleanse Facial'
+  )
+) as v(creator_id, business_id, short_code, content_url, platform,
+       content_thumbnail_url, status, featured_service)
+where not exists (
+  select 1 from links l
+  where l.creator_id = v.creator_id and l.business_id = v.business_id
+);

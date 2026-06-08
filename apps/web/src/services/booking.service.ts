@@ -1,6 +1,7 @@
 import { BookingRepo } from '@/repositories/booking.repo'
 import { LinkRepo } from '@/repositories/link.repo'
 import { AttributionService } from './attribution.service'
+import { NotificationService } from './notification.service'
 
 export interface CreateBookingInput {
   serviceId: string
@@ -62,6 +63,11 @@ export const BookingService = {
 
     if (attribution.effectiveLinkId) {
       await AttributionService.recordBookingEvent(attribution.effectiveLinkId, booking.id)
+    }
+
+    // Walk-ins are entered by the business itself — no need to tell them.
+    if (!input.isWalkin) {
+      await NotificationService.notifyBusinessNewBooking(booking.id)
     }
 
     return { id: booking.id, status: booking.status }

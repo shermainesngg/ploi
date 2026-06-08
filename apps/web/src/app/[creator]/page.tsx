@@ -23,11 +23,12 @@ export default async function Page({ params }: PageProps) {
   }
 
   // 2. Fall back to a standalone business page (no creator → direct booking).
-  const [{ business }, affiliations, content, recentBookings] = await Promise.all([
+  const [{ business }, affiliations, content, recentBookings, me] = await Promise.all([
     BusinessService.getPageData('', slug),
     BusinessService.getAffiliations(slug),
     BusinessService.getContent(slug),
     BusinessService.getRecentBookingCount(slug),
+    getCurrentUser(),
   ])
 
   if (business) {
@@ -39,6 +40,7 @@ export default async function Page({ params }: PageProps) {
         affiliations={affiliations}
         content={content}
         recentBookings={recentBookings}
+        isOwner={me?.businessSlug === business.slug}
       />
     )
   }

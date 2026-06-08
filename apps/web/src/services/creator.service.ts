@@ -126,6 +126,29 @@ export const CreatorService = {
       throw new Error('That handle is already taken by a business on PLOI. Please choose a different handle.')
     }
 
+    // Business identities are exclusive — an account or email that belongs to
+    // a business can never also join as a creator.
+    if (data.authUserId) {
+      const { data: bizByUser } = await db
+        .from('businesses')
+        .select('id')
+        .eq('auth_user_id', data.authUserId)
+        .maybeSingle()
+      if (bizByUser) {
+        throw new Error('A business account can’t also join as a creator. Use a separate account for creator activity.')
+      }
+    }
+    if (data.email) {
+      const { data: bizByEmail } = await db
+        .from('businesses')
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle()
+      if (bizByEmail) {
+        throw new Error('That email already belongs to a business on PLOI. Use a different email for creator activity.')
+      }
+    }
+
     const { data: creator, error } = await db
       .from('creators')
       .insert({

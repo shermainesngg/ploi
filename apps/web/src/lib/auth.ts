@@ -153,7 +153,8 @@ export async function getCurrentUser(): Promise<AppUser | null> {
  *
  * Order: last-used role (cookie) if they own it → owned business → owned creator →
  * the customer bookings page as a fallback. Used by both /auth/callback (magic link +
- * OAuth) and /auth/post-login (password sign-in).
+ * OAuth) and /auth/post-login (password sign-in). Businesses land on /business — the
+ * slugless business home, which renders their dashboard.
  */
 export async function pickDashboardPath(
   authUserId: string,
@@ -168,10 +169,28 @@ export async function pickDashboardPath(
   ])
 
   if (lastUsed === 'creator' && cre?.slug) return { path: `/dashboard/creator/${cre.slug}`, role: 'creator' }
-  if (lastUsed === 'business' && biz?.slug) return { path: `/dashboard/business/${biz.slug}`, role: 'business' }
-  if (biz?.slug) return { path: `/dashboard/business/${biz.slug}`, role: 'business' }
+  if (lastUsed === 'business' && biz?.slug) return { path: '/business', role: 'business' }
+  if (biz?.slug) return { path: '/business', role: 'business' }
   if (cre?.slug) return { path: `/dashboard/creator/${cre.slug}`, role: 'creator' }
   return { path: '/bookings', role: null }
+}
+
+/**
+ * True if this auth user (or their email) owns a business record. Business
+ * identities are exclusive — a business can never also join as a creator.
+ * The email fallback covers businesses created during onboarding that haven't
+ * been linked to the auth user yet.
+ */
+export async function ownsBusiness(authUserId: string, email?: string | null): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false
+  const db = createServerClient()
+  const { data: byUser } = await db
+    .from('businesses').select('id').eq('auth_user_id', authUserId).maybeSingle()
+  if (byUser) return true
+  if (!email) return false
+  const { data: byEmail } = await db
+    .from('businesses').select('id').eq('email', email).maybeSingle()
+  return !!byEmail
 }
 
 /**

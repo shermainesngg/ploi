@@ -25,6 +25,7 @@ import {
   Play,
   TrendingUp,
   Zap,
+  LayoutDashboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -57,6 +58,8 @@ interface Props {
   affiliations: BusinessCreatorAffiliation[]
   content: ContentWithCreator[]
   recentBookings: number
+  /** Signed-in user owns this business — show the dashboard shortcut bar. */
+  isOwner?: boolean
 }
 
 // ── Creator content wall (swimlane of facade cards → bottom-sheet player) ─────
@@ -1300,7 +1303,7 @@ function EmptyServices({ business }: { business: Business }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function ShopBookingPage({ business, creator, link, affiliations, content, recentBookings }: Props) {
+export default function ShopBookingPage({ business, creator, link, affiliations, content, recentBookings, isOwner = false }: Props) {
   const [activeService, setActiveService] = useState<Service | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showServicePicker, setShowServicePicker] = useState(false)
@@ -1344,6 +1347,19 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
   return (
     <div className="min-h-screen bg-bridge-bg">
       <div className="max-w-2xl mx-auto relative">
+        {/* Owner shortcut — only the signed-in owner sees this */}
+        {isOwner && (
+          <div className="bg-bridge-ink-static text-white px-4 py-2.5 flex items-center justify-between gap-3">
+            <span className="text-xs text-white/70">This is your public listing</span>
+            <NextLink
+              href="/business"
+              className="flex items-center gap-1.5 text-xs font-semibold text-white hover:text-white/80 transition-colors"
+            >
+              <LayoutDashboard size={12} /> Go to dashboard
+            </NextLink>
+          </div>
+        )}
+
         <BusinessHero business={business} recentBookings={recentBookings} affiliationsCount={affiliations.length} />
 
         {creator && (

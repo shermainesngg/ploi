@@ -43,8 +43,12 @@ export default function NavBar({ user }: { user: AppUser | null }) {
   async function signOut() {
     await fetch('/api/auth/signout', { method: 'POST' })
     setOpen(false)
-    router.refresh()
+    // Navigate first, then refresh — refresh re-fetches server components
+    // (root layout included) for the destination, so the NavBar re-renders
+    // with the cleared session. The old order refreshed the page being left
+    // and then served '/' from the stale client router cache.
     router.push('/')
+    router.refresh()
   }
 
   // Dashboard-backed roles the user can switch between (creator / business).
@@ -53,7 +57,7 @@ export default function NavBar({ user }: { user: AppUser | null }) {
     roleTargets.push({ role: 'creator', label: 'Creator dashboard', href: `/dashboard/creator/${user.creatorSlug}`, icon: <Megaphone size={15} /> })
   }
   if (user?.businessSlug) {
-    roleTargets.push({ role: 'business', label: 'Business dashboard', href: `/dashboard/business/${user.businessSlug}`, icon: <Store size={15} /> })
+    roleTargets.push({ role: 'business', label: 'Business dashboard', href: '/business', icon: <Store size={15} /> })
   }
   const showSwitcher = roleTargets.length > 1
 
@@ -73,6 +77,12 @@ export default function NavBar({ user }: { user: AppUser | null }) {
   // The consumer-style section (bookings, saved items) shows for everyone who
   // owns a non-business identity. A business-only account never sees it.
   const showRegular = !!user && user.roles.some((r) => r !== 'business')
+
+  // Onboarding links. Identities are exclusive — an account that already owns
+  // a creator profile or a business gets neither link (mirrors the guards on
+  // the /onboard/* pages, which redirect those accounts away).
+  const showJoinCreator = !user?.creatorSlug && !user?.businessSlug
+  const showListBusiness = !user?.creatorSlug && !user?.businessSlug
 
   return (
     <>
@@ -211,7 +221,7 @@ export default function NavBar({ user }: { user: AppUser | null }) {
                 <div className="pb-1">
                   <p className="px-3 pb-1.5 text-micro text-bridge-muted uppercase tracking-wide">Business</p>
                   <NavLink
-                    href={`/dashboard/business/${user.businessSlug}`}
+                    href="/business"
                     label="Dashboard"
                     icon={<LayoutDashboard size={15} />}
                     onClick={() => setOpen(false)}
@@ -253,12 +263,14 @@ export default function NavBar({ user }: { user: AppUser | null }) {
                 </>
               )}
 
-              <div className="my-2 border-t border-bridge-border/40" />
+              {(showJoinCreator || showListBusiness) && (
+                <div className="my-2 border-t border-bridge-border/40" />
+              )}
 
-              {!user?.creatorSlug && (
+              {showJoinCreator && (
                 <NavLink href="/onboard/creator" label="Join as creator" onClick={() => setOpen(false)} />
               )}
-              {!user && (
+              {showListBusiness && (
                 <NavLink href="/onboard/business" label="List your business" onClick={() => setOpen(false)} />
               )}
             </div>

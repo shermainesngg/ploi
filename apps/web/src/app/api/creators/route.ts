@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CreatorService } from '@/services/creator.service'
 import { createAuthServerClient } from '@/lib/supabase-server'
 import { isReservedSlug } from '@/lib/constants'
-import { PLOI_ACTIVE_ROLE } from '@/lib/auth'
+import { ownsBusiness, PLOI_ACTIVE_ROLE } from '@/lib/auth'
 import type { Social, SocialPlatform } from '@/lib/types'
 
 const ONE_YEAR = 60 * 60 * 24 * 365
@@ -41,6 +41,16 @@ export async function POST(req: NextRequest) {
     // so it joins their existing account (and default the contact email to theirs).
     const supabase = await createAuthServerClient()
     const { data: { user } } = await supabase.auth.getUser()
+
+    // Business identities are exclusive — a business account can never also
+    // join as a creator.
+    if (user && (await ownsBusiness(user.id, user.email))) {
+      return NextResponse.json(
+        { error: 'A business account can’t also join as a creator. Use a separate account for creator activity.' },
+        { status: 403 },
+      )
+    }
+
     const resolvedEmail =
       (typeof email === 'string' && email.trim() ? email.trim() : undefined) ?? user?.email
 

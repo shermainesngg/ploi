@@ -109,7 +109,7 @@ export default async function Home() {
             </div>
             <div className="flex items-center gap-6 text-caption text-bridge-muted">
               <Link href="/onboard/creator" className="hover:text-bridge-text transition-colors cursor-pointer">Creators</Link>
-              <Link href="/onboard/business" className="hover:text-bridge-text transition-colors cursor-pointer">Businesses</Link>
+              <Link href="/business" className="hover:text-bridge-text transition-colors cursor-pointer">Businesses</Link>
               <Link href="/login" className="hover:text-bridge-text transition-colors cursor-pointer">Log in</Link>
             </div>
           </div>

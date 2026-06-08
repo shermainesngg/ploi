@@ -115,8 +115,9 @@ create table if not exists attribution_events (
   id              uuid primary key default uuid_generate_v4(),
   link_id         uuid not null references links(id),
   booking_id      uuid references bookings(id),
+  content_id      uuid,                         -- which video drove it (nullable); FK added after creator_content
   event_type      text not null
-                    check (event_type in ('click', 'booking_started', 'booking_confirmed')),
+                    check (event_type in ('click', 'content_click', 'booking_started', 'booking_confirmed')),
   metadata        jsonb,                        -- user agent, referrer, etc.
   created_at      timestamptz default now()
 );
@@ -401,7 +402,8 @@ create index if not exists idx_acq_active on customer_acquisitions(is_active);
 alter table bookings
   add column if not exists acquisition_id   uuid references customer_acquisitions(id),
   add column if not exists is_repeat        boolean default false,
-  add column if not exists commission_rate  numeric(4,3);
+  add column if not exists commission_rate  numeric(4,3),
+  add column if not exists content_id       uuid; -- which video drove it; FK added after creator_content
   -- 0.100 for first bookings, 0.050 for repeat. Nullable for non-attributed bookings.
 
 create index if not exists idx_bookings_acquisition on bookings(acquisition_id);
@@ -847,8 +849,30 @@ create table if not exists creator_content (
                     check (status in ('pending','active','hidden')),
 
   sort_order      integer not null default 0,
+  click_count     integer not null default 0,   -- per-video tap counter (mirrors links.click_count)
   created_at      timestamptz default now()
 );
+
+-- Per-video attribution: wire attribution_events.content_id to creator_content now that
+-- the table exists (the column is declared above; the FK is deferred to here).
+do $$ begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'attribution_events_content_id_fkey'
+  ) then
+    alter table attribution_events
+      add constraint attribution_events_content_id_fkey
+      foreign key (content_id) references creator_content(id);
+  end if;
+  if not exists (
+    select 1 from pg_constraint where conname = 'bookings_content_id_fkey'
+  ) then
+    alter table bookings
+      add constraint bookings_content_id_fkey
+      foreign key (content_id) references creator_content(id);
+  end if;
+end $$;
+create index if not exists idx_attribution_content_id on attribution_events(content_id);
+create index if not exists idx_bookings_content_id on bookings(content_id);
 
 -- ── Indexes ──────────────────────────────────────────────────────────────────
 -- Hot path: active content for a business, pre-sorted (partial composite kills the Sort node)

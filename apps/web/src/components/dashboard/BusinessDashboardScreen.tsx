@@ -4,6 +4,7 @@ import { BusinessService } from '@/services/business.service'
 import { ContentService } from '@/services/content.service'
 import { StaffService } from '@/services/staff.service'
 import BusinessDashboard from '@/components/BusinessDashboard'
+import { attachBookingStats } from '@/lib/content-stats'
 import { notFound } from 'next/navigation'
 
 export interface DashboardSearchParams {
@@ -13,7 +14,7 @@ export interface DashboardSearchParams {
   status?: string
 }
 
-type Tab = 'overview' | 'calendar' | 'bookings' | 'creators' | 'settings'
+type Tab = 'overview' | 'calendar' | 'bookings' | 'creators' | 'locations' | 'settings'
 type View = 'day' | 'week' | 'month'
 
 function pad(n: number) { return String(n).padStart(2, '0') }
@@ -40,7 +41,8 @@ export default async function BusinessDashboardScreen({
   const today = formatDate(new Date())
 
   const tab: Tab =
-    sp.tab === 'calendar' || sp.tab === 'bookings' || sp.tab === 'creators' || sp.tab === 'settings'
+    sp.tab === 'calendar' || sp.tab === 'bookings' || sp.tab === 'creators' ||
+    sp.tab === 'locations' || sp.tab === 'settings'
       ? sp.tab
       : 'overview'
 
@@ -62,7 +64,11 @@ export default async function BusinessDashboardScreen({
   if (!data) return notFound()
 
   // Live videos for this business — powers the per-creator video stats modal.
-  const activeContent = await ContentService.listForBusiness(data.business.id)
+  // Augment with per-video booking performance (taps already live on the row).
+  const activeContent = attachBookingStats(
+    await ContentService.listForBusiness(data.business.id),
+    data.bookings,
+  )
 
   // Tab-specific
   let agenda: AgendaBooking[] = todayAgenda

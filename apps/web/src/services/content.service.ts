@@ -4,6 +4,7 @@ import { adapterForUrl, adapterForProvider } from '@/lib/providers'
 import { contentUrlHash } from '@/lib/content-url'
 import { enqueueContentProcessing } from '@/lib/qstash'
 import { storePoster } from '@/lib/poster-store'
+import { AttributionRepo } from '@/repositories/attribution.repo'
 import { rowToContentWithCreator } from '@/lib/mappers'
 import type { ContentWithCreator, ContentStatus, PosterSource } from '@/lib/types'
 
@@ -128,6 +129,26 @@ export const ContentService = {
     if (!isSupabaseConfigured()) return []
     const rows = await CreatorContentRepo.listActiveForBusiness(businessId)
     return rows.map(rowToContentWithCreator).filter(Boolean) as ContentWithCreator[]
+  },
+
+  /**
+   * Record a tap on a specific video (Phase 1 per-video attribution). Bumps the
+   * denormalized counter and logs a 'content_click' event. Only counts active
+   * content; unknown/hidden videos are silently ignored. Best-effort — callers
+   * fire-and-forget, so a failure here must never block the UI.
+   */
+  async recordClick(contentId: string) {
+    if (!isSupabaseConfigured()) return
+    const row = await CreatorContentRepo.findForClick(contentId)
+    if (!row || row.status !== 'active') return
+    await Promise.all([
+      CreatorContentRepo.incrementClickCount(contentId, row.click_count ?? 0),
+      AttributionRepo.insertEvent({
+        link_id: row.link_id,
+        content_id: contentId,
+        event_type: 'content_click',
+      }),
+    ])
   },
 
   async listForCreator(creatorId: string): Promise<ContentWithCreator[]> {

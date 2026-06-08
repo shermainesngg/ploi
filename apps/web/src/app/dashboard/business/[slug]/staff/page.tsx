@@ -1,4 +1,5 @@
 import { StaffService } from '@/services/staff.service'
+import { LocationService } from '@/services/location.service'
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
 import { notFound } from 'next/navigation'
 import StaffManagement from '@/components/StaffManagement'
@@ -19,7 +20,10 @@ export default async function Page({ params }: PageProps) {
     .single()
   if (!biz) return notFound()
 
-  const staff = await StaffService.list(slug)
+  const [staff, locations] = await Promise.all([
+    StaffService.list(slug),
+    LocationService.list(slug),
+  ])
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const services = (biz.services as any[] ?? [])
@@ -34,6 +38,7 @@ export default async function Page({ params }: PageProps) {
       services={services}
       businessHours={biz.opening_hours ?? null}
       initialStaff={staff}
+      locations={locations}
     />
   )
 }

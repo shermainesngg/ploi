@@ -3,7 +3,9 @@ import { createServerClient } from '@/lib/supabase'
 export interface BookingInsert {
   service_id: string
   business_id: string
+  location_id: string | null
   link_id: string | null
+  content_id: string | null
   staff_id: string | null
   customer_name: string
   customer_contact: string
@@ -51,7 +53,8 @@ export const BookingRepo = {
         id, customer_name, customer_email, booking_date, booking_time,
         status, payment_status, is_walkin,
         services ( name, price ),
-        businesses ( name, slug, email, location )
+        businesses ( name, slug, email, location ),
+        locations ( name, address )
       `)
       .eq('id', id)
       .maybeSingle()

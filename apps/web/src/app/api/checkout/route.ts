@@ -22,7 +22,9 @@ export async function POST(req: NextRequest) {
       const booking = await BookingService.create({
         serviceId: input.serviceId,
         businessId: input.businessId,
+        locationId: input.locationId ?? undefined,
         linkId: input.linkId ?? undefined,
+        contentId: input.contentId ?? undefined,
         customerName: input.customerName,
         customerContact: input.customerEmail,
         bookingDate: input.bookingDate,

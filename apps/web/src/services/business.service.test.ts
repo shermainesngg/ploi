@@ -8,6 +8,13 @@ vi.mock('@/lib/supabase', () => ({
 vi.mock('@/repositories/business.repo', () => ({
   BusinessRepo: {
     updateBySlug: vi.fn(),
+    findIdBySlug: vi.fn(),
+  },
+}))
+
+vi.mock('@/repositories/location.repo', () => ({
+  LocationRepo: {
+    updatePrimaryByBusinessId: vi.fn(),
   },
 }))
 
@@ -17,13 +24,17 @@ vi.mock('@/services/content.service', () => ({
 
 import { BusinessService } from './business.service'
 import { BusinessRepo } from '@/repositories/business.repo'
+import { LocationRepo } from '@/repositories/location.repo'
 import { createServerClient } from '@/lib/supabase'
 
 const mockRepo = vi.mocked(BusinessRepo)
+const mockLocationRepo = vi.mocked(LocationRepo)
 const mockCreateServerClient = vi.mocked(createServerClient)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // updateSettings mirrors the primary location after the row update.
+  mockRepo.findIdBySlug.mockResolvedValue('biz-1')
 })
 
 type Row = Record<string, unknown> | null
@@ -128,6 +139,14 @@ describe('BusinessService.updateSettings', () => {
       description: 'Premier glow destination.',
       cover_photo_url: 'https://example.com/a.jpg',
       photos: ['https://example.com/a.jpg', 'https://example.com/b.jpg'],
+      opening_hours: { mon: '10:00-20:00', sun: 'closed' },
+      contact_phone: '+66 2 123 4567',
+      contact_whatsapp: null,
+      contact_line: '@glow',
+    })
+    // The primary location is mirrored from the same headline fields.
+    expect(mockLocationRepo.updatePrimaryByBusinessId).toHaveBeenCalledWith('biz-1', {
+      address: 'Sukhumvit, Bangkok',
       opening_hours: { mon: '10:00-20:00', sun: 'closed' },
       contact_phone: '+66 2 123 4567',
       contact_whatsapp: null,

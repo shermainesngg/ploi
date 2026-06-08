@@ -17,6 +17,38 @@ import type {
   LinkStatus,
 } from '@/lib/types'
 
+/** One row in the per-creator bookings feed (paginated, business-dashboard only). */
+export interface CreatorBookingFeedItem {
+  id: string
+  serviceName: string
+  price: number
+  customerName: string
+  date: string
+  time: string
+  status: 'pending' | 'confirmed' | 'cancelled'
+  isRepeat: boolean
+  commissionRate: number | null
+  contentId: string | null
+}
+
+/** Filters the business can apply to the per-creator bookings feed. */
+export interface CreatorBookingFilters {
+  status?: 'confirmed' | 'pending' | 'cancelled'
+  type?: 'new' | 'repeat'
+  videoId?: string
+  range?: '30' | '90' | 'all'
+}
+
+/** Whole-dataset aggregates for the per-creator stats page (filters don't apply). */
+export interface CreatorBookingStats {
+  bookingCount: number
+  revenue: number
+  commission: number
+  repeats: number
+  /** Per-video booking performance, keyed by content_id (non-cancelled). */
+  byVideo: Record<string, { bookingCount: number; revenue: number }>
+}
+
 export interface AgendaBooking {
   id: string
   serviceName: string
@@ -67,6 +99,7 @@ function generateMockBookings(business: Business): BookingWithCreator[] {
       isRepeat: false,
       commissionRate: attributed ? 0.10 : null,
       acquiredBy: null,
+      contentId: null,
     })
   }
   return bookings
@@ -148,6 +181,57 @@ function mapAgendaBooking(r: any): AgendaBooking {
   }
 }
 
+/**
+ * Resolve which bookings belong to a creator at a business: those made via the
+ * creator's link, plus repeat bookings auto-attributed to them as the acquiring
+ * creator. Returns a PostgREST `.or()` clause string, or null if the creator has
+ * no links/acquisitions here (→ caller short-circuits to an empty result).
+ */
+async function resolveCreatorBookingScope(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  businessSlug: string,
+  creatorSlug: string,
+): Promise<{ businessId: string; orClause: string } | null> {
+  const [{ data: bizRow }, { data: creatorRow }] = await Promise.all([
+    db.from('businesses').select('id').eq('slug', businessSlug).single(),
+    db.from('creators').select('id').eq('slug', creatorSlug).single(),
+  ])
+  if (!bizRow || !creatorRow) return null
+
+  const [{ data: linkRows }, { data: acqRows }] = await Promise.all([
+    db.from('links').select('id').eq('creator_id', creatorRow.id).eq('business_id', bizRow.id),
+    db.from('customer_acquisitions').select('id').eq('creator_id', creatorRow.id).eq('business_id', bizRow.id),
+  ])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const linkIds = (linkRows ?? []).map((r: any) => r.id)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const acqIds = (acqRows ?? []).map((r: any) => r.id)
+
+  const clauses: string[] = []
+  if (linkIds.length) clauses.push(`link_id.in.(${linkIds.join(',')})`)
+  if (acqIds.length) clauses.push(`acquisition_id.in.(${acqIds.join(',')})`)
+  if (!clauses.length) return null
+
+  return { businessId: bizRow.id, orClause: clauses.join(',') }
+}
+
+/** Created-at cutoff (ISO) for a range filter, or null for 'all'. */
+function rangeCutoff(range?: '30' | '90' | 'all'): string | null {
+  if (!range || range === 'all') return null
+  const days = range === '90' ? 90 : 30
+  return new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString()
+}
+
+/** Seed-data fallback: this creator's mock bookings at a business, newest first. */
+function mockCreatorBookings(businessSlug: string, creatorSlug: string): BookingWithCreator[] {
+  const business = seedBusinesses[businessSlug]
+  if (!business) return []
+  return generateMockBookings(business)
+    .filter((b) => b.creator?.slug === creatorSlug || b.acquiredBy?.slug === creatorSlug)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+}
+
 export const DashboardService = {
   async getBusinessDashboard(businessSlug: string): Promise<BusinessDashboardData | null> {
     if (!isSupabaseConfigured()) {
@@ -160,7 +244,7 @@ export const DashboardService = {
     const db = createServerClient()
     const { data: bizRow } = await db
       .from('businesses')
-      .select('*, services(*)')
+      .select('*, services(*), locations(*)')
       .eq('slug', businessSlug)
       .single()
 
@@ -170,7 +254,7 @@ export const DashboardService = {
     const { data: bookingRows } = await db
       .from('bookings')
       .select(`
-        id, customer_name, booking_date, booking_time, status, created_at, is_repeat, commission_rate,
+        id, customer_name, booking_date, booking_time, status, created_at, is_repeat, commission_rate, content_id,
         services ( name, price ),
         links ( creators ( slug, handle, display_name ) ),
         customer_acquisitions!bookings_acquisition_id_fkey ( creators ( slug, handle ) )
@@ -197,6 +281,7 @@ export const DashboardService = {
         isRepeat: !!r.is_repeat,
         commissionRate: r.commission_rate ?? null,
         acquiredBy: acqCre ? { slug: acqCre.slug, handle: acqCre.handle } : null,
+        contentId: r.content_id ?? null,
       }
     })
 
@@ -432,6 +517,124 @@ export const DashboardService = {
 
     const { data: rows } = await query
     return (rows ?? []).map(mapAgendaBooking)
+  },
+
+  /**
+   * Whole-dataset aggregates for the per-creator stats page — totals for the stat
+   * cards and per-video booking counts for the tile badges. Deliberately separate
+   * from the paginated feed: a "12 bookings" count can't be derived from a 5-row
+   * page. Loads minimal columns (no customer/creator joins) for this creator's
+   * bookings only — far lighter than the old whole-business dashboard payload.
+   */
+  async getCreatorBookingStats(businessSlug: string, creatorSlug: string): Promise<CreatorBookingStats> {
+    const empty: CreatorBookingStats = { bookingCount: 0, revenue: 0, commission: 0, repeats: 0, byVideo: {} }
+
+    const accumulate = (rows: Array<{ status: string; isRepeat: boolean; commissionRate: number | null; contentId: string | null; price: number }>): CreatorBookingStats => {
+      const stats: CreatorBookingStats = { bookingCount: 0, revenue: 0, commission: 0, repeats: 0, byVideo: {} }
+      for (const r of rows) {
+        if (r.status === 'cancelled') continue
+        stats.bookingCount += 1
+        stats.revenue += r.price
+        stats.commission += Math.round(r.price * (r.commissionRate ?? 0))
+        if (r.isRepeat) stats.repeats += 1
+        if (r.contentId) {
+          const v = stats.byVideo[r.contentId] ?? { bookingCount: 0, revenue: 0 }
+          v.bookingCount += 1
+          v.revenue += r.price
+          stats.byVideo[r.contentId] = v
+        }
+      }
+      return stats
+    }
+
+    if (!isSupabaseConfigured()) {
+      return accumulate(
+        mockCreatorBookings(businessSlug, creatorSlug).map((b) => ({
+          status: b.status, isRepeat: b.isRepeat, commissionRate: b.commissionRate, contentId: b.contentId, price: b.price,
+        })),
+      )
+    }
+
+    const db = createServerClient()
+    const scope = await resolveCreatorBookingScope(db, businessSlug, creatorSlug)
+    if (!scope) return empty
+
+    const { data: rows } = await db
+      .from('bookings')
+      .select('status, is_repeat, commission_rate, content_id, services ( price )')
+      .eq('business_id', scope.businessId)
+      .or(scope.orClause)
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return accumulate((rows ?? []).map((r: any) => {
+      const svc = Array.isArray(r.services) ? r.services[0] : r.services
+      return { status: r.status, isRepeat: !!r.is_repeat, commissionRate: r.commission_rate ?? null, contentId: r.content_id ?? null, price: svc?.price ?? 0 }
+    }))
+  },
+
+  /**
+   * Paginated, filtered bookings feed for one creator at a business. Newest first.
+   * Returns one extra row beyond `limit` internally to compute `hasMore` without a
+   * second count query.
+   */
+  async listCreatorBookings(
+    businessSlug: string,
+    creatorSlug: string,
+    opts: CreatorBookingFilters & { offset?: number; limit?: number },
+  ): Promise<{ items: CreatorBookingFeedItem[]; hasMore: boolean }> {
+    const offset = Math.max(0, opts.offset ?? 0)
+    const limit = Math.min(50, Math.max(1, opts.limit ?? 5))
+
+    if (!isSupabaseConfigured()) {
+      let rows = mockCreatorBookings(businessSlug, creatorSlug)
+      if (opts.status) rows = rows.filter((b) => b.status === opts.status)
+      if (opts.type) rows = rows.filter((b) => (opts.type === 'repeat' ? b.isRepeat : !b.isRepeat))
+      if (opts.videoId) rows = rows.filter((b) => b.contentId === opts.videoId)
+      const page = rows.slice(offset, offset + limit + 1)
+      const items = page.slice(0, limit).map((b) => ({
+        id: b.id, serviceName: b.serviceName, price: b.price, customerName: b.customerName,
+        date: b.date, time: b.time, status: b.status, isRepeat: b.isRepeat,
+        commissionRate: b.commissionRate, contentId: b.contentId,
+      }))
+      return { items, hasMore: page.length > limit }
+    }
+
+    const db = createServerClient()
+    const scope = await resolveCreatorBookingScope(db, businessSlug, creatorSlug)
+    if (!scope) return { items: [], hasMore: false }
+
+    let query = db
+      .from('bookings')
+      .select('id, customer_name, booking_date, booking_time, status, is_repeat, commission_rate, content_id, created_at, services ( name, price )')
+      .eq('business_id', scope.businessId)
+      .or(scope.orClause)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit) // +1 row to probe hasMore
+
+    if (opts.status) query = query.eq('status', opts.status)
+    if (opts.type) query = query.eq('is_repeat', opts.type === 'repeat')
+    if (opts.videoId) query = query.eq('content_id', opts.videoId)
+    const cutoff = rangeCutoff(opts.range)
+    if (cutoff) query = query.gte('created_at', cutoff)
+
+    const { data: rows } = await query
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mapped: CreatorBookingFeedItem[] = (rows ?? []).map((r: any) => {
+      const svc = Array.isArray(r.services) ? r.services[0] : r.services
+      return {
+        id: r.id,
+        serviceName: svc?.name ?? 'Service',
+        price: svc?.price ?? 0,
+        customerName: r.customer_name,
+        date: r.booking_date,
+        time: String(r.booking_time).slice(0, 5),
+        status: r.status,
+        isRepeat: !!r.is_repeat,
+        commissionRate: r.commission_rate ?? null,
+        contentId: r.content_id ?? null,
+      }
+    })
+    return { items: mapped.slice(0, limit), hasMore: mapped.length > limit }
   },
 
   async getBookingsForRange(businessSlug: string, startDate: string, endDate: string): Promise<AgendaBooking[]> {

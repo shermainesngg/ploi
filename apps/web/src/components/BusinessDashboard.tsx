@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import NextLink from 'next/link'
-import { Eye, Wallet, LayoutGrid, Calendar, Inbox, Users, Plus, Settings } from 'lucide-react'
+import { Eye, Wallet, LayoutGrid, Calendar, Inbox, Users, Plus, Settings, MapPin } from 'lucide-react'
 import type { BusinessDashboardData, ContentWithCreator } from '@/lib/types'
 import type { PendingLinkRequest, MyCreatorEntry } from '@/services/link.service'
 import type { AgendaBooking } from '@/services/dashboard.service'
@@ -15,8 +15,9 @@ import OverviewTab from './dashboard/OverviewTab'
 import BookingsTab from './dashboard/BookingsTab'
 import CreatorsTab from './dashboard/CreatorsTab'
 import SettingsTab from './dashboard/SettingsTab'
+import LocationsTab from './dashboard/LocationsTab'
 
-type Tab = 'overview' | 'calendar' | 'bookings' | 'creators' | 'settings'
+type Tab = 'overview' | 'calendar' | 'bookings' | 'creators' | 'locations' | 'settings'
 type ScheduleView = 'day' | 'week' | 'month'
 
 interface Props {
@@ -43,6 +44,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'calendar', label: 'Calendar', icon: <Calendar size={14} /> },
   { key: 'bookings', label: 'Bookings', icon: <Inbox size={14} /> },
   { key: 'creators', label: 'Creators', icon: <Users size={14} /> },
+  { key: 'locations', label: 'Locations', icon: <MapPin size={14} /> },
   { key: 'settings', label: 'Settings', icon: <Settings size={14} /> },
 ]
 
@@ -236,6 +238,8 @@ export default function BusinessDashboard(props: Props) {
               services={services}
             />
           )}
+
+          {tab === 'locations' && <LocationsTab business={business} />}
 
           {tab === 'settings' && <SettingsTab business={business} />}
         </div>

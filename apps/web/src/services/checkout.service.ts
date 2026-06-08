@@ -3,13 +3,16 @@ import { isSupabaseConfigured } from '@/lib/supabase'
 import { BookingRepo } from '@/repositories/booking.repo'
 import { BusinessRepo } from '@/repositories/business.repo'
 import { LinkRepo } from '@/repositories/link.repo'
+import { LocationRepo } from '@/repositories/location.repo'
 import { AttributionService } from './attribution.service'
 import { StaffService } from './staff.service'
 
 export interface CheckoutInput {
   serviceId: string
   businessId: string
+  locationId?: string | null
   linkId?: string | null
+  contentId?: string | null
   staffId?: string | null
   customerName: string
   customerEmail: string
@@ -33,6 +36,14 @@ export const CheckoutService = {
       throw new Error('Service or business not found')
     }
 
+    // Resolve the branch: explicit choice, else the business's primary location.
+    let locationId = input.locationId ?? null
+    if (!locationId) {
+      const primary = await LocationRepo.findPrimaryByBusinessId(business.id)
+      locationId = primary?.id ?? null
+    }
+    const resolvedInput: CheckoutInput = { ...input, locationId }
+
     let resolvedStaffId: string | null = input.staffId ?? null
     if (!resolvedStaffId) {
       resolvedStaffId = await StaffService.pickEligibleStaff({
@@ -40,14 +51,15 @@ export const CheckoutService = {
         serviceId: input.serviceId,
         bookingDate: input.bookingDate,
         bookingTime: input.bookingTime,
+        locationId,
       })
     }
 
     if (isStripeConfigured()) {
-      return this.processStripeCheckout(input, service, business, resolvedStaffId, origin)
+      return this.processStripeCheckout(resolvedInput, service, business, resolvedStaffId, origin)
     }
 
-    return this.processInAppBooking(input, resolvedStaffId)
+    return this.processInAppBooking(resolvedInput, resolvedStaffId)
   },
 
   async processStripeCheckout(
@@ -73,7 +85,9 @@ export const CheckoutService = {
     const booking = await BookingRepo.insert({
       service_id: input.serviceId,
       business_id: input.businessId,
+      location_id: input.locationId ?? null,
       link_id: attribution.effectiveLinkId,
+      content_id: input.contentId ?? null,
       staff_id: staffId,
       customer_name: input.customerName,
       customer_contact: input.customerEmail,
@@ -163,7 +177,9 @@ export const CheckoutService = {
     const booking = await BookingService.create({
       serviceId: input.serviceId,
       businessId: input.businessId,
+      locationId: input.locationId,
       linkId: input.linkId,
+      contentId: input.contentId,
       staffId,
       customerName: input.customerName,
       customerContact: input.customerEmail,

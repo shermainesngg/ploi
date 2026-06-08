@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const createBookingSchema = z.object({
   serviceId: z.string().uuid(),
   businessId: z.string().uuid(),
+  locationId: z.string().uuid().optional(),
   linkId: z.string().uuid().optional(),
   staffId: z.string().uuid().optional(),
   customerName: z.string().min(1).max(100),

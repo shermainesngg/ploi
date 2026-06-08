@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
 import { decideAccess, getAuthIdentity } from '@/lib/ownership'
 import { NotificationService } from '@/services/notification.service'
+import { CalendarSyncService } from '@/services/calendar-sync.service'
 import { PaymentService, type RefundResult } from '@/services/payment.service'
 
 const VALID_STATUSES = ['pending', 'confirmed', 'declined', 'cancelled', 'completed', 'no_show'] as const
@@ -126,6 +127,17 @@ export async function PATCH(
         // Customer cancelled their own booking — tell the business.
         await NotificationService.notifyBusinessCancellation(id)
       }
+    }
+
+    // ── Google Calendar sync (fire-safe; mirrors the notification contract) ──
+    // A confirm + reschedule can arrive together; pushOnConfirm already patches
+    // an existing event, so the confirm branch covers both — don't double-call.
+    if (update.status === 'confirmed' && isBusinessOwner) {
+      await CalendarSyncService.pushOnConfirm(id)
+    } else if (update.status === 'declined' || update.status === 'cancelled') {
+      await CalendarSyncService.deleteOnCancel(id)
+    } else if (update.booking_date !== undefined) {
+      await CalendarSyncService.updateOnReschedule(id)
     }
 
     return NextResponse.json({ id, ...update, ...(refund ? { refund } : {}) })

@@ -130,6 +130,9 @@ export interface ContentWithCreator {
   stats?: { bookingCount: number; revenue: number }
 }
 
+/** Per-booking Google Calendar push state (null = not connected / not pushed). */
+export type GoogleSyncStatus = 'pending' | 'synced' | 'failed'
+
 export interface Booking {
   id: string
   serviceId: string
@@ -142,6 +145,8 @@ export interface Booking {
   time: string
   status: 'pending' | 'confirmed' | 'cancelled'
   createdAt: string
+  googleEventId?: string | null
+  googleSyncStatus?: GoogleSyncStatus | null
 }
 
 export interface TimeSlot {
@@ -193,6 +198,10 @@ export interface BusinessDashboardData {
     totalPlatformFees: number
   }
   creatorRollups: CreatorRollup[]
+  /** Whether the business has a Google Calendar connected. Never exposes the token. */
+  googleCalendarConnected: boolean
+  /** ISO timestamp of the last Google Calendar credential update, or null. */
+  googleLastSyncedAt: string | null
 }
 
 export interface LinkPerformance {

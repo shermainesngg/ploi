@@ -201,10 +201,22 @@ export const StaffRepo = {
     const db = createServerClient()
     const { data } = await db
       .from('bookings')
-      .select('staff_id, booking_time, services(duration, buffer_minutes)')
+      .select('id, staff_id, booking_time, services(duration, buffer_minutes)')
       .in('staff_id', staffIds)
       .eq('booking_date', dateISO)
       .in('status', ['pending', 'confirmed'])
+    return data ?? []
+  },
+
+  /** Business-wide closures (time_blocks with no staff_id) on a date/weekday. */
+  async listBusinessWideBlocks(businessId: string, dateISO: string, dow: number) {
+    const db = createServerClient()
+    const { data } = await db
+      .from('time_blocks')
+      .select('start_time, end_time')
+      .eq('business_id', businessId)
+      .is('staff_id', null)
+      .or(`block_date.eq.${dateISO},recurring_dow.eq.${dow}`)
     return data ?? []
   },
 

@@ -22,22 +22,31 @@ export default function WalkinModal({
   services,
   staff,
   date,
+  initialDate,
+  initialTime,
   onClose,
 }: {
   businessSlug: string
   services: ServiceOption[]
   staff: StaffOption[]
   date: string  // YYYY-MM-DD (the day this walk-in is being added to)
+  /** Empty-slot click overrides: the day + time of the clicked grid cell. */
+  initialDate?: string
+  initialTime?: string
   onClose: () => void
 }) {
   const router = useRouter()
   const now = new Date()
   const defaultTime = `${String(now.getHours()).padStart(2, '0')}:${String(Math.floor(now.getMinutes() / 30) * 30).padStart(2, '0')}`
 
+  // An empty-slot click seeds the exact day/time; otherwise fall back to the
+  // currently-viewed day + the next half-hour.
+  const seededDate = initialDate ?? date
+
   const [serviceId, setServiceId] = useState<string>(services[0]?.id ?? '')
   const [staffId, setStaffId] = useState<string>('')
   const [customerName, setCustomerName] = useState('')
-  const [time, setTime] = useState(defaultTime)
+  const [time, setTime] = useState(initialTime ?? defaultTime)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -57,7 +66,7 @@ export default function WalkinModal({
           serviceId,
           staffId: staffId || undefined,
           customerName,
-          bookingDate: date,
+          bookingDate: seededDate,
           bookingTime: time,
         }),
       })
@@ -149,7 +158,7 @@ export default function WalkinModal({
               <div>
                 <label className="block text-xs font-semibold text-bridge-text mb-1.5">Date</label>
                 <input
-                  type="date" value={date} disabled
+                  type="date" value={seededDate} disabled
                   className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-muted bg-bridge-bg text-sm"
                 />
               </div>

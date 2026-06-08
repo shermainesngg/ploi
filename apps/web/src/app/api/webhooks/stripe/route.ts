@@ -3,6 +3,7 @@ import Stripe from 'stripe'
 import { getStripe, isStripeConfigured } from '@/lib/stripe'
 import { createServerClient } from '@/lib/supabase'
 import { NotificationService } from '@/services/notification.service'
+import { CalendarSyncService } from '@/services/calendar-sync.service'
 
 export async function POST(req: NextRequest) {
   if (!isStripeConfigured() || !process.env.STRIPE_WEBHOOK_SECRET) {
@@ -61,6 +62,10 @@ export async function POST(req: NextRequest) {
       // email isn't configured.
       await NotificationService.notifyBusinessNewBooking(bookingId, { paid: true })
       await NotificationService.notifyCustomerStatusChange(bookingId, 'confirmed')
+
+      // Paid bookings arrive already `confirmed` — push to Google Calendar
+      // (fire-safe: no-op when unconnected, never throws).
+      await CalendarSyncService.pushOnConfirm(bookingId)
     }
   }
 

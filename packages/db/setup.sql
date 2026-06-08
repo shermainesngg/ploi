@@ -558,13 +558,17 @@ alter table bookings
 -- ══════════════════════════════════════════════════════════════════════════════
 
 alter table businesses
-  add column if not exists google_calendar_id    text,
-  add column if not exists google_refresh_token  text,
-  add column if not exists google_sync_token     text,
-  add column if not exists google_last_synced_at timestamptz;
+  add column if not exists google_calendar_id       text,
+  add column if not exists google_refresh_token     text,
+  add column if not exists google_sync_token        text,
+  add column if not exists google_last_synced_at    timestamptz,
+  add column if not exists google_calendar_timezone text;
 
 alter table bookings
-  add column if not exists google_event_id text;
+  add column if not exists google_event_id    text,
+  add column if not exists google_sync_status text
+    check (google_sync_status in ('pending', 'synced', 'failed')),
+  add column if not exists google_synced_at   timestamptz;
 
 
 -- ══════════════════════════════════════════════════════════════════════════════

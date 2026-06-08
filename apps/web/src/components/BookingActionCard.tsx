@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import type { StaffAvailabilityReason } from '@/services/staff.service'
 import {
   Check, X, MoreHorizontal, CalendarCheck, UserX, Repeat, User as UserIcon,
-  Calendar, Clock,
+  Calendar, Clock, AlertTriangle,
 } from 'lucide-react'
 import type { AgendaBooking } from '@/services/dashboard.service'
 import RescheduleModal from './RescheduleModal'
@@ -25,6 +26,16 @@ const STAFF_COLORS = [
   { bg: 'bg-cyan-500', soft: 'bg-cyan-100', text: 'text-cyan-700' },
 ]
 const UNASSIGNED_COLOR = { bg: 'bg-bridge-muted', soft: 'bg-bridge-surface', text: 'text-bridge-secondary' }
+
+const REASON_LABEL: Record<StaffAvailabilityReason, string> = {
+  qualified: '',
+  not_qualified: 'Can’t do this service',
+  day_off: 'Off this day',
+  outside_hours: 'Outside hours',
+  double_booked: 'Already booked',
+  time_off: 'On time off',
+  business_closed: 'Business closed',
+}
 
 export function colorForStaff(staffId: string | null, allStaff: StaffSummary[]) {
   if (!staffId) return UNASSIGNED_COLOR
@@ -76,11 +87,46 @@ export default function BookingActionCard({
 
   const [busy, setBusy] = useState(false)
   const [reschedOpen, setReschedOpen] = useState(false)
+  // Per-staff availability for THIS booking's slot, keyed by staffId. Null until loaded.
+  const [avail, setAvail] = useState<Record<string, StaffAvailabilityReason> | null>(null)
+  // Optimistic assignment so reassign feels instant — the dashboard re-render that
+  // reconciles it server-side can take a moment. undefined = trust the server prop.
+  const [optimisticStaffId, setOptimisticStaffId] = useState<string | null | undefined>(undefined)
+  // Once the server prop catches up, drop the override so the server is truth again.
+  useEffect(() => { setOptimisticStaffId(undefined) }, [booking.staffId])
 
-  const col = colorForStaff(booking.staffId, staff)
+  const effectiveStaffId = optimisticStaffId !== undefined ? optimisticStaffId : booking.staffId
+  const effectiveStaffName = effectiveStaffId
+    ? (staff.find((s) => s.id === effectiveStaffId)?.name ?? booking.staffName)
+    : null
+
+  const col = colorForStaff(effectiveStaffId, staff)
   const isFinal = ['completed', 'cancelled', 'declined', 'no_show'].includes(booking.status)
 
   const eligibleStaff = staff
+
+  // Load availability when the assign section is on screen. excludeBookingId keeps
+  // the current assignee from flagging as double-booked against their own slot.
+  useEffect(() => {
+    if (!expanded || isFinal || staff.length === 0 || !booking.serviceId) return
+    let cancelled = false
+    const qs = new URLSearchParams({
+      serviceId: booking.serviceId,
+      date: booking.date,
+      time: booking.time,
+      excludeBookingId: booking.id,
+    })
+    fetch(`/api/businesses/${encodeURIComponent(businessSlug)}/staff-availability?${qs}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !d?.availability) return
+        const m: Record<string, StaffAvailabilityReason> = {}
+        for (const a of d.availability) m[a.staffId] = a.reason
+        setAvail(m)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [expanded, isFinal, booking.serviceId, booking.date, booking.time, booking.id, businessSlug, staff.length])
 
   async function setStatus(status: AgendaBooking['status']) {
     setBusy(true)
@@ -97,14 +143,20 @@ export default function BookingActionCard({
   }
 
   async function reassign(newStaffId: string | null) {
+    if (busy) return
+    const previous = optimisticStaffId
+    setOptimisticStaffId(newStaffId) // instant UI; don't wait on the server re-render
     setBusy(true)
     try {
-      await fetch(`/api/bookings/${booking.id}`, {
+      const res = await fetch(`/api/bookings/${booking.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ staffId: newStaffId }),
       })
-      router.refresh()
+      if (!res.ok) throw new Error('Reassign failed')
+      router.refresh() // reconcile the rest of the dashboard in the background — not awaited
+    } catch {
+      setOptimisticStaffId(previous) // revert on failure
     } finally {
       setBusy(false)
     }
@@ -138,6 +190,19 @@ export default function BookingActionCard({
                 <span className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${statusStyles(booking.status)}`}>
                   {booking.status === 'no_show' ? 'No-show' : booking.status}
                 </span>
+                {booking.googleSyncStatus === 'synced' && (
+                  <span title="Synced to Google Calendar" className="inline-flex items-center text-bridge-muted">
+                    <CalendarCheck size={12} />
+                  </span>
+                )}
+                {booking.googleSyncStatus === 'failed' && (
+                  <span
+                    title="Google Calendar sync failed — use Re-sync"
+                    className="inline-flex items-center gap-0.5 text-[9px] font-bold uppercase text-bridge-accent"
+                  >
+                    <AlertTriangle size={11} /> Sync
+                  </span>
+                )}
               </div>
               {booking.isRepeat && booking.acquiredBy && (
                 <p className="text-micro text-bridge-accent mt-0.5">
@@ -154,8 +219,8 @@ export default function BookingActionCard({
                     <span>·</span>
                   </>
                 )}
-                {booking.staffName ? (
-                  <span className={`font-medium ${col.text}`}>{booking.staffName}</span>
+                {effectiveStaffName ? (
+                  <span className={`font-medium ${col.text}`}>{effectiveStaffName}</span>
                 ) : (
                   <span className="italic text-bridge-muted">Unassigned</span>
                 )}
@@ -189,20 +254,24 @@ export default function BookingActionCard({
                   <ReassignChip
                     label="Unassigned"
                     icon={<UserIcon size={10} />}
-                    active={!booking.staffId}
+                    active={!effectiveStaffId}
                     onClick={() => reassign(null)}
                     busy={busy}
                   />
                   {eligibleStaff.map((s) => {
                     const c = colorForStaff(s.id, staff)
-                    const canDoService = s.serviceIds.length === 0 || true
+                    const reason = avail?.[s.id]
+                    const isActive = effectiveStaffId === s.id
+                    // Grey out unavailable staff (but never the one already assigned).
+                    const unavailable = !isActive && !!reason && reason !== 'qualified'
                     return (
                       <ReassignChip
                         key={s.id}
                         label={s.name}
                         dotClass={c.bg}
-                        active={booking.staffId === s.id}
-                        dim={!canDoService}
+                        active={isActive}
+                        unavailable={unavailable}
+                        reasonLabel={reason ? REASON_LABEL[reason] : undefined}
                         onClick={() => reassign(s.id)}
                         busy={busy}
                       />
@@ -267,31 +336,37 @@ export default function BookingActionCard({
 }
 
 function ReassignChip({
-  label, dotClass, icon, active, dim, onClick, busy,
+  label, dotClass, icon, active, unavailable, reasonLabel, onClick, busy,
 }: {
   label: string
   dotClass?: string
   icon?: React.ReactNode
   active: boolean
-  dim?: boolean
+  unavailable?: boolean
+  reasonLabel?: string
   onClick: () => void
   busy: boolean
 }) {
   return (
     <button
       onClick={onClick}
-      disabled={busy}
-      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-button text-micro font-semibold border transition-colors disabled:opacity-50 ${
+      disabled={busy || unavailable}
+      title={unavailable ? reasonLabel : undefined}
+      aria-label={unavailable && reasonLabel ? `${label} — ${reasonLabel}` : label}
+      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-button text-micro font-semibold border transition-colors ${
         active
           ? 'bg-bridge-ink text-bridge-ink-foreground border-bridge-ink'
-          : dim
-            ? 'bg-bridge-card border-bridge-border text-bridge-muted hover:border-bridge-border-strong'
-            : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'
+          : unavailable
+            ? 'bg-bridge-surface border-bridge-border/60 text-bridge-muted/60 line-through cursor-not-allowed'
+            : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong disabled:opacity-50'
       }`}
     >
-      {dotClass && <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />}
+      {dotClass && <span className={`w-1.5 h-1.5 rounded-full ${dotClass} ${unavailable ? 'opacity-40' : ''}`} />}
       {icon}
       {label}
+      {unavailable && reasonLabel && (
+        <span className="font-normal no-underline text-bridge-muted/70">· {reasonLabel}</span>
+      )}
     </button>
   )
 }

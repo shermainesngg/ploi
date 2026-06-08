@@ -143,6 +143,9 @@ Schema in `packages/db/schema.sql`. Migrations run in order in Supabase SQL Edit
 - `migration_007`–`009` — Creator content embeds + backfill, avatars storage bucket
 - `migration_010_multi_featured` — Multiple featured services per link (`featured_service_ids uuid[]`); supersedes the single `featured_service_id` from 005, kept for back-compat
 - `migration_011_business_photos_bucket` — Public `business-photos` Storage bucket for dashboard Settings photo uploads (already created in staging; run in prod)
+- `migration_012`–`013` — Per-video creator attribution + booking↔video link
+- `migration_014_multi_location` — Multi-location businesses (branches); per-location staff/bookings/time_blocks
+- `migration_015_calendar_sync` — Google Calendar sync: per-booking `google_sync_status`/`google_synced_at` + `businesses.google_calendar_timezone` (additive to the dormant 006 Google columns)
 
 `packages/db/setup.sql` is the **consolidated schema** (core tables + all migrations in one file) — run it for a fresh project instead of applying migrations one by one.
 
@@ -182,6 +185,12 @@ RESEND_API_KEY                       # Resend API key (re_...) for booking notif
 EMAIL_FROM                           # Sender, e.g. "PLOI <bookings@ploi.app>" (domain must be
                                      #   verified in Resend). Defaults to Resend's test sender,
                                      #   which only delivers to the Resend account owner.
+GOOGLE_CLIENT_ID                     # Google OAuth client id (Web application) for Calendar sync.
+GOOGLE_CLIENT_SECRET                 # Google OAuth client secret. Optional — without these (and
+                                     #   GCAL_TOKEN_ENC_KEY) calendar sync is a silent no-op.
+GCAL_TOKEN_ENC_KEY                   # AES-256-GCM key encrypting the stored Google refresh token at
+                                     #   rest. Base64-encoded 32 bytes: `openssl rand -base64 32`.
+                                     #   Server-only — never expose to browser.
 ```
 
 > **Key-name tolerance.** `lib/supabase.ts` / `supabase-server.ts` / `middleware.ts` resolve the public key from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` **or** `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and the secret key from `SUPABASE_SERVICE_ROLE_KEY` **or** `SUPABASE_SECRET_KEY`. If neither public key is set, `isSupabaseConfigured()` is false and the app **silently falls back to the in-memory `seed-data.ts`** (one demo business/creator) instead of the real DB — the usual cause of "I don't see my seeded data" on a deployment.

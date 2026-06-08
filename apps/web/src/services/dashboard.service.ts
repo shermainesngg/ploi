@@ -6,6 +6,7 @@ import {
 } from '@/lib/seed-data'
 import { rowToBusiness, rowToCreator, gradientForCategory } from '@/lib/mappers'
 import { calculateCreatorEarnings, calculatePlatformFee } from '@/lib/constants'
+import { CalendarSyncService } from './calendar-sync.service'
 import type {
   Business,
   BookingWithCreator,
@@ -15,6 +16,7 @@ import type {
   LinkPerformance,
   ActivityEvent,
   LinkStatus,
+  GoogleSyncStatus,
 } from '@/lib/types'
 
 /** One row in the per-creator bookings feed (paginated, business-dashboard only). */
@@ -51,6 +53,7 @@ export interface CreatorBookingStats {
 
 export interface AgendaBooking {
   id: string
+  serviceId: string | null
   serviceName: string
   serviceDuration: number
   customerName: string
@@ -66,6 +69,8 @@ export interface AgendaBooking {
   staffName: string | null
   isRepeat: boolean
   acquiredBy: { slug: string; handle: string } | null
+  /** Google Calendar push state for the per-booking sync indicator. */
+  googleSyncStatus: GoogleSyncStatus | null
 }
 
 function generateMockBookings(business: Business): BookingWithCreator[] {
@@ -163,6 +168,7 @@ function mapAgendaBooking(r: any): AgendaBooking {
 
   return {
     id: r.id,
+    serviceId: r.service_id ?? null,
     serviceName: svc?.name ?? 'Service',
     serviceDuration: duration,
     customerName: r.customer_name,
@@ -178,6 +184,7 @@ function mapAgendaBooking(r: any): AgendaBooking {
     staffName: staffRow?.name ?? null,
     isRepeat: !!r.is_repeat,
     acquiredBy: acqCre ? { slug: acqCre.slug, handle: acqCre.handle } : null,
+    googleSyncStatus: r.google_sync_status ?? null,
   }
 }
 
@@ -238,7 +245,10 @@ export const DashboardService = {
       const business = seedBusinesses[businessSlug]
       if (!business) return null
       const bookings = generateMockBookings(business)
-      return { business, bookings, stats: computeBusinessStats(bookings), creatorRollups: rollupByCreator(bookings) }
+      return {
+        business, bookings, stats: computeBusinessStats(bookings), creatorRollups: rollupByCreator(bookings),
+        googleCalendarConnected: false, googleLastSyncedAt: null,
+      }
     }
 
     const db = createServerClient()
@@ -285,7 +295,12 @@ export const DashboardService = {
       }
     })
 
-    return { business, bookings, stats: computeBusinessStats(bookings), creatorRollups: rollupByCreator(bookings) }
+    return {
+      business, bookings, stats: computeBusinessStats(bookings), creatorRollups: rollupByCreator(bookings),
+      // Connection state only — the refresh token itself is never sent to the client.
+      googleCalendarConnected: !!bizRow.google_refresh_token,
+      googleLastSyncedAt: bizRow.google_last_synced_at ?? null,
+    }
   },
 
   async getCreatorDashboard(creatorSlug: string): Promise<CreatorDashboardData | null> {
@@ -477,7 +492,7 @@ export const DashboardService = {
     const { data: rows } = await db
       .from('bookings')
       .select(`
-        id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id, is_repeat,
+        id, service_id, customer_name, customer_email, booking_date, booking_time, status, google_sync_status, is_walkin, staff_id, is_repeat,
         services ( name, price, duration ),
         links ( creators ( slug, handle ) ),
         staff ( id, name ),
@@ -502,7 +517,7 @@ export const DashboardService = {
     let query = db
       .from('bookings')
       .select(`
-        id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id, created_at, is_repeat,
+        id, service_id, customer_name, customer_email, booking_date, booking_time, status, google_sync_status, is_walkin, staff_id, created_at, is_repeat,
         services ( name, price, duration ),
         links ( creators ( slug, handle ) ),
         staff ( id, name ),
@@ -646,7 +661,7 @@ export const DashboardService = {
     const { data: rows } = await db
       .from('bookings')
       .select(`
-        id, customer_name, customer_email, booking_date, booking_time, status, is_walkin, staff_id,
+        id, service_id, customer_name, customer_email, booking_date, booking_time, status, google_sync_status, is_walkin, staff_id,
         services ( name, price, duration ),
         links ( creators ( slug, handle ) ),
         staff ( id, name )
@@ -666,6 +681,7 @@ export const DashboardService = {
       const duration = svc?.duration ?? 60
       return {
         id: r.id,
+        serviceId: r.service_id ?? null,
         serviceName: svc?.name ?? 'Service',
         serviceDuration: duration,
         customerName: r.customer_name,
@@ -681,6 +697,7 @@ export const DashboardService = {
         staffName: staffRow?.name ?? null,
         isRepeat: false,
         acquiredBy: null,
+        googleSyncStatus: r.google_sync_status ?? null,
       }
     })
   },
@@ -691,7 +708,7 @@ export const DashboardService = {
     const { data: rows } = await db
       .from('bookings')
       .select(`
-        id, customer_name, customer_email, booking_date, booking_time, status, is_walkin,
+        id, service_id, customer_name, customer_email, booking_date, booking_time, status, google_sync_status, is_walkin,
         services ( name, price, duration ),
         links ( creators ( slug, handle ) )
       `)
@@ -707,6 +724,7 @@ export const DashboardService = {
       const duration = svc?.duration ?? 60
       return {
         id: r.id,
+        serviceId: r.service_id ?? null,
         serviceName: svc?.name ?? 'Service',
         serviceDuration: duration,
         customerName: r.customer_name,
@@ -722,6 +740,7 @@ export const DashboardService = {
         staffName: null,
         isRepeat: false,
         acquiredBy: null,
+        googleSyncStatus: r.google_sync_status ?? null,
       }
     })
   },
@@ -756,6 +775,11 @@ export const DashboardService = {
       .select()
       .single()
     if (error) throw new Error(error.message)
+
+    // Walk-ins are created already `confirmed`, so push to Google Calendar too
+    // (fire-safe: no-op when the business isn't connected, never throws).
+    await CalendarSyncService.pushOnConfirm(row.id)
+
     return row
   },
 }

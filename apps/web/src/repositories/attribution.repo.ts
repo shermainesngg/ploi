@@ -73,6 +73,7 @@ export const AttributionRepo = {
   async insertEvent(data: {
     link_id: string
     booking_id?: string
+    content_id?: string
     event_type: string
   }) {
     const db = createServerClient()

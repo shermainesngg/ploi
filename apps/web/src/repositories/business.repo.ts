@@ -5,7 +5,7 @@ export const BusinessRepo = {
     const db = createServerClient()
     const { data } = await db
       .from('businesses')
-      .select('*, services(*)')
+      .select('*, services(*), locations(*)')
       .eq('slug', slug)
       .eq('is_active', true)
       .single()

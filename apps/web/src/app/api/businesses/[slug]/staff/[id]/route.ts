@@ -13,6 +13,7 @@ export async function PATCH(
       role: body.role,
       photoUrl: body.photoUrl,
       serviceIds: Array.isArray(body.serviceIds) ? body.serviceIds : undefined,
+      locationId: typeof body.locationId === 'string' ? body.locationId : undefined,
     })
     return NextResponse.json({ id })
   } catch (err) {

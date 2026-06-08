@@ -8,12 +8,18 @@ import {
   Copy, ExternalLink, Calendar, Check,
 } from 'lucide-react'
 import type { StaffMember } from '@/services/staff.service'
+import type { Location } from '@/lib/types'
 
 interface ServiceOption {
   id: string
   name: string
   duration: number
   price: number
+}
+
+/** A short, human label for a branch in dropdowns/cards. */
+function locationLabel(loc: Location): string {
+  return loc.name || loc.address || (loc.isPrimary ? 'Main location' : 'Branch')
 }
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -64,12 +70,14 @@ export default function StaffManagement({
   services,
   businessHours,
   initialStaff,
+  locations = [],
 }: {
   businessSlug: string
   businessName: string
   services: ServiceOption[]
   businessHours: Record<string, string> | null
   initialStaff: StaffMember[]
+  locations?: Location[]
 }) {
   const router = useRouter()
   const [staff, setStaff] = useState<StaffMember[]>(initialStaff)
@@ -88,6 +96,7 @@ export default function StaffManagement({
         businessSlug={businessSlug}
         services={services}
         businessHours={businessHours}
+        locations={locations}
         staff={editing === 'new' ? null : editing}
         onClose={() => setEditing(null)}
         onSaved={async () => { await refresh(); setEditing(null) }}
@@ -122,6 +131,7 @@ export default function StaffManagement({
               key={s.id}
               staff={s}
               services={services}
+              locations={locations}
               businessSlug={businessSlug}
               onEdit={() => setEditing(s)}
             />
@@ -139,14 +149,19 @@ export default function StaffManagement({
 }
 
 function StaffCard({
-  staff, services, businessSlug, onEdit,
+  staff, services, locations, businessSlug, onEdit,
 }: {
   staff: StaffMember
   services: ServiceOption[]
+  locations: Location[]
   businessSlug: string
   onEdit: () => void
 }) {
   const assigned = services.filter((s) => staff.serviceIds.includes(s.id))
+  // Only worth showing a branch when the business actually has more than one.
+  const branch = locations.length > 1
+    ? locations.find((l) => l.id === staff.locationId)
+    : null
   const scheduleUrl = typeof window !== 'undefined' ? `${window.location.origin}/staff/${staff.id}/schedule` : ''
   const [copied, setCopied] = useState(false)
 
@@ -172,6 +187,9 @@ function StaffCard({
           <div className="flex-1 min-w-0">
             <p className="font-semibold text-bridge-heading text-sm truncate">{staff.name}</p>
             {staff.role && <p className="text-bridge-muted text-xs">{staff.role}</p>}
+            {branch && (
+              <p className="text-bridge-secondary text-[11px] mt-0.5 truncate">📍 {locationLabel(branch)}</p>
+            )}
             <p className="text-bridge-muted text-[11px] mt-1 truncate">
               {assigned.length > 0
                 ? `${assigned.length} service${assigned.length !== 1 ? 's' : ''} · ${assigned.slice(0, 2).map((s) => s.name).join(', ')}${assigned.length > 2 ? '…' : ''}`
@@ -204,11 +222,12 @@ function StaffCard({
 // ── Editor ─────────────────────────────────────────────────────────────────
 
 function StaffEditor({
-  businessSlug, services, businessHours, staff, onClose, onSaved,
+  businessSlug, services, businessHours, locations, staff, onClose, onSaved,
 }: {
   businessSlug: string
   services: ServiceOption[]
   businessHours: Record<string, string> | null
+  locations: Location[]
   staff: StaffMember | null
   onClose: () => void
   onSaved: () => void
@@ -218,6 +237,11 @@ function StaffEditor({
   const [role, setRole] = useState(staff?.role ?? '')
   const [photoUrl, setPhotoUrl] = useState(staff?.photoUrl ?? '')
   const [serviceIds, setServiceIds] = useState<string[]>(staff?.serviceIds ?? [])
+  // Branch this staff works at. Default to their current branch, else the
+  // primary location. Only surfaced as a picker when there are 2+ branches.
+  const defaultLocationId =
+    staff?.locationId ?? locations.find((l) => l.isPrimary)?.id ?? locations[0]?.id ?? ''
+  const [locationId, setLocationId] = useState<string>(defaultLocationId)
   const [hours, setHours] = useState<Record<number, ScheduleDraft>>(parseBusinessHours(businessHours))
   const [scheduleLoaded, setScheduleLoaded] = useState(!staff)
   const [blocks, setBlocks] = useState<BlockDraft[]>([])
@@ -287,7 +311,7 @@ function StaffEditor({
         const res = await fetch(`/api/businesses/${businessSlug}/staff`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, role, photoUrl, serviceIds }),
+          body: JSON.stringify({ name, role, photoUrl, serviceIds, locationId: locationId || undefined }),
         })
         const data = await res.json()
         if (!res.ok) throw new Error(data.error ?? 'Could not create staff')
@@ -296,7 +320,7 @@ function StaffEditor({
         const res = await fetch(`/api/businesses/${businessSlug}/staff/${staffId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, role, photoUrl, serviceIds }),
+          body: JSON.stringify({ name, role, photoUrl, serviceIds, locationId: locationId || undefined }),
         })
         if (!res.ok) {
           const data = await res.json()
@@ -389,6 +413,19 @@ function StaffEditor({
               className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm"
             />
           </Field>
+          {locations.length > 1 && (
+            <Field label="Location" required>
+              <select
+                value={locationId}
+                onChange={(e) => setLocationId(e.target.value)}
+                className="w-full border border-bridge-border rounded-xl px-3 py-2.5 text-bridge-heading bg-bridge-card focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm"
+              >
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>{locationLabel(l)}</option>
+                ))}
+              </select>
+            </Field>
+          )}
           <Field label="Photo URL">
             <div className="relative">
               <ImageIcon size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-bridge-muted" />

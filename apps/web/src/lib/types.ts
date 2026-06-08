@@ -9,12 +9,32 @@ export interface Service {
 export type DayKey = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 export type OpeningHours = Partial<Record<DayKey, string>> // "HH:MM-HH:MM" or "closed"
 
+/**
+ * A branch of a business. Each location is a full booking unit — its own
+ * address, hours, contacts, and (optional) photos. Staff and bookings are
+ * scoped to a location; services stay business-wide (shared menu).
+ */
+export interface Location {
+  id: string
+  businessId: string
+  name: string | null            // branch label, e.g. "Thonglor". Null = unnamed/main.
+  address: string
+  openingHours: OpeningHours | null
+  contactPhone: string | null
+  contactWhatsapp: string | null
+  contactLine: string | null
+  photos: string[]               // optional; empty means fall back to business.photos
+  isPrimary: boolean
+  isActive: boolean
+  sortOrder: number
+}
+
 export interface Business {
   id: string
   slug: string
   name: string
   category: string
-  location: string
+  location: string               // primary location address (legacy/display convenience)
   description: string
   coverGradient: [string, string] // CSS gradient from/to (always available, used as fallback)
   coverPhotoUrl: string | null     // optional uploaded cover photo
@@ -26,6 +46,7 @@ export interface Business {
   rating: number
   reviewCount: number
   services: Service[]
+  locations: Location[]            // all active branches; primary first. Empty for legacy/seed rows.
 }
 
 export type SocialPlatform = 'tiktok' | 'instagram' | 'youtube' | 'x' | 'other'
@@ -93,6 +114,8 @@ export interface CreatorContent {
   posterExpiresAt: string | null
   status: ContentStatus
   sortOrder: number
+  /** Per-video tap counter — how many times this video's facade was opened. */
+  clickCount: number
   createdAt: string | null
 }
 
@@ -100,6 +123,11 @@ export interface ContentWithCreator {
   content: CreatorContent
   // Creator has no avatarUrl in this codebase — uses avatarInitials/avatarColor.
   creator: Pick<Creator, 'slug' | 'handle' | 'displayName' | 'avatarInitials' | 'avatarColor'>
+  /**
+   * Per-video booking performance — populated only on business-dashboard surfaces
+   * via attachBookingStats(). Absent on public pages (no booking data leaks there).
+   */
+  stats?: { bookingCount: number; revenue: number }
 }
 
 export interface Booking {
@@ -142,6 +170,8 @@ export interface BookingWithCreator {
   commissionRate: number | null
   /** If this is a repeat booking, the original creator who acquired the customer. */
   acquiredBy: { handle: string; slug: string } | null
+  /** The video credited with driving this booking, if any (hybrid attribution). */
+  contentId: string | null
 }
 
 export interface CreatorRollup {

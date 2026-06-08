@@ -580,8 +580,9 @@ function CreatorStatsModal({
               Their videos for your business
             </p>
             <div className="space-y-2">
-              {videos.map(({ content }) => {
+              {videos.map(({ content, stats }) => {
                 const poster = resolvePosterUrl(content.posterPath)
+                const bookings = stats?.bookingCount ?? 0
                 return (
                   <a
                     key={content.id}
@@ -606,6 +607,10 @@ function CreatorStatsModal({
                       <p className="text-micro text-bridge-muted mt-0.5 flex items-center gap-1">
                         <PlatformIcon platform={content.provider} size={10} />
                         {platformLabel(content.provider)}
+                        <span aria-hidden>·</span>
+                        <span className="font-data">{content.clickCount}</span> tap{content.clickCount !== 1 ? 's' : ''}
+                        <span aria-hidden>·</span>
+                        <span className={`font-data ${bookings > 0 ? 'text-bridge-accent' : ''}`}>{bookings}</span> booking{bookings !== 1 ? 's' : ''}
                       </p>
                     </div>
                     <ExternalLink size={12} className="text-bridge-muted flex-shrink-0" />

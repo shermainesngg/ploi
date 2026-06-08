@@ -1,5 +1,6 @@
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
 import { BusinessRepo } from '@/repositories/business.repo'
+import { LocationRepo } from '@/repositories/location.repo'
 import {
   businesses as seedBusinesses,
   creators as seedCreators,
@@ -17,7 +18,7 @@ export const BusinessService = {
     const db = createServerClient()
     const { data } = await db
       .from('businesses')
-      .select('*, services(*)')
+      .select('*, services(*), locations(*)')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
     return (data ?? []).map(rowToBusiness)
@@ -33,7 +34,7 @@ export const BusinessService = {
     const db = createServerClient()
     const { data } = await db
       .from('businesses')
-      .select('*, services(*)')
+      .select('*, services(*), locations(*)')
       .eq('is_active', true)
       .or(`name.ilike.%${query}%,slug.ilike.%${query}%`)
       .limit(10)
@@ -48,7 +49,7 @@ export const BusinessService = {
     const db = createServerClient()
     const { data: bizRow } = await db
       .from('businesses')
-      .select('*, services(*)')
+      .select('*, services(*), locations(*)')
       .eq('slug', businessSlug)
       .eq('is_active', true)
       .single()
@@ -71,7 +72,7 @@ export const BusinessService = {
     const [{ data: bizRow }, { data: creatorRow }] = await Promise.all([
       db
         .from('businesses')
-        .select('*, services(*)')
+        .select('*, services(*), locations(*)')
         .eq('slug', businessSlug)
         .eq('is_active', true)
         .single(),
@@ -226,6 +227,21 @@ export const BusinessService = {
     const { error: svcErr } = await db.from('services').insert(serviceRows)
     if (svcErr) throw new Error(svcErr.message)
 
+    // Every business starts with one primary location, mirrored from the
+    // headline fields above. Secondary branches are added from the dashboard.
+    const { error: locErr } = await db.from('locations').insert({
+      business_id: biz.id,
+      name: null,
+      address: data.location,
+      opening_hours: data.openingHours ?? null,
+      contact_phone: data.contactPhone ?? null,
+      contact_whatsapp: data.contactWhatsapp ?? null,
+      contact_line: data.contactLine ?? null,
+      is_primary: true,
+      sort_order: 0,
+    })
+    if (locErr) throw new Error(locErr.message)
+
     return { slug: biz.slug, id: biz.id }
   },
 
@@ -263,6 +279,19 @@ export const BusinessService = {
       contact_whatsapp: data.contactWhatsapp?.trim() || null,
       contact_line: data.contactLine?.trim() || null,
     })
+
+    // Keep the primary location in sync with the headline fields. Secondary
+    // branches manage their own address/hours/contacts independently.
+    const businessId = await BusinessRepo.findIdBySlug(slug)
+    if (businessId) {
+      await LocationRepo.updatePrimaryByBusinessId(businessId, {
+        address: data.location,
+        opening_hours: data.openingHours ?? null,
+        contact_phone: data.contactPhone?.trim() || null,
+        contact_whatsapp: data.contactWhatsapp?.trim() || null,
+        contact_line: data.contactLine?.trim() || null,
+      })
+    }
   },
 
   async getStripeStatus(businessSlug: string) {

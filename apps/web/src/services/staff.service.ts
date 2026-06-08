@@ -1,10 +1,12 @@
 import { isSupabaseConfigured } from '@/lib/supabase'
 import { StaffRepo } from '@/repositories/staff.repo'
 import { BusinessRepo } from '@/repositories/business.repo'
+import { LocationRepo } from '@/repositories/location.repo'
 
 export interface StaffMember {
   id: string
   businessId: string
+  locationId: string | null
   name: string
   role: string | null
   photoUrl: string | null
@@ -33,6 +35,7 @@ function rowToStaff(r: any, serviceIds: string[]): StaffMember {
   return {
     id: r.id,
     businessId: r.business_id,
+    locationId: r.location_id ?? null,
     name: r.name,
     role: r.role ?? null,
     photoUrl: r.photo_url ?? null,
@@ -71,14 +74,22 @@ export const StaffService = {
 
   async create(
     businessSlug: string,
-    data: { name: string; role?: string; photoUrl?: string; serviceIds: string[] },
+    data: { name: string; role?: string; photoUrl?: string; serviceIds: string[]; locationId?: string | null },
   ): Promise<StaffMember> {
     if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
     const businessId = await BusinessRepo.findIdBySlug(businessSlug)
     if (!businessId) throw new Error('Business not found')
 
+    // Default new staff to the business's primary location when none specified.
+    let locationId = data.locationId ?? null
+    if (!locationId) {
+      const primary = await LocationRepo.findPrimaryByBusinessId(businessId)
+      locationId = primary?.id ?? null
+    }
+
     const row = await StaffRepo.insert({
       business_id: businessId,
+      location_id: locationId,
       name: data.name,
       role: data.role ?? null,
       photo_url: data.photoUrl ?? null,
@@ -93,7 +104,7 @@ export const StaffService = {
 
   async update(
     staffId: string,
-    data: { name?: string; role?: string; photoUrl?: string; serviceIds?: string[] },
+    data: { name?: string; role?: string; photoUrl?: string; serviceIds?: string[]; locationId?: string | null },
   ) {
     if (!isSupabaseConfigured()) throw new Error('Supabase not configured')
 
@@ -101,6 +112,7 @@ export const StaffService = {
     if (data.name !== undefined) update.name = data.name
     if (data.role !== undefined) update.role = data.role || null
     if (data.photoUrl !== undefined) update.photo_url = data.photoUrl || null
+    if (data.locationId !== undefined) update.location_id = data.locationId || null
     if (Object.keys(update).length > 0) {
       await StaffRepo.update(staffId, update)
     }
@@ -191,6 +203,7 @@ export const StaffService = {
     serviceId: string
     bookingDate: string
     bookingTime: string
+    locationId?: string | null
   }): Promise<string | null> {
     if (!isSupabaseConfigured()) return null
 
@@ -201,7 +214,7 @@ export const StaffService = {
       .single()
     const duration = (svc?.duration ?? 60) + (svc?.buffer_minutes ?? 0)
 
-    const allStaff = await StaffRepo.listActiveByBusinessId(opts.businessId)
+    const allStaff = await StaffRepo.listActiveByBusinessId(opts.businessId, opts.locationId)
     const allStaffIds = allStaff.map((s) => s.id)
     if (allStaffIds.length === 0) return null
 

@@ -90,7 +90,19 @@ async function loadBooking(bookingId: string) {
   const service = one(row.services)
   const business = one(row.businesses)
   if (!service || !business) return null
-  return { row, service, business }
+  const location = one(row.locations)
+  return { row, service, business, location }
+}
+
+/** A branch label for emails: "Thonglor — 12 Soi 4" or just the address. */
+function locationLabel(
+  location: { name?: string | null; address?: string | null } | null,
+  business: { location?: string | null },
+): string | null {
+  if (location?.address) {
+    return location.name ? `${location.name} — ${location.address}` : location.address
+  }
+  return business.location ?? null
 }
 
 function bookingRows(input: {
@@ -98,6 +110,7 @@ function bookingRows(input: {
   date: string
   time: string
   price: number
+  location?: string | null
   customerName?: string
   customerEmail?: string | null
 }): EmailRow[] {
@@ -107,6 +120,7 @@ function bookingRows(input: {
     { label: 'Time', value: formatTime(input.time) },
     { label: 'Price', value: `฿${input.price.toLocaleString()}` },
   ]
+  if (input.location) rows.push({ label: 'Location', value: escapeHtml(input.location) })
   if (input.customerName) rows.push({ label: 'Customer', value: escapeHtml(input.customerName) })
   if (input.customerEmail) rows.push({ label: 'Contact', value: escapeHtml(input.customerEmail) })
   return rows
@@ -123,7 +137,7 @@ export const NotificationService = {
     try {
       const loaded = await loadBooking(bookingId)
       if (!loaded || !loaded.business.email) return
-      const { row, service, business } = loaded
+      const { row, service, business, location } = loaded
 
       const paid = opts?.paid ?? false
       await sendEmail({
@@ -141,6 +155,7 @@ export const NotificationService = {
             date: row.booking_date,
             time: row.booking_time,
             price: service.price,
+            location: locationLabel(location, business),
             customerName: row.customer_name,
             customerEmail: row.customer_email,
           }),
@@ -164,7 +179,7 @@ export const NotificationService = {
     try {
       const loaded = await loadBooking(bookingId)
       if (!loaded || !loaded.row.customer_email) return
-      const { row, service, business } = loaded
+      const { row, service, business, location } = loaded
 
       const copy = {
         confirmed: {
@@ -192,6 +207,7 @@ export const NotificationService = {
             date: row.booking_date,
             time: row.booking_time,
             price: service.price,
+            location: locationLabel(location, business),
           }),
           cta: { label: 'View booking', url: `${siteUrl()}/booking-confirmed/${row.id}` },
         }),
@@ -207,7 +223,7 @@ export const NotificationService = {
     try {
       const loaded = await loadBooking(bookingId)
       if (!loaded || !loaded.business.email) return
-      const { row, service, business } = loaded
+      const { row, service, business, location } = loaded
 
       await sendEmail({
         to: business.email,
@@ -220,6 +236,7 @@ export const NotificationService = {
             date: row.booking_date,
             time: row.booking_time,
             price: service.price,
+            location: locationLabel(location, business),
             customerName: row.customer_name,
             customerEmail: row.customer_email,
           }),

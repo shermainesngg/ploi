@@ -11,6 +11,23 @@ import type { ContentWithCreator } from '@/lib/types'
 const INITIAL_VISIBLE = 20 // facades are cheap — comfortable headroom (PRD §7.1)
 const EAGER_POSTERS = 4 // load posters above the fold eagerly; lazy-load the rest
 
+/** sessionStorage key holding the last video a viewer tapped, scoped per business. */
+export const lastTappedVideoKey = (businessId: string) => `ploi_lastvideo_${businessId}`
+
+/**
+ * On tap: (1) remember this as the last-watched video for its business so a
+ * subsequent booking can be credited to it (hybrid attribution fallback), and
+ * (2) fire a per-video tap ping, deduped per session so one viewer = one click.
+ */
+function recordVideoClick(item: { id: string; businessId: string } | undefined) {
+  if (!item || typeof window === 'undefined') return
+  sessionStorage.setItem(lastTappedVideoKey(item.businessId), item.id)
+  const key = `ploi_vclick_${item.id}`
+  if (sessionStorage.getItem(key)) return
+  sessionStorage.setItem(key, '1')
+  fetch(`/api/content/${encodeURIComponent(item.id)}/click`, { method: 'POST' }).catch(() => {})
+}
+
 export interface ContentCarouselProps {
   items: ContentWithCreator[]
   /** Hide the creator chip when the carousel already lives on that creator's page. */
@@ -34,6 +51,8 @@ export function ContentCarousel({ items, showCreatorChip = true, className }: Co
   const shown = items.slice(0, visible)
 
   const open = (i: number) => {
+    const c = items[i]?.content
+    recordVideoClick(c && { id: c.id, businessId: c.businessId })
     setStartIndex(i)
     setPlayerOpen(true)
   }

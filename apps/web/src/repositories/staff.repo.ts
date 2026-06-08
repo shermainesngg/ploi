@@ -31,6 +31,7 @@ export const StaffRepo = {
 
   async insert(data: {
     business_id: string
+    location_id?: string | null
     name: string
     role: string | null
     photo_url: string | null
@@ -170,13 +171,17 @@ export const StaffRepo = {
     return data?.business_id ?? null
   },
 
-  async listActiveByBusinessId(businessId: string) {
+  async listActiveByBusinessId(businessId: string, locationId?: string | null) {
     const db = createServerClient()
-    const { data } = await db
+    let q = db
       .from('staff')
       .select('id')
       .eq('business_id', businessId)
       .eq('is_active', true)
+    // Scope to a branch when given, so a multi-location business never
+    // auto-assigns a staff member who works at a different branch.
+    if (locationId) q = q.eq('location_id', locationId)
+    const { data } = await q
     return data ?? []
   },
 

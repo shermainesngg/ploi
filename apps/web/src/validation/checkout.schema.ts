@@ -3,7 +3,9 @@ import { z } from 'zod'
 export const checkoutSchema = z.object({
   serviceId: z.string().uuid(),
   businessId: z.string().uuid(),
+  locationId: z.string().uuid().nullable().optional(),
   linkId: z.string().uuid().nullable().optional(),
+  contentId: z.string().uuid().nullable().optional(),
   staffId: z.string().uuid().nullable().optional(),
   customerName: z.string().min(1).max(100),
   customerEmail: z.string().email(),

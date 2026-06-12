@@ -31,6 +31,7 @@ export const StaffRepo = {
 
   async insert(data: {
     business_id: string
+    location_id?: string | null
     name: string
     role: string | null
     photo_url: string | null
@@ -170,13 +171,17 @@ export const StaffRepo = {
     return data?.business_id ?? null
   },
 
-  async listActiveByBusinessId(businessId: string) {
+  async listActiveByBusinessId(businessId: string, locationId?: string | null) {
     const db = createServerClient()
-    const { data } = await db
+    let q = db
       .from('staff')
       .select('id')
       .eq('business_id', businessId)
       .eq('is_active', true)
+    // Scope to a branch when given, so a multi-location business never
+    // auto-assigns a staff member who works at a different branch.
+    if (locationId) q = q.eq('location_id', locationId)
+    const { data } = await q
     return data ?? []
   },
 
@@ -196,10 +201,22 @@ export const StaffRepo = {
     const db = createServerClient()
     const { data } = await db
       .from('bookings')
-      .select('staff_id, booking_time, services(duration, buffer_minutes)')
+      .select('id, staff_id, booking_time, services(duration, buffer_minutes)')
       .in('staff_id', staffIds)
       .eq('booking_date', dateISO)
       .in('status', ['pending', 'confirmed'])
+    return data ?? []
+  },
+
+  /** Business-wide closures (time_blocks with no staff_id) on a date/weekday. */
+  async listBusinessWideBlocks(businessId: string, dateISO: string, dow: number) {
+    const db = createServerClient()
+    const { data } = await db
+      .from('time_blocks')
+      .select('start_time, end_time')
+      .eq('business_id', businessId)
+      .is('staff_id', null)
+      .or(`block_date.eq.${dateISO},recurring_dow.eq.${dow}`)
     return data ?? []
   },
 

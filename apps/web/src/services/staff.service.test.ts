@@ -41,11 +41,19 @@ vi.mock('@/repositories/business.repo', () => ({
   },
 }))
 
+vi.mock('@/repositories/location.repo', () => ({
+  LocationRepo: {
+    findPrimaryByBusinessId: vi.fn(),
+  },
+}))
+
 import { StaffRepo } from '@/repositories/staff.repo'
 import { BusinessRepo } from '@/repositories/business.repo'
+import { LocationRepo } from '@/repositories/location.repo'
 
 const mockStaffRepo = vi.mocked(StaffRepo)
 const mockBusinessRepo = vi.mocked(BusinessRepo)
+const mockLocationRepo = vi.mocked(LocationRepo)
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -77,6 +85,7 @@ describe('StaffService.list', () => {
     expect(result[0]).toEqual({
       id: 'staff-1',
       businessId: 'biz-1',
+      locationId: null,
       name: 'Alice',
       role: 'Therapist',
       photoUrl: null,
@@ -91,9 +100,11 @@ describe('StaffService.list', () => {
 describe('StaffService.create', () => {
   it('creates staff and inserts service IDs', async () => {
     mockBusinessRepo.findIdBySlug.mockResolvedValue('biz-1')
+    mockLocationRepo.findPrimaryByBusinessId.mockResolvedValue({ id: 'loc-1' })
     mockStaffRepo.insert.mockResolvedValue({
       id: 'staff-new',
       business_id: 'biz-1',
+      location_id: 'loc-1',
       name: 'Charlie',
       role: 'Senior',
       photo_url: null,
@@ -111,6 +122,7 @@ describe('StaffService.create', () => {
     expect(result.serviceIds).toEqual(['svc-1', 'svc-2'])
     expect(mockStaffRepo.insert).toHaveBeenCalledWith({
       business_id: 'biz-1',
+      location_id: 'loc-1',
       name: 'Charlie',
       role: 'Senior',
       photo_url: null,

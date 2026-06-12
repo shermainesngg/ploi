@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { BusinessService } from '@/services/business.service'
 import { createAuthServerClient } from '@/lib/supabase-server'
+import { createServerClient } from '@/lib/supabase'
 import { PLOI_ACTIVE_ROLE } from '@/lib/auth'
 
 const ONE_YEAR = 60 * 60 * 24 * 365
@@ -15,6 +16,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       name, category, location, description, email, services,
+      additionalLocations,
       openingHours, contactPhone, contactWhatsapp, contactLine, photos,
     } = body
 
@@ -45,11 +47,20 @@ export async function POST(req: NextRequest) {
 
     const result = await BusinessService.create({
       slug, name, category, location, description, services,
+      additionalLocations: Array.isArray(additionalLocations) ? additionalLocations : undefined,
       email: resolvedEmail,
       authUserId: user?.id,
       openingHours, contactPhone, contactWhatsapp, contactLine,
       photos: Array.isArray(photos) ? photos : undefined,
     })
+
+    if (user?.id) {
+      // A business is never a user — remove any consumer row that may have been
+      // auto-created for this identity (e.g. a layout render between sign-up and
+      // business creation). Best-effort: never let cleanup fail the request.
+      const admin = createServerClient()
+      await admin.from('consumers').delete().eq('auth_user_id', user.id)
+    }
 
     const res = NextResponse.json(result, { status: 201 })
     if (user) {

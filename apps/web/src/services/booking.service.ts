@@ -1,11 +1,15 @@
 import { BookingRepo } from '@/repositories/booking.repo'
 import { LinkRepo } from '@/repositories/link.repo'
+import { LocationRepo } from '@/repositories/location.repo'
 import { AttributionService } from './attribution.service'
+import { NotificationService } from './notification.service'
 
 export interface CreateBookingInput {
   serviceId: string
   businessId: string
+  locationId?: string | null
   linkId?: string | null
+  contentId?: string | null
   staffId?: string | null
   customerName: string
   customerContact: string
@@ -18,6 +22,15 @@ export interface CreateBookingInput {
 
 export const BookingService = {
   async create(input: CreateBookingInput) {
+    // Always attribute a booking to a branch. If the caller didn't specify one
+    // (e.g. flows that pre-date the location picker), fall back to the
+    // business's primary location.
+    let locationId = input.locationId ?? null
+    if (!locationId) {
+      const primary = await LocationRepo.findPrimaryByBusinessId(input.businessId)
+      locationId = primary?.id ?? null
+    }
+
     const attribution = await AttributionService.resolve({
       customerPhone: input.customerPhone ?? input.customerContact ?? null,
       businessId: input.businessId,
@@ -32,7 +45,9 @@ export const BookingService = {
     const booking = await BookingRepo.insert({
       service_id: input.serviceId,
       business_id: input.businessId,
+      location_id: locationId,
       link_id: attribution.effectiveLinkId,
+      content_id: input.contentId ?? null,
       staff_id: input.staffId ?? null,
       customer_name: input.customerName,
       customer_contact: input.customerContact,
@@ -62,6 +77,11 @@ export const BookingService = {
 
     if (attribution.effectiveLinkId) {
       await AttributionService.recordBookingEvent(attribution.effectiveLinkId, booking.id)
+    }
+
+    // Walk-ins are entered by the business itself — no need to tell them.
+    if (!input.isWalkin) {
+      await NotificationService.notifyBusinessNewBooking(booking.id)
     }
 
     return { id: booking.id, status: booking.status }

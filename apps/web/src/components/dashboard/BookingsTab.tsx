@@ -33,7 +33,7 @@ export default function BookingsTab({ bookings, status, staff, businessSlug }: P
           return (
             <Link
               key={s.key}
-              href={`/dashboard/business/${businessSlug}?tab=bookings&status=${s.key}`}
+              href={`?tab=bookings&status=${s.key}`}
               scroll={false}
               className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-micro font-semibold border transition-colors ${
                 active ? 'bg-bridge-ink text-bridge-ink-foreground border-bridge-ink' : 'bg-bridge-card border-bridge-border text-bridge-secondary hover:border-bridge-border-strong'

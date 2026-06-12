@@ -1,4 +1,6 @@
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase'
+import { BusinessRepo } from '@/repositories/business.repo'
+import { LocationRepo } from '@/repositories/location.repo'
 import {
   businesses as seedBusinesses,
   creators as seedCreators,
@@ -16,7 +18,7 @@ export const BusinessService = {
     const db = createServerClient()
     const { data } = await db
       .from('businesses')
-      .select('*, services(*)')
+      .select('*, services(*), locations(*)')
       .eq('is_active', true)
       .order('created_at', { ascending: false })
     return (data ?? []).map(rowToBusiness)
@@ -32,11 +34,26 @@ export const BusinessService = {
     const db = createServerClient()
     const { data } = await db
       .from('businesses')
-      .select('*, services(*)')
+      .select('*, services(*), locations(*)')
       .eq('is_active', true)
       .or(`name.ilike.%${query}%,slug.ilike.%${query}%`)
       .limit(10)
     return (data ?? []).map(rowToBusiness)
+  },
+
+  // Direct (non-creator) lookup for organic discovery — no attribution.
+  async getBySlug(businessSlug: string): Promise<Business | null> {
+    if (!isSupabaseConfigured()) {
+      return seedBusinesses[businessSlug] ?? null
+    }
+    const db = createServerClient()
+    const { data: bizRow } = await db
+      .from('businesses')
+      .select('*, services(*), locations(*)')
+      .eq('slug', businessSlug)
+      .eq('is_active', true)
+      .single()
+    return bizRow ? rowToBusiness(bizRow) : null
   },
 
   async getPageData(creatorSlug: string, businessSlug: string) {
@@ -55,7 +72,7 @@ export const BusinessService = {
     const [{ data: bizRow }, { data: creatorRow }] = await Promise.all([
       db
         .from('businesses')
-        .select('*, services(*)')
+        .select('*, services(*), locations(*)')
         .eq('slug', businessSlug)
         .eq('is_active', true)
         .single(),
@@ -92,6 +109,8 @@ export const BusinessService = {
     name: string
     category: string
     location: string
+    /** Extra branch addresses captured at onboarding (beyond the primary). */
+    additionalLocations?: string[]
     description: string
     email?: string
     coverPhotoUrl?: string
@@ -115,6 +134,66 @@ export const BusinessService = {
     const coverPhoto = data.coverPhotoUrl ?? photos[0] ?? null
 
     const db = createServerClient()
+
+    // Slugs are shared across the /[slug] namespace — a business can't claim a
+    // slug already taken by a creator.
+    const { data: creatorClash } = await db
+      .from('creators')
+      .select('id')
+      .eq('slug', data.slug)
+      .maybeSingle()
+    if (creatorClash) {
+      throw new Error('That name is already taken by a creator on PLOI. Please choose a different name.')
+    }
+
+    // Business identities are exclusive — an account or email already used as
+    // a creator (or as a customer with booking history) can't sign up a
+    // business. An EMPTY consumer row doesn't count: one is auto-minted for any
+    // signed-in visitor (including mid business-signup), and the businesses API
+    // route deletes it again after creation.
+    async function consumerHasBookings(consumerId: string): Promise<boolean> {
+      const { count } = await db
+        .from('bookings')
+        .select('id', { count: 'exact', head: true })
+        .eq('consumer_id', consumerId)
+      return (count ?? 0) > 0
+    }
+    if (data.authUserId) {
+      const { data: creByUser } = await db
+        .from('creators')
+        .select('id')
+        .eq('auth_user_id', data.authUserId)
+        .maybeSingle()
+      if (creByUser) {
+        throw new Error('This account is already a creator on PLOI. Use a separate account for your business.')
+      }
+      const { data: conByUser } = await db
+        .from('consumers')
+        .select('id')
+        .eq('auth_user_id', data.authUserId)
+        .maybeSingle()
+      if (conByUser && (await consumerHasBookings(conByUser.id))) {
+        throw new Error('This account is already a customer on PLOI. Use a separate account for your business.')
+      }
+    }
+    if (data.email) {
+      const { data: creByEmail } = await db
+        .from('creators')
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle()
+      if (creByEmail) {
+        throw new Error('That email already belongs to a creator on PLOI. Use a separate email for your business.')
+      }
+      const { data: conByEmail } = await db
+        .from('consumers')
+        .select('id')
+        .eq('email', data.email)
+        .maybeSingle()
+      if (conByEmail && (await consumerHasBookings(conByEmail.id))) {
+        throw new Error('That email already belongs to a customer account on PLOI. Use a separate email for your business.')
+      }
+    }
 
     const { data: biz, error: bizErr } = await db
       .from('businesses')
@@ -150,7 +229,91 @@ export const BusinessService = {
     const { error: svcErr } = await db.from('services').insert(serviceRows)
     if (svcErr) throw new Error(svcErr.message)
 
+    // Every business starts with one primary location, mirrored from the
+    // headline fields above. Secondary branches are added from the dashboard.
+    const locationRows = [
+      {
+        business_id: biz.id,
+        name: null,
+        address: data.location,
+        opening_hours: data.openingHours ?? null,
+        contact_phone: data.contactPhone ?? null,
+        contact_whatsapp: data.contactWhatsapp ?? null,
+        contact_line: data.contactLine ?? null,
+        is_primary: true,
+        sort_order: 0,
+      },
+      // Extra branches captured at onboarding — addresses only; the owner can
+      // flesh out per-branch hours/contacts from the dashboard Locations tab.
+      ...(data.additionalLocations ?? [])
+        .map((a) => a.trim())
+        .filter((a) => a.length > 0)
+        .map((address, i) => ({
+          business_id: biz.id,
+          name: null,
+          address,
+          opening_hours: null,
+          contact_phone: null,
+          contact_whatsapp: null,
+          contact_line: null,
+          is_primary: false,
+          sort_order: i + 1,
+        })),
+    ]
+
+    const { error: locErr } = await db.from('locations').insert(locationRows)
+    if (locErr) throw new Error(locErr.message)
+
     return { slug: biz.slug, id: biz.id }
+  },
+
+  /**
+   * Update the editable profile fields from the dashboard Settings tab.
+   * Slug, email, auth linkage, Stripe, and services are not touched here.
+   * The cover photo follows the first gallery photo (same rule as create).
+   */
+  async updateSettings(slug: string, data: {
+    name: string
+    category: string
+    location: string
+    description: string
+    contactPhone?: string
+    contactWhatsapp?: string
+    contactLine?: string
+    photos: string[]
+    openingHours?: Record<string, string>
+  }) {
+    if (!isSupabaseConfigured()) {
+      throw new Error('Supabase not configured. Add env vars to .env.local to save data.')
+    }
+
+    const photos = data.photos.filter((p) => p.trim().length > 0)
+
+    await BusinessRepo.updateBySlug(slug, {
+      name: data.name,
+      category: data.category,
+      location: data.location,
+      description: data.description,
+      cover_photo_url: photos[0] ?? null,
+      photos,
+      opening_hours: data.openingHours ?? null,
+      contact_phone: data.contactPhone?.trim() || null,
+      contact_whatsapp: data.contactWhatsapp?.trim() || null,
+      contact_line: data.contactLine?.trim() || null,
+    })
+
+    // Keep the primary location in sync with the headline fields. Secondary
+    // branches manage their own address/hours/contacts independently.
+    const businessId = await BusinessRepo.findIdBySlug(slug)
+    if (businessId) {
+      await LocationRepo.updatePrimaryByBusinessId(businessId, {
+        address: data.location,
+        opening_hours: data.openingHours ?? null,
+        contact_phone: data.contactPhone?.trim() || null,
+        contact_whatsapp: data.contactWhatsapp?.trim() || null,
+        contact_line: data.contactLine?.trim() || null,
+      })
+    }
   },
 
   async getStripeStatus(businessSlug: string) {

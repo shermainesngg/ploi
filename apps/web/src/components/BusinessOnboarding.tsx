@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import {
   Plus, Trash2, ChevronRight, Check, ArrowLeft, Clock,
-  Phone, MessageCircle, Image as ImageIcon, Copy,
+  Phone, MessageCircle, Copy, Upload, Loader2, Star,
 } from 'lucide-react'
 import type { DayKey } from '@/lib/types'
 import { signUpWithPassword } from '@/lib/auth-client'
@@ -20,6 +20,25 @@ interface ServiceDraft {
 }
 
 type Step = 'info' | 'services' | 'details' | 'done'
+
+/** Structured primary-location fields. Composed into a single address string on submit. */
+interface Address {
+  street: string
+  city: string
+  state: string
+  postal: string
+  country: string
+}
+
+const EMPTY_ADDRESS: Address = { street: '', city: '', state: '', postal: '', country: '' }
+
+/** Join the filled address parts into one display string for storage. */
+function composeAddress(a: Address): string {
+  return [a.street, a.city, a.state, a.postal, a.country]
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .join(', ')
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -48,25 +67,58 @@ function uid() {
 
 // ── Step bar ──────────────────────────────────────────────────────────────────
 
-function StepBar({ step }: { step: Step }) {
-  const steps: Step[] = ['info', 'services', 'details']
-  const idx = steps.indexOf(step)
+const STEP_ORDER: Step[] = ['info', 'services', 'details']
+
+function StepBar({
+  step,
+  reachedIdx,
+  onStepClick,
+}: {
+  step: Step
+  /** Furthest step reached — only steps at/before this are navigable. */
+  reachedIdx: number
+  onStepClick: (s: Step) => void
+}) {
+  const idx = STEP_ORDER.indexOf(step)
   const labels = ['About', 'Services', 'Details']
 
   return (
     <div className="flex items-center gap-2 mb-8">
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="flex items-center gap-2">
+      {[0, 1, 2].map((i) => {
+        const clickable = i <= reachedIdx && i !== idx
+        const circle = (
           <div
-            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-              i < idx ? 'bg-bridge-accent text-white' : i === idx ? 'bg-bridge-accent text-white' : 'bg-bridge-border text-bridge-muted'
-            }`}
+            className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+              i <= idx ? 'bg-bridge-accent text-white' : 'bg-bridge-border text-bridge-muted'
+            } ${clickable ? 'group-hover:ring-2 group-hover:ring-bridge-accent/30' : ''}`}
           >
             {i < idx ? <Check size={13} strokeWidth={3} /> : i + 1}
           </div>
-          {i < 2 && <div className={`h-0.5 w-6 rounded-full ${i < idx ? 'bg-bridge-accent' : 'bg-bridge-border'}`} />}
-        </div>
-      ))}
+        )
+        return (
+          <div key={i} className="flex items-center gap-2">
+            {clickable ? (
+              <button
+                type="button"
+                onClick={() => onStepClick(STEP_ORDER[i])}
+                aria-label={`Go to ${labels[i]}`}
+                className="group relative rounded-full cursor-pointer"
+              >
+                {circle}
+                <span
+                  role="tooltip"
+                  className="pointer-events-none absolute left-1/2 -top-8 -translate-x-1/2 whitespace-nowrap rounded-md bg-bridge-ink px-2 py-1 text-[11px] font-semibold text-bridge-ink-foreground opacity-0 shadow-card transition-opacity duration-150 group-hover:opacity-100"
+                >
+                  {labels[i]}
+                </span>
+              </button>
+            ) : (
+              circle
+            )}
+            {i < 2 && <div className={`h-0.5 w-6 rounded-full ${i < idx ? 'bg-bridge-accent' : 'bg-bridge-border'}`} />}
+          </div>
+        )
+      })}
       <span className="ml-2 text-sm text-bridge-muted">{labels[idx] ?? ''}</span>
     </div>
   )
@@ -75,19 +127,32 @@ function StepBar({ step }: { step: Step }) {
 // ── Step 1: Info ─────────────────────────────────────────────────────────────
 
 function InfoStep({
-  name, setName, category, setCategory, location, setLocation,
+  name, setName, category, setCategory, address, setAddress,
+  additionalLocations, setAdditionalLocations,
   description, setDescription, email, setEmail, password, setPassword, onNext,
 }: {
   name: string; setName: (v: string) => void
   category: string; setCategory: (v: string) => void
-  location: string; setLocation: (v: string) => void
+  address: Address; setAddress: (v: Address) => void
+  additionalLocations: string[]; setAdditionalLocations: (v: string[]) => void
   description: string; setDescription: (v: string) => void
   email: string; setEmail: (v: string) => void
   password: string; setPassword: (v: string) => void
   onNext: () => void
 }) {
   const canContinue =
-    name.trim() && category && location.trim() && email.trim() && password.length >= 8
+    name.trim() && category && address.street.trim() && address.city.trim() &&
+    email.trim() && password.length >= 8
+
+  const setField = (k: keyof Address, v: string) => setAddress({ ...address, [k]: v })
+  const inputCls =
+    'w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base'
+
+  const addLocation = () => setAdditionalLocations([...additionalLocations, ''])
+  const updateLocation = (i: number, v: string) =>
+    setAdditionalLocations(additionalLocations.map((l, idx) => (idx === i ? v : l)))
+  const removeLocation = (i: number) =>
+    setAdditionalLocations(additionalLocations.filter((_, idx) => idx !== i))
 
   return (
     <div className="space-y-5">
@@ -124,11 +189,64 @@ function InfoStep({
         <label className="block text-sm font-semibold text-bridge-text mb-1.5">
           Location <span className="text-bridge-accent">*</span>
         </label>
-        <input
-          type="text" value={location} onChange={(e) => setLocation(e.target.value)}
-          placeholder="e.g. Sukhumvit Soi 24, Bangkok"
-          className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
-        />
+
+        <div className="space-y-2">
+          <input
+            type="text" value={address.street} onChange={(e) => setField('street', e.target.value)}
+            placeholder="Street address (e.g. 24 Sukhumvit Soi 24)"
+            className={inputCls}
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text" value={address.city} onChange={(e) => setField('city', e.target.value)}
+              placeholder="City *"
+              className={inputCls}
+            />
+            <input
+              type="text" value={address.state} onChange={(e) => setField('state', e.target.value)}
+              placeholder="State / Province"
+              className={inputCls}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text" value={address.postal} onChange={(e) => setField('postal', e.target.value)}
+              placeholder="Postal code"
+              className={inputCls}
+            />
+            <input
+              type="text" value={address.country} onChange={(e) => setField('country', e.target.value)}
+              placeholder="Country"
+              className={inputCls}
+            />
+          </div>
+        </div>
+
+        {additionalLocations.map((loc, i) => (
+          <div key={i} className="flex gap-2 mt-2">
+            <input
+              type="text" value={loc} onChange={(e) => updateLocation(i, e.target.value)}
+              placeholder={`Another location (branch ${i + 2})`}
+              className="flex-1 border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-base"
+            />
+            <button
+              type="button" onClick={() => removeLocation(i)} aria-label="Remove location"
+              className="flex-shrink-0 px-3 rounded-xl border border-bridge-border text-bridge-border-strong hover:text-bridge-accent hover:border-bridge-accent-light transition-colors"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        ))}
+
+        <button
+          type="button" onClick={addLocation}
+          className="flex items-center gap-1.5 mt-2 text-sm font-semibold text-bridge-accent hover:text-bridge-accent-dark transition-colors"
+        >
+          <Plus size={14} /> Add another location
+        </button>
+        <p className="text-xs text-bridge-muted mt-1.5">
+          Have more than one branch? Add them here — you can fine-tune each from the dashboard later.
+        </p>
       </div>
 
       <div>
@@ -294,6 +412,9 @@ interface HoursDraft {
   end: string
 }
 
+/** Max gallery photos collected during onboarding (matches the Settings limit). */
+const MAX_PHOTOS = 5
+
 const DEFAULT_HOURS: Record<DayKey, HoursDraft> = {
   mon: { open: true, start: '10:00', end: '20:00' },
   tue: { open: true, start: '10:00', end: '20:00' },
@@ -340,14 +461,39 @@ function DetailsStep({
     setHours({ ...hours, [d]: { ...hours[d], ...change } })
   }
 
-  function updatePhoto(i: number, url: string) {
-    const next = [...photos]
-    next[i] = url
-    setPhotos(next)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [dragOver, setDragOver] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+
+  async function uploadPhotos(files: File[]) {
+    if (uploading) return
+    const remaining = MAX_PHOTOS - photos.length
+    const batch = files.filter((f) => f.type.startsWith('image/')).slice(0, remaining)
+    if (batch.length === 0) return
+    setUploading(true)
+    setPhotoError(null)
+    const uploaded: string[] = []
+    try {
+      for (const file of batch) {
+        const fd = new FormData()
+        fd.append('file', file)
+        const res = await fetch('/api/businesses/onboarding-photo', { method: 'POST', body: fd })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? 'Upload failed')
+        uploaded.push(data.url)
+        setPhotos([...photos, ...uploaded])
+      }
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
+      if (fileInput.current) fileInput.current.value = ''
+    }
   }
-  function addPhoto() {
-    if (photos.length >= 5) return
-    setPhotos([...photos, ''])
+  function makeCover(i: number) {
+    if (i === 0) return
+    setPhotos([photos[i], ...photos.filter((_, idx) => idx !== i)])
   }
   function removePhoto(i: number) {
     setPhotos(photos.filter((_, idx) => idx !== i))
@@ -445,31 +591,73 @@ function DetailsStep({
       {/* Photos */}
       <div className="mb-6">
         <label className="block text-sm font-semibold text-bridge-text mb-1">Photos</label>
-        <p className="text-xs text-bridge-muted mb-2">Up to 5 URLs. The first becomes your cover photo.</p>
-        <div className="space-y-2">
-          {photos.map((p, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <ImageIcon size={13} className="text-bridge-muted flex-shrink-0" />
-              <input
-                type="url" value={p} onChange={(e) => updatePhoto(i, e.target.value)}
-                placeholder="https://..."
-                autoCapitalize="none" autoCorrect="off"
-                className="flex-1 min-w-0 border border-bridge-border rounded-lg px-3 py-2 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-xs font-mono"
-              />
-              <button onClick={() => removePhoto(i)} className="text-bridge-border-strong hover:text-bridge-accent flex-shrink-0">
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
-        {photos.length < 5 && (
-          <button
-            onClick={addPhoto}
-            className="w-full mt-2 py-2 rounded-xl border-2 border-dashed border-bridge-border text-bridge-muted text-xs font-medium hover:border-bridge-accent-light hover:text-bridge-accent flex items-center justify-center gap-1"
-          >
-            <Plus size={13} /> Add a photo
-          </button>
+        <p className="text-xs text-bridge-muted mb-2">Up to {MAX_PHOTOS}. The first becomes your cover photo.</p>
+        {photos.length > 0 && (
+          <div className="grid grid-cols-3 gap-2 mb-2">
+            {photos.map((p, i) => (
+              <div key={`${p}-${i}`} className="relative aspect-square rounded-xl overflow-hidden border border-bridge-border/60">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p} alt="" className="absolute inset-0 w-full h-full object-cover" />
+                {i === 0 && (
+                  <span className="absolute top-1.5 left-1.5 text-[9px] font-bold uppercase bg-bridge-ink-static/80 text-white px-1.5 py-0.5 rounded-full">
+                    Cover
+                  </span>
+                )}
+                <div className="absolute bottom-1.5 right-1.5 flex gap-1">
+                  {i !== 0 && (
+                    <button
+                      type="button" onClick={() => makeCover(i)} title="Make cover"
+                      className="w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+                    >
+                      <Star size={12} />
+                    </button>
+                  )}
+                  <button
+                    type="button" onClick={() => removePhoto(i)} title="Remove"
+                    className="w-7 h-7 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-red-600"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
+        {photos.length < MAX_PHOTOS && (
+          <>
+            <input
+              ref={fileInput}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) uploadPhotos(Array.from(e.target.files))
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => fileInput.current?.click()}
+              disabled={uploading}
+              onDragOver={(e) => { e.preventDefault(); if (!uploading) setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={(e) => {
+                e.preventDefault()
+                setDragOver(false)
+                if (e.dataTransfer.files.length) uploadPhotos(Array.from(e.dataTransfer.files))
+              }}
+              className={`w-full py-2.5 rounded-xl border-2 border-dashed text-xs font-medium flex items-center justify-center gap-1.5 disabled:opacity-50 transition-colors ${
+                dragOver
+                  ? 'border-bridge-accent bg-bridge-accent-wash text-bridge-accent'
+                  : 'border-bridge-border text-bridge-muted hover:border-bridge-accent-light hover:text-bridge-accent'
+              }`}
+            >
+              {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+              {uploading ? 'Uploading…' : dragOver ? 'Drop to upload' : 'Upload or drag photos here'}
+            </button>
+          </>
+        )}
+        {photoError && <p className="text-xs text-red-600 mt-2">{photoError}</p>}
       </div>
 
       {error && (
@@ -501,17 +689,43 @@ function DoneScreen({ slug }: { slug: string }) {
         Your booking page is ready. Share it with a creator to start getting attributed bookings.
       </p>
 
-      <div className="w-full bg-bridge-bg rounded-2xl p-5 text-left mb-8">
+      <div className="w-full bg-bridge-bg rounded-2xl p-5 text-left mb-5">
         <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-2">Your page slug</p>
         <p className="font-mono text-bridge-accent font-semibold text-sm break-all">{slug}</p>
         <p className="text-bridge-muted text-xs mt-3">A creator can link to you at: <span className="text-bridge-secondary">{url}</span></p>
       </div>
 
+      {/* Next steps — set up the rest from the dashboard */}
+      <div className="w-full bg-bridge-bg rounded-2xl p-5 text-left mb-8">
+        <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-3">Next, from your dashboard</p>
+        <div className="space-y-2.5">
+          <div className="flex gap-2.5 items-start">
+            <span className="font-mono text-xs text-bridge-accent mt-0.5">1</span>
+            <p className="text-sm text-bridge-secondary">
+              <span className="font-semibold text-bridge-heading">Connect payments</span> — accept cards with Stripe so bookings can be paid online.
+            </p>
+          </div>
+          <div className="flex gap-2.5 items-start">
+            <span className="font-mono text-xs text-bridge-accent mt-0.5">2</span>
+            <p className="text-sm text-bridge-secondary">
+              <span className="font-semibold text-bridge-heading">Add your staff</span> — set who does what and when, so customers book the right person.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <Link
-        href={`/${slug}`}
+        href={`/dashboard/business/${slug}`}
         className="w-full py-4 rounded-2xl bg-bridge-ink text-bridge-ink-foreground font-semibold text-base hover:bg-bridge-ink-hover transition-all flex items-center justify-center gap-2"
       >
-        Preview my booking page →
+        Open my dashboard →
+      </Link>
+
+      <Link
+        href={`/${slug}`}
+        className="w-full mt-3 py-3.5 rounded-2xl border border-bridge-border text-bridge-secondary font-semibold text-sm hover:border-bridge-border-strong hover:text-bridge-heading transition-all flex items-center justify-center"
+      >
+        Preview my booking page
       </Link>
 
       <div className="mt-4 flex gap-4 text-sm">
@@ -527,10 +741,18 @@ function DoneScreen({ slug }: { slug: string }) {
 
 export default function BusinessOnboarding() {
   const [step, setStep] = useState<Step>('info')
+  // Furthest step the user has advanced to — gates the clickable breadcrumb so
+  // they can revisit completed steps but not skip ahead past validation.
+  const [reachedIdx, setReachedIdx] = useState(0)
+  function go(s: Step) {
+    setStep(s)
+    setReachedIdx((r) => Math.max(r, STEP_ORDER.indexOf(s)))
+  }
 
   const [name, setName] = useState('')
   const [category, setCategory] = useState('')
-  const [location, setLocation] = useState('')
+  const [address, setAddress] = useState<Address>(EMPTY_ADDRESS)
+  const [additionalLocations, setAdditionalLocations] = useState<string[]>([])
   const [description, setDescription] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -543,7 +765,7 @@ export default function BusinessOnboarding() {
   const [contactPhone, setContactPhone] = useState('')
   const [contactWhatsapp, setContactWhatsapp] = useState('')
   const [contactLine, setContactLine] = useState('')
-  const [photos, setPhotos] = useState<string[]>([''])
+  const [photos, setPhotos] = useState<string[]>([])
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -573,7 +795,8 @@ export default function BusinessOnboarding() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name, category, location, description, email,
+          name, category, location: composeAddress(address), description, email,
+          additionalLocations: additionalLocations.map((l) => l.trim()).filter((l) => l.length > 0),
           openingHours: buildOpeningHours(),
           contactPhone: contactPhone.trim() || undefined,
           contactWhatsapp: contactWhatsapp.trim() || undefined,
@@ -616,17 +839,18 @@ export default function BusinessOnboarding() {
           )}
         </div>
 
-        {step !== 'done' && <StepBar step={step} />}
+        {step !== 'done' && <StepBar step={step} reachedIdx={reachedIdx} onStepClick={go} />}
 
         {step === 'info' && (
           <InfoStep
             name={name} setName={setName}
             category={category} setCategory={setCategory}
-            location={location} setLocation={setLocation}
+            address={address} setAddress={setAddress}
+            additionalLocations={additionalLocations} setAdditionalLocations={setAdditionalLocations}
             description={description} setDescription={setDescription}
             email={email} setEmail={setEmail}
             password={password} setPassword={setPassword}
-            onNext={() => setStep('services')}
+            onNext={() => go('services')}
           />
         )}
 
@@ -634,7 +858,7 @@ export default function BusinessOnboarding() {
           <ServicesStep
             services={services} setServices={setServices}
             onBack={() => setStep('info')}
-            onNext={() => setStep('details')}
+            onNext={() => go('details')}
           />
         )}
 

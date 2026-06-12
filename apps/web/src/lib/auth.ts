@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { createServerClient, isSupabaseConfigured } from './supabase'
 import { createAuthServerClient } from './supabase-server'
@@ -54,8 +55,13 @@ export async function getActiveRoleCookie(): Promise<UserRole | null> {
 /**
  * Get the current authenticated user, all the roles they own, and the active role.
  * Returns null if not logged in or Supabase not configured.
+ *
+ * Wrapped in React `cache()` so repeated calls within a single server render
+ * (middleware aside — e.g. a page + its `generateMetadata` + nested components)
+ * share one auth round-trip + DB lookup instead of re-querying Supabase each
+ * time. This is a major navigation-latency win on auth-gated pages.
  */
-export async function getCurrentUser(): Promise<AppUser | null> {
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<AppUser | null> {
   if (!isSupabaseConfigured()) return null
 
   const auth = await createAuthServerClient()
@@ -87,12 +93,31 @@ export async function getCurrentUser(): Promise<AppUser | null> {
   if (business) roles.push('business')
   if (consumer) roles.push('consumer')
 
-  // Auth user with no record yet — create a consumer row so they always have a role.
+  // Business display fields may come from the linked-by-email path below.
+  let businessRow: { slug: string; name: string } | null = business
+
   let consumerName = consumer?.name as string | null | undefined
   if (roles.length === 0) {
-    await admin.from('consumers').insert({ auth_user_id: user.id, email: user.email })
-    roles.push('consumer')
-    consumerName = null
+    // No record yet. A BUSINESS identity must never get a consumer row — a business
+    // created during onboarding may not be linked yet (email-confirmation flow), so
+    // resolve it by email and link it instead of minting a consumer. Only a genuine
+    // B2C identity (no business by email) gets the consumer fallback.
+    const { data: bizByEmail } = await admin
+      .from('businesses')
+      .select('id, slug, name, auth_user_id')
+      .eq('email', user.email)
+      .maybeSingle()
+    if (bizByEmail) {
+      if (!bizByEmail.auth_user_id) {
+        await admin.from('businesses').update({ auth_user_id: user.id }).eq('id', bizByEmail.id)
+      }
+      businessRow = { slug: bizByEmail.slug, name: bizByEmail.name }
+      roles.push('business')
+    } else {
+      await admin.from('consumers').insert({ auth_user_id: user.id, email: user.email })
+      roles.push('consumer')
+      consumerName = null
+    }
   }
 
   // Pick the active role: cookie value if owned, otherwise first by priority.
@@ -109,16 +134,16 @@ export async function getCurrentUser(): Promise<AppUser | null> {
     activeRole,
     role: activeRole,
     creatorSlug: creator?.slug,
-    businessSlug: business?.slug,
+    businessSlug: businessRow?.slug,
     avatarColor: ROLE_AVATAR_COLOR[activeRole],
   }
 
   if (activeRole === 'creator' && creator) {
     base.displayName = creator.display_name
     base.avatarInitials = initialsFromName(creator.display_name)
-  } else if (activeRole === 'business' && business) {
-    base.displayName = business.name
-    base.avatarInitials = business.name.charAt(0).toUpperCase()
+  } else if (activeRole === 'business' && businessRow) {
+    base.displayName = businessRow.name
+    base.avatarInitials = businessRow.name.charAt(0).toUpperCase()
   } else {
     const name = consumerName ?? user.email
     base.displayName = name
@@ -126,7 +151,7 @@ export async function getCurrentUser(): Promise<AppUser | null> {
   }
 
   return base
-}
+})
 
 /**
  * Decide which dashboard a freshly-authenticated user lands on, based purely on the
@@ -134,7 +159,8 @@ export async function getCurrentUser(): Promise<AppUser | null> {
  *
  * Order: last-used role (cookie) if they own it → owned business → owned creator →
  * the customer bookings page as a fallback. Used by both /auth/callback (magic link +
- * OAuth) and /auth/post-login (password sign-in).
+ * OAuth) and /auth/post-login (password sign-in). Businesses land on /business — the
+ * slugless business home, which renders their dashboard.
  */
 export async function pickDashboardPath(
   authUserId: string,
@@ -149,10 +175,28 @@ export async function pickDashboardPath(
   ])
 
   if (lastUsed === 'creator' && cre?.slug) return { path: `/dashboard/creator/${cre.slug}`, role: 'creator' }
-  if (lastUsed === 'business' && biz?.slug) return { path: `/dashboard/business/${biz.slug}`, role: 'business' }
-  if (biz?.slug) return { path: `/dashboard/business/${biz.slug}`, role: 'business' }
+  if (lastUsed === 'business' && biz?.slug) return { path: '/business', role: 'business' }
+  if (biz?.slug) return { path: '/business', role: 'business' }
   if (cre?.slug) return { path: `/dashboard/creator/${cre.slug}`, role: 'creator' }
   return { path: '/bookings', role: null }
+}
+
+/**
+ * True if this auth user (or their email) owns a business record. Business
+ * identities are exclusive — a business can never also join as a creator.
+ * The email fallback covers businesses created during onboarding that haven't
+ * been linked to the auth user yet.
+ */
+export async function ownsBusiness(authUserId: string, email?: string | null): Promise<boolean> {
+  if (!isSupabaseConfigured()) return false
+  const db = createServerClient()
+  const { data: byUser } = await db
+    .from('businesses').select('id').eq('auth_user_id', authUserId).maybeSingle()
+  if (byUser) return true
+  if (!email) return false
+  const { data: byEmail } = await db
+    .from('businesses').select('id').eq('email', email).maybeSingle()
+  return !!byEmail
 }
 
 /**
@@ -170,6 +214,30 @@ export async function linkAuthUserToRecord(
   if (!isSupabaseConfigured()) return null
   const admin = createServerClient()
 
+  // ── Business identities are EXCLUSIVE ─────────────────────────────────────────
+  // A business is never a user: it never owns a consumer (or creator) record.
+  // Resolve the business FIRST — by auth_user_id (returning user) or by email (first
+  // login after onboarding, which we then link) — drop any stray consumer row that
+  // may have been auto-created for this identity, and stop. We never fall through to
+  // ensureConsumer() for a business, which was the bug that re-created a consumer row
+  // on every business login.
+  const { data: linkedBiz } = await admin
+    .from('businesses').select('id').eq('auth_user_id', authUserId).maybeSingle()
+  if (linkedBiz) {
+    await admin.from('consumers').delete().eq('auth_user_id', authUserId)
+    return 'business'
+  }
+  const { data: bizByEmail } = await admin
+    .from('businesses').select('id, auth_user_id').eq('email', email).maybeSingle()
+  if (bizByEmail) {
+    if (!bizByEmail.auth_user_id) {
+      await admin.from('businesses').update({ auth_user_id: authUserId }).eq('id', bizByEmail.id)
+    }
+    await admin.from('consumers').delete().eq('auth_user_id', authUserId)
+    return 'business'
+  }
+
+  // ── B2C identities (consumer / creator) ───────────────────────────────────────
   async function linkCreator(): Promise<UserRole | null> {
     const { data } = await admin
       .from('creators')
@@ -180,18 +248,6 @@ export async function linkAuthUserToRecord(
     if (!data) return null
     await admin.from('creators').update({ auth_user_id: authUserId }).eq('id', data.id)
     return 'creator'
-  }
-
-  async function linkBusiness(): Promise<UserRole | null> {
-    const { data } = await admin
-      .from('businesses')
-      .select('id')
-      .eq('email', email)
-      .is('auth_user_id', null)
-      .maybeSingle()
-    if (!data) return null
-    await admin.from('businesses').update({ auth_user_id: authUserId }).eq('id', data.id)
-    return 'business'
   }
 
   async function ensureConsumer(): Promise<UserRole> {
@@ -209,8 +265,11 @@ export async function linkAuthUserToRecord(
   }
 
   if (hint === 'creator') return (await linkCreator()) ?? (await ensureConsumer())
-  if (hint === 'business') return (await linkBusiness()) ?? (await ensureConsumer())
+  // hint === 'business' but no business record exists for this email is an
+  // inconsistent state (a business account with no business row). Try a creator
+  // link, but never auto-create a consumer for a business intent.
+  if (hint === 'business') return await linkCreator()
 
-  // No hint — legacy behaviour.
-  return (await linkCreator()) ?? (await linkBusiness()) ?? (await ensureConsumer())
+  // No hint — legacy B2C behaviour (business already handled above).
+  return (await linkCreator()) ?? (await ensureConsumer())
 }

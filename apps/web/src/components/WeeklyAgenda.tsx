@@ -7,7 +7,6 @@ import type { AgendaBooking } from '@/services/dashboard.service'
 interface Props {
   bookings: AgendaBooking[]
   weekStart: string  // YYYY-MM-DD (Monday)
-  businessSlug: string
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -19,7 +18,7 @@ function shiftDate(dateStr: string, days: number) {
   return d.toISOString().split('T')[0]
 }
 
-export default function WeeklyAgenda({ bookings, weekStart, businessSlug }: Props) {
+export default function WeeklyAgenda({ bookings, weekStart }: Props) {
   const router = useRouter()
   const today = new Date().toISOString().split('T')[0]
 
@@ -41,10 +40,10 @@ export default function WeeklyAgenda({ bookings, weekStart, businessSlug }: Prop
   const maxBookings = Math.max(1, ...days.map((d) => d.bookings.length))
 
   function nav(toStart: string) {
-    router.push(`/dashboard/business/${businessSlug}?view=week&date=${toStart}`)
+    router.push(`?tab=calendar&view=week&date=${toStart}`)
   }
   function goToDay(date: string) {
-    router.push(`/dashboard/business/${businessSlug}?view=day&date=${date}`)
+    router.push(`?tab=calendar&view=day&date=${date}`)
   }
 
   return (

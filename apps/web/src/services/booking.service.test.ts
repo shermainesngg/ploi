@@ -15,6 +15,12 @@ vi.mock('@/repositories/link.repo', () => ({
   },
 }))
 
+vi.mock('@/repositories/location.repo', () => ({
+  LocationRepo: {
+    findPrimaryByBusinessId: vi.fn(),
+  },
+}))
+
 vi.mock('./attribution.service', () => ({
   AttributionService: {
     resolve: vi.fn(),
@@ -23,16 +29,28 @@ vi.mock('./attribution.service', () => ({
   },
 }))
 
+vi.mock('./notification.service', () => ({
+  NotificationService: {
+    notifyBusinessNewBooking: vi.fn(),
+    notifyCustomerStatusChange: vi.fn(),
+    notifyBusinessCancellation: vi.fn(),
+  },
+}))
+
 import { BookingRepo } from '@/repositories/booking.repo'
 import { LinkRepo } from '@/repositories/link.repo'
+import { LocationRepo } from '@/repositories/location.repo'
 import { AttributionService } from './attribution.service'
 
 const mockBookingRepo = vi.mocked(BookingRepo)
 const mockLinkRepo = vi.mocked(LinkRepo)
+const mockLocationRepo = vi.mocked(LocationRepo)
 const mockAttribution = vi.mocked(AttributionService)
 
 beforeEach(() => {
   vi.clearAllMocks()
+  // Bookings default to the business's primary location when none is passed.
+  mockLocationRepo.findPrimaryByBusinessId.mockResolvedValue({ id: 'loc-primary' })
 })
 
 describe('BookingService.create', () => {
@@ -64,6 +82,7 @@ describe('BookingService.create', () => {
       expect.objectContaining({
         service_id: 'svc-1',
         business_id: 'biz-1',
+        location_id: 'loc-primary',
         link_id: null,
         commission_rate: null,
         is_repeat: false,

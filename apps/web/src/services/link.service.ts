@@ -16,6 +16,8 @@ export interface MyCreatorEntry {
   link: Link
   bookingCount: number
   revenue: number
+  /** Live videos this creator has connected to the business (status active + poster ok). */
+  contentCount: number
 }
 
 export const LinkService = {
@@ -26,7 +28,7 @@ export const LinkService = {
     contentUrl?: string
     platform?: SocialPlatform
     contentThumbnailUrl?: string
-    featuredServiceId?: string | null
+    featuredServiceIds?: string[]
   }) {
     if (!isSupabaseConfigured()) throw new Error('Supabase not configured.')
     const db = createServerClient()
@@ -39,7 +41,10 @@ export const LinkService = {
         content_url: opts.contentUrl ?? null,
         platform: opts.platform ?? null,
         content_thumbnail_url: opts.contentThumbnailUrl ?? null,
-        featured_service_id: opts.featuredServiceId ?? null,
+        featured_service_ids: opts.featuredServiceIds ?? [],
+        // Keep the legacy single column in sync (first featured service) for
+        // backward compatibility with anything still reading it.
+        featured_service_id: opts.featuredServiceIds?.[0] ?? null,
         status: 'pending',
       })
       .select()
@@ -114,7 +119,7 @@ export const LinkService = {
       const sara = seedCreators.glowwithsara
       const link = seedLinks.find((l) => l.businessSlug === businessSlug && l.creatorSlug === 'glowwithsara')
       if (!sara || !link) return []
-      return [{ creator: sara, link, bookingCount: 0, revenue: 0 }]
+      return [{ creator: sara, link, bookingCount: 0, revenue: 0, contentCount: 0 }]
     }
 
     const db = createServerClient()
@@ -145,6 +150,21 @@ export const LinkService = {
           .neq('status', 'declined')
       : { data: [] }
 
+    // Live connected videos per creator — same filters as the public page embeds.
+    const { data: contentRows } = linkIds.length
+      ? await db
+          .from('creator_content')
+          .select('creator_id')
+          .eq('business_id', bizRow.id)
+          .eq('status', 'active')
+          .eq('fetch_status', 'ok')
+      : { data: [] }
+    const contentByCreator = new Map<string, number>()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const c of (contentRows ?? []) as any[]) {
+      contentByCreator.set(c.creator_id, (contentByCreator.get(c.creator_id) ?? 0) + 1)
+    }
+
     const bookingsByLink = new Map<string, { count: number; revenue: number }>()
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for (const b of (bookingRows ?? []) as any[]) {
@@ -165,6 +185,7 @@ export const LinkService = {
           link: rowToLink(r, r.creators.slug, businessSlug),
           bookingCount: stats.count,
           revenue: stats.revenue,
+          contentCount: contentByCreator.get(r.creators.id) ?? 0,
         }
       })
       .filter(Boolean) as MyCreatorEntry[]

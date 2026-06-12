@@ -134,3 +134,115 @@ select {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   PLOI Calendar (Schedule-X) — map the library's --sx-* surface/text/grid
+   tokens onto our bridge-* tokens. Because the bridge-* values themselves flip
+   under `.dark` (on <html>), this single block themes the calendar in BOTH
+   light and dark. The compound `.sx-react-calendar-wrapper .sx__calendar`
+   selector (0,2,0) outranks the library's own `:root` / `.is-dark` defaults.
+   Per-event STATUS colors are intentionally NOT set here — they come from the
+   `calendars` config in PloiCalendar.tsx (the two concerns stay separate).
+   ────────────────────────────────────────────────────────────────────────── */
+.sx-react-calendar-wrapper .sx__calendar {
+  --sx-color-background: var(--bridge-card);
+  --sx-color-on-background: var(--bridge-text);
+
+  --sx-color-surface: var(--bridge-card);
+  --sx-color-surface-bright: var(--bridge-card);
+  --sx-color-surface-dim: var(--bridge-surface);
+  --sx-color-surface-container: var(--bridge-surface);
+  --sx-color-surface-container-low: var(--bridge-card);
+  --sx-color-surface-container-high: var(--bridge-surface);
+  --sx-color-on-surface: var(--bridge-text);
+
+  --sx-color-outline: var(--bridge-border-strong);
+  --sx-color-outline-variant: var(--bridge-border);
+  --sx-color-neutral: var(--bridge-muted);
+  --sx-border: 1px solid var(--bridge-border);
+  --sx-internal-color-text: var(--bridge-text);
+  --sx-internal-color-light-gray: var(--bridge-border);
+
+  /* Today-marker / date-picker selection — keep on-palette (ink), not the
+     library's default blue. Event status colors are unaffected (set per-event). */
+  --sx-color-primary: var(--bridge-heading);
+  --sx-color-on-primary: var(--bridge-bg);
+  --sx-color-primary-container: var(--bridge-surface);
+  --sx-color-on-primary-container: var(--bridge-heading);
+
+  border-radius: 1rem;
+  overflow: hidden;
+}
+
+/* Header chrome — brand typography + softer nav buttons. */
+.sx-react-calendar-wrapper .sx__range-heading {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--bridge-heading);
+}
+.sx-react-calendar-wrapper .sx__today-button,
+.sx-react-calendar-wrapper .sx__view-selection-selected-item {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  border-radius: 9px;
+}
+.sx-react-calendar-wrapper .sx__chevron-wrapper { border-radius: 9px; }
+
+/* Weekday / day-name labels — quiet, uppercase, tracked. */
+.sx-react-calendar-wrapper .sx__week-grid__day-name,
+.sx-react-calendar-wrapper .sx__month-grid-day__header-day-name,
+.sx-react-calendar-wrapper .sx__month-agenda-day-name {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--bridge-muted);
+}
+
+/* Events — rounded, lifted, with a clear hover so the grid feels alive. */
+.sx-react-calendar-wrapper .sx__time-grid-event,
+.sx-react-calendar-wrapper .sx__date-grid-event,
+.sx-react-calendar-wrapper .sx__month-grid-event,
+.sx-react-calendar-wrapper .sx__month-agenda-event {
+  border-radius: 9px;
+  border: none;
+  box-shadow: 0 1px 2px rgb(13 17 23 / 0.06);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+}
+.sx-react-calendar-wrapper .sx__time-grid-event:hover,
+.sx-react-calendar-wrapper .sx__month-grid-event:hover,
+.sx-react-calendar-wrapper .sx__month-agenda-event:hover {
+  box-shadow: 0 6px 16px rgb(13 17 23 / 0.16);
+  filter: brightness(1.03) saturate(1.05);
+  z-index: 6;
+}
+.sx-react-calendar-wrapper .sx__time-grid-event { cursor: pointer; }
+
+/* Today — warm highlight on the date marker + a faint column wash. */
+.sx-react-calendar-wrapper .sx__week-grid__date--is-today,
+.sx-react-calendar-wrapper .sx__month-grid-day__header-date.sx__is-today {
+  background-color: var(--bridge-accent);
+  color: #fff;
+  border-radius: 9999px;
+}
+.sx-react-calendar-wrapper .sx__month-grid-day.sx__is-today {
+  background-color: var(--bridge-accent-wash);
+}
+
+/* "Now" line — a single thin coral highlight (an allowed accent use). */
+.sx-react-calendar-wrapper .sx__current-time-indicator,
+.sx-react-calendar-wrapper .sx__current-time-indicator-full-week {
+  background-color: var(--bridge-accent);
+}
+.sx-react-calendar-wrapper .sx__current-time-indicator::before {
+  background-color: var(--bridge-accent);
+  box-shadow: 0 0 0 3px var(--bridge-accent-wash);
+}
+
+/* Slim, on-palette scrollbar for the time grid. */
+.sx-react-calendar-wrapper .sx__week-grid__scrollable::-webkit-scrollbar { width: 8px; height: 8px; }
+.sx-react-calendar-wrapper .sx__week-grid__scrollable::-webkit-scrollbar-thumb {
+  background: var(--bridge-border-strong);
+  border-radius: 9999px;
+}

@@ -37,6 +37,7 @@ function makeItem(id: string, externalId: string): ContentWithCreator {
       posterExpiresAt: null,
       status: 'active',
       sortOrder: 0,
+      clickCount: 0,
       createdAt: null,
     },
     creator: { slug: 'ava', handle: '@ava', displayName: 'Ava', avatarInitials: 'A', avatarColor: '#000' },

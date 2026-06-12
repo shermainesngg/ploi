@@ -43,8 +43,8 @@ export default function AddPlaceModal({
   const [selectedBusiness, setSelectedBusiness] = useState<BusinessSearchResult | null>(null)
   const [contentUrl, setContentUrl] = useState('')
   const [platform, setPlatform] = useState<SocialPlatform>('tiktok')
-  const [thumbnailUrl, setThumbnailUrl] = useState('')
-  const [featuredServiceId, setFeaturedServiceId] = useState<string>('')
+  const [featuredServiceIds, setFeaturedServiceIds] = useState<string[]>([])
+  const [placeOnly, setPlaceOnly] = useState(false)
   const [businessServices, setBusinessServices] = useState<Array<{ id: string; name: string; price: number; duration: number }>>([])
 
   const [loading, setLoading] = useState(false)
@@ -52,7 +52,7 @@ export default function AddPlaceModal({
 
   // When the user picks a business, fetch its services for the featured-service dropdown
   useEffect(() => {
-    if (!selectedBusiness) { setBusinessServices([]); setFeaturedServiceId(''); return }
+    if (!selectedBusiness) { setBusinessServices([]); setFeaturedServiceIds([]); setPlaceOnly(false); return }
     fetch(`/api/businesses/${selectedBusiness.slug}/services`)
       .then((r) => r.ok ? r.json() : [])
       .then((data) => { if (Array.isArray(data)) setBusinessServices(data) })
@@ -90,6 +90,18 @@ export default function AddPlaceModal({
     setStep('details')
   }
 
+  function toggleService(id: string) {
+    setPlaceOnly(false)
+    setFeaturedServiceIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    )
+  }
+
+  function selectPlaceOnly() {
+    setFeaturedServiceIds([])
+    setPlaceOnly((prev) => !prev)
+  }
+
   async function submit() {
     if (!selectedBusiness) return
     setLoading(true)
@@ -103,8 +115,7 @@ export default function AddPlaceModal({
           businessSlug: selectedBusiness.slug,
           contentUrl: contentUrl.trim(),
           platform,
-          contentThumbnailUrl: thumbnailUrl.trim() || undefined,
-          featuredServiceId: featuredServiceId || undefined,
+          featuredServiceIds,
         }),
       })
       const data = await res.json()
@@ -122,14 +133,17 @@ export default function AddPlaceModal({
     if (step === 'done') onCreated()
   }
 
-  const canSubmit = !!selectedBusiness && contentUrl.trim().length > 0
+  // The featured-service question is compulsory whenever the business has
+  // services: the creator must pick at least one, or say "place only".
+  const featuredAnswered = businessServices.length === 0 || placeOnly || featuredServiceIds.length > 0
+  const canSubmit = !!selectedBusiness && contentUrl.trim().length > 0 && featuredAnswered
 
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={handleClose} />
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-[480px] mx-auto animate-slide-up">
-        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-[480px] bg-bridge-card rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col animate-scale-in pointer-events-auto">
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-bridge-border/60">
@@ -271,51 +285,68 @@ export default function AddPlaceModal({
                   </div>
                 </div>
 
-                {/* Featured service */}
+                {/* Featured services — compulsory, multi-select */}
                 {businessServices.length > 0 && (
                   <div>
                     <label className="block text-sm font-semibold text-bridge-text mb-1.5">
-                      Which service did you feature? <span className="text-bridge-muted font-normal">(optional)</span>
+                      Which service(s) did you feature? <span className="text-bridge-accent">*</span>
                     </label>
-                    <select
-                      value={featuredServiceId}
-                      onChange={(e) => setFeaturedServiceId(e.target.value)}
-                      className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm appearance-none"
-                      style={{
-                        backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 0.75rem center',
-                        backgroundSize: '14px',
-                        paddingRight: '2.25rem',
-                      }}
-                    >
-                      <option value="">No specific service</option>
-                      {businessServices.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} · ฿{s.price.toLocaleString()}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-bridge-muted mt-1.5">
-                      Customers landing from your link will see this service front-and-centre.
+                    <p className="text-xs text-bridge-muted mb-2.5">
+                      Select all that apply. Customers landing from your link will see these front-and-centre.
                     </p>
+                    <div className="space-y-2">
+                      {businessServices.map((s) => {
+                        const checked = featuredServiceIds.includes(s.id)
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => toggleService(s.id)}
+                            className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
+                              checked
+                                ? 'border-bridge-accent bg-bridge-accent-wash'
+                                : 'border-bridge-border bg-bridge-card hover:border-bridge-accent-light'
+                            }`}
+                          >
+                            <span
+                              className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-all ${
+                                checked ? 'border-bridge-accent bg-bridge-accent' : 'border-bridge-border-strong bg-bridge-card'
+                              }`}
+                            >
+                              {checked && <Check size={13} className="text-white" strokeWidth={3} />}
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <span className="block text-sm font-semibold text-bridge-heading truncate">{s.name}</span>
+                              <span className="block text-xs text-bridge-muted font-mono">฿{s.price.toLocaleString()}</span>
+                            </span>
+                          </button>
+                        )
+                      })}
+
+                      {/* Mutually exclusive: place-only clears all service selections */}
+                      <button
+                        type="button"
+                        onClick={selectPlaceOnly}
+                        className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-all ${
+                          placeOnly
+                            ? 'border-bridge-accent bg-bridge-accent-wash'
+                            : 'border-bridge-border bg-bridge-card hover:border-bridge-accent-light'
+                        }`}
+                      >
+                        <span
+                          className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 border transition-all ${
+                            placeOnly ? 'border-bridge-accent bg-bridge-accent' : 'border-bridge-border-strong bg-bridge-card'
+                          }`}
+                        >
+                          {placeOnly && <Check size={13} className="text-white" strokeWidth={3} />}
+                        </span>
+                        <span className="flex-1 text-sm font-semibold text-bridge-heading">
+                          I only talked about the place
+                        </span>
+                      </button>
+                    </div>
                   </div>
                 )}
-
-                <div>
-                  <label className="block text-sm font-semibold text-bridge-text mb-1.5">
-                    Thumbnail URL <span className="text-bridge-muted font-normal">(optional)</span>
-                  </label>
-                  <input
-                    type="url"
-                    value={thumbnailUrl}
-                    onChange={(e) => setThumbnailUrl(e.target.value)}
-                    placeholder="https://..."
-                    autoCapitalize="none"
-                    autoCorrect="off"
-                    className="w-full border border-bridge-border rounded-xl px-4 py-3 text-bridge-heading placeholder:text-bridge-muted focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent text-sm font-mono"
-                  />
-                </div>
 
                 {error && (
                   <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">{error}</div>
@@ -326,7 +357,7 @@ export default function AddPlaceModal({
                   disabled={!canSubmit || loading}
                   className="w-full py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-bridge-accent-dark active:scale-[0.98] transition-all"
                 >
-                  {loading ? 'Generating link…' : 'Generate PLOI link'}
+                  {loading ? 'Sending request…' : 'Send request to merchant'}
                 </button>
               </div>
             )}

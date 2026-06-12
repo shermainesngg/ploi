@@ -25,6 +25,7 @@ import {
   Play,
   TrendingUp,
   Zap,
+  LayoutDashboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -40,7 +41,7 @@ import type {
   SocialPlatform,
   DayKey,
 } from '@/lib/types'
-import { ContentCarousel } from '@/components/ContentCarousel'
+import { ContentCarousel, lastTappedVideoKey } from '@/components/ContentCarousel'
 import { getUpcomingDates } from '@/lib/seed-data'
 
 interface AvailabilityResult {
@@ -57,6 +58,8 @@ interface Props {
   affiliations: BusinessCreatorAffiliation[]
   content: ContentWithCreator[]
   recentBookings: number
+  /** Signed-in user owns this business — show the dashboard shortcut bar. */
+  isOwner?: boolean
 }
 
 // ── Creator content wall (swimlane of facade cards → bottom-sheet player) ─────
@@ -80,6 +83,7 @@ interface BookingStaff {
   name: string
   role: string | null
   photoUrl: string | null
+  locationId: string | null
 }
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -352,18 +356,41 @@ function AboutSection({ business }: { business: Business }) {
               </div>
             )}
 
-            {/* Location */}
+            {/* Location(s) */}
             <div>
-              <p className="text-xs font-semibold text-bridge-muted uppercase tracking-wide mb-2">Location</p>
-              <p className="text-sm text-bridge-secondary mb-2">{business.location}</p>
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.location + ' ' + business.name)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-bridge-accent text-sm font-semibold hover:underline"
-              >
-                <MapPin size={13} /> Open in Google Maps
-              </a>
+              <p className="text-xs font-semibold text-bridge-muted uppercase tracking-wide mb-2">
+                {business.locations.length > 1 ? `Locations (${business.locations.length})` : 'Location'}
+              </p>
+              {business.locations.length > 1 ? (
+                <div className="space-y-3">
+                  {business.locations.map((loc) => (
+                    <div key={loc.id}>
+                      {loc.name && <p className="text-sm font-semibold text-bridge-heading">{loc.name}</p>}
+                      <p className="text-sm text-bridge-secondary mb-1">{loc.address}</p>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc.address + ' ' + business.name)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-bridge-accent text-xs font-semibold hover:underline"
+                      >
+                        <MapPin size={12} /> Open in Google Maps
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-bridge-secondary mb-2">{business.location}</p>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.location + ' ' + business.name)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-bridge-accent text-sm font-semibold hover:underline"
+                  >
+                    <MapPin size={13} /> Open in Google Maps
+                  </a>
+                </>
+              )}
             </div>
 
             {/* Contact */}
@@ -520,8 +547,8 @@ function CreatorDetailModal({
   return (
     <>
       <div className="fixed inset-0 bg-black/50 z-40 animate-fade-in" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
-        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-2xl bg-bridge-card rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto animate-scale-in pointer-events-auto">
           {/* Close */}
           <div className="flex justify-end p-4 pb-0">
             <button
@@ -858,15 +885,25 @@ function FeaturedServiceCard({
 // ── Booking modal (unchanged from previous) ──────────────────────────────────
 
 function BookingModal({
-  service, business, creator, linkId, onClose,
+  service, business, creator, linkId, deepLinkContentId, onClose,
 }: {
   service: Service
   business: Business
   creator: Creator | null
   linkId?: string
+  /** Video this booking is credited to via ?v= deep-link, if any. */
+  deepLinkContentId?: string | null
   onClose: () => void
 }) {
   const dates = getUpcomingDates(14)
+  // Branches. Customer picks one when there's more than one; otherwise the
+  // single (primary) branch is used silently.
+  const locations = business.locations ?? []
+  const multiLocation = locations.length > 1
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
+    locations.find((l) => l.isPrimary)?.id ?? locations[0]?.id ?? null,
+  )
+  const selectedLocation = locations.find((l) => l.id === selectedLocationId) ?? null
   const [staffOptions, setStaffOptions] = useState<BookingStaff[]>([])
   const [staffLoaded, setStaffLoaded] = useState(false)
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
@@ -889,13 +926,23 @@ function BookingModal({
         if (!Array.isArray(all)) { setStaffLoaded(true); return }
         const eligible = all
           .filter((s) => Array.isArray(s.serviceIds) && s.serviceIds.includes(service.id))
-          .map((s) => ({ id: s.id, name: s.name, role: s.role, photoUrl: s.photoUrl }))
+          .map((s) => ({ id: s.id, name: s.name, role: s.role, photoUrl: s.photoUrl, locationId: s.locationId ?? null }))
         setStaffOptions(eligible)
         // Staff dropdown will appear inline on time step — no separate step needed
       })
       .catch(() => {})
       .finally(() => setStaffLoaded(true))
   }, [business.slug, service.id])
+
+  // Only staff who work at the chosen branch are selectable.
+  const branchStaff = multiLocation
+    ? staffOptions.filter((s) => s.locationId === selectedLocationId)
+    : staffOptions
+
+  // Switching branch invalidates a previously-picked therapist.
+  useEffect(() => {
+    setSelectedStaffId(null)
+  }, [selectedLocationId])
 
   // Fetch real availability when a date is picked
   useEffect(() => {
@@ -905,14 +952,15 @@ function BookingModal({
     setAvailability(null)
     setSelectedTime(null)
     const staffParam = selectedStaffId ? `&staffId=${selectedStaffId}` : ''
-    fetch(`/api/businesses/${business.slug}/availability?date=${dateStr}&serviceId=${service.id}${staffParam}`)
+    const locationParam = selectedLocationId ? `&locationId=${selectedLocationId}` : ''
+    fetch(`/api/businesses/${business.slug}/availability?date=${dateStr}&serviceId=${service.id}${staffParam}${locationParam}`)
       .then((r) => r.json())
       .then((data) => {
         if (data && !data.error) setAvailability(data)
       })
       .catch(() => {})
       .finally(() => setLoadingSlots(false))
-  }, [selectedDate, business.slug, service.id, selectedStaffId])
+  }, [selectedDate, business.slug, service.id, selectedStaffId, selectedLocationId])
 
   const timeSessions = availability?.groups ?? []
 
@@ -922,13 +970,22 @@ function BookingModal({
     setSubmitError(null)
     try {
       const dateStr = selectedDate.toISOString().split('T')[0]
+      // Hybrid video attribution: explicit ?v= deep-link wins, else the last
+      // video this viewer tapped for this business in the session.
+      const contentId =
+        deepLinkContentId ??
+        (typeof window !== 'undefined'
+          ? sessionStorage.getItem(lastTappedVideoKey(business.id))
+          : null)
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           serviceId: service.id,
           businessId: business.id,
+          locationId: selectedLocationId,
           linkId,
+          contentId,
           staffId: selectedStaffId,
           customerName: name,
           customerEmail: email,
@@ -964,12 +1021,15 @@ function BookingModal({
   return (
     <>
       <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={onClose} />
-      <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
-        <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+        <div className="w-full max-w-2xl bg-bridge-card rounded-3xl shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto animate-scale-in pointer-events-auto">
           {step === 'confirmed' ? (
             <ConfirmedScreen
               service={service} business={business} creator={creator}
               date={selectedDate!} time={selectedTime!} name={name}
+              branch={multiLocation && selectedLocation
+                ? (selectedLocation.name ? `${selectedLocation.name} — ${selectedLocation.address}` : selectedLocation.address)
+                : null}
               onClose={onClose}
             />
           ) : (
@@ -1024,6 +1084,38 @@ function BookingModal({
                     exit={{ opacity: 0, x: -40 }}
                     transition={{ duration: 0.2, ease: 'easeInOut' }}
                   >
+                    {/* Branch picker — only when the business has more than one */}
+                    {multiLocation && (
+                      <div className="mb-5 bg-bridge-bg rounded-2xl p-3 border border-bridge-border">
+                        <label className="block text-xs font-semibold text-bridge-text mb-1.5">
+                          Choose a location
+                        </label>
+                        <select
+                          value={selectedLocationId ?? ''}
+                          onChange={(e) => setSelectedLocationId(e.target.value || null)}
+                          className="w-full bg-bridge-card border border-bridge-border rounded-xl px-3 py-2.5 text-sm text-bridge-heading focus:outline-none focus:ring-2 focus:ring-bridge-accent focus:border-transparent appearance-none"
+                          style={{
+                            backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
+                            backgroundRepeat: 'no-repeat',
+                            backgroundPosition: 'right 0.75rem center',
+                            backgroundSize: '14px',
+                            paddingRight: '2.25rem',
+                          }}
+                        >
+                          {locations.map((l) => (
+                            <option key={l.id} value={l.id}>
+                              {l.name ? `${l.name} — ${l.address}` : l.address}
+                            </option>
+                          ))}
+                        </select>
+                        {selectedLocation && (
+                          <p className="text-[10px] text-bridge-muted mt-1.5 flex items-center gap-1">
+                            <MapPin size={10} /> {selectedLocation.address}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     <p className="text-xs font-semibold text-bridge-muted uppercase tracking-widest mb-4">Select Date</p>
                     <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
                       {dates.map((date) => {
@@ -1077,7 +1169,7 @@ function BookingModal({
                     </p>
 
                     {/* Preferred therapist (inline, optional) */}
-                    {staffOptions.length > 0 && (
+                    {branchStaff.length > 0 && (
                       <div className="mb-5 bg-bridge-bg rounded-2xl p-3 border border-bridge-border">
                         <label className="block text-xs font-semibold text-bridge-text mb-1.5">
                           Preferred therapist <span className="text-bridge-muted font-normal">(optional)</span>
@@ -1095,7 +1187,7 @@ function BookingModal({
                           }}
                         >
                           <option value="">Any available</option>
-                          {staffOptions.map((s) => (
+                          {branchStaff.map((s) => (
                             <option key={s.id} value={s.id}>
                               {s.name}{s.role ? ` · ${s.role}` : ''}
                             </option>
@@ -1181,6 +1273,11 @@ function BookingModal({
                       <p className="text-bridge-muted mt-0.5">
                         {selectedDate && `${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} ${MONTH_NAMES[selectedDate.getMonth()]}`} at {selectedTime}
                       </p>
+                      {multiLocation && selectedLocation && (
+                        <p className="text-bridge-muted mt-0.5 flex items-center gap-1">
+                          <MapPin size={11} /> {selectedLocation.name ? `${selectedLocation.name} — ${selectedLocation.address}` : selectedLocation.address}
+                        </p>
+                      )}
                     </div>
                     <div className="space-y-4">
                       <Input
@@ -1235,9 +1332,9 @@ function BookingModal({
 }
 
 function ConfirmedScreen({
-  service, business, creator, date, time, name, onClose,
+  service, business, creator, date, time, name, branch, onClose,
 }: {
-  service: Service; business: Business; creator: Creator | null; date: Date; time: string; name: string; onClose: () => void
+  service: Service; business: Business; creator: Creator | null; date: Date; time: string; name: string; branch?: string | null; onClose: () => void
 }) {
   return (
     <div className="px-5 py-8 flex flex-col items-center text-center">
@@ -1257,6 +1354,12 @@ function ConfirmedScreen({
             {DAY_NAMES[date.getDay()]} {date.getDate()} {MONTH_NAMES[date.getMonth()]} at {time}
           </span>
         </div>
+        {branch && (
+          <div className="flex justify-between text-sm gap-3">
+            <span className="text-bridge-muted flex-shrink-0">Location</span>
+            <span className="font-semibold text-bridge-text text-right">{branch}</span>
+          </div>
+        )}
         <div className="flex justify-between text-sm">
           <span className="text-bridge-muted">Name</span>
           <span className="font-semibold text-bridge-text">{name}</span>
@@ -1300,10 +1403,13 @@ function EmptyServices({ business }: { business: Business }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
-export default function ShopBookingPage({ business, creator, link, affiliations, content, recentBookings }: Props) {
+export default function ShopBookingPage({ business, creator, link, affiliations, content, recentBookings, isOwner = false }: Props) {
   const [activeService, setActiveService] = useState<Service | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showServicePicker, setShowServicePicker] = useState(false)
+  // Explicit per-video deep-link (?v=<id>) — the strong half of booking attribution.
+  // Only honoured when the id actually belongs to this page's content.
+  const [deepLinkContentId, setDeepLinkContentId] = useState<string | null>(null)
   const servicesRef = useRef<HTMLDivElement>(null)
 
   // Click attribution
@@ -1316,13 +1422,24 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
     fetch(`/api/links/${encodeURIComponent(link.shortCode)}/click`, { method: 'POST' }).catch(() => {})
   }, [creator, link])
 
-  // Content-first: featured service hero (if link has one + creator is present)
-  const featuredService =
-    creator && link?.featuredServiceId
-      ? business.services.find((s) => s.id === link.featuredServiceId)
-      : null
-  const otherServices = featuredService
-    ? business.services.filter((s) => s.id !== featuredService.id)
+  // Resolve the ?v= deep-link once, validating it against this page's videos.
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const v = new URLSearchParams(window.location.search).get('v')
+    if (v && content.some((c) => c.content.id === v)) setDeepLinkContentId(v)
+  }, [content])
+
+  // Content-first: featured service heroes (if link has any + creator is present).
+  // Preserves the creator's selection order.
+  const featuredServices =
+    creator && link?.featuredServiceIds.length
+      ? link.featuredServiceIds
+          .map((id) => business.services.find((s) => s.id === id))
+          .filter((s): s is Service => !!s)
+      : []
+  const featuredIds = new Set(featuredServices.map((s) => s.id))
+  const otherServices = featuredServices.length
+    ? business.services.filter((s) => !featuredIds.has(s.id))
     : business.services
   const hasServices = business.services.length > 0
   const fromPrice = hasServices ? Math.min(...business.services.map(s => s.price)) : null
@@ -1340,6 +1457,19 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
   return (
     <div className="min-h-screen bg-bridge-bg">
       <div className="max-w-2xl mx-auto relative">
+        {/* Owner shortcut — only the signed-in owner sees this */}
+        {isOwner && (
+          <div className="bg-bridge-ink-static text-white px-4 py-2.5 flex items-center justify-between gap-3">
+            <span className="text-xs text-white/70">This is your public listing</span>
+            <NextLink
+              href="/business"
+              className="flex items-center gap-1.5 text-xs font-semibold text-white hover:text-white/80 transition-colors"
+            >
+              <LayoutDashboard size={12} /> Go to dashboard
+            </NextLink>
+          </div>
+        )}
+
         <BusinessHero business={business} recentBookings={recentBookings} affiliationsCount={affiliations.length} />
 
         {creator && (
@@ -1360,27 +1490,28 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
         {/* About section */}
         <AboutSection business={business} />
 
-        {/* Featured service (content-first hero) */}
-        {featuredService && creator && (
+        {/* Featured services (content-first heroes) */}
+        {creator && featuredServices.map((service) => (
           <FeaturedServiceCard
-            service={featuredService}
+            key={service.id}
+            service={service}
             business={business}
             creator={creator}
             link={link}
             onBook={setActiveService}
           />
-        )}
+        ))}
 
         {/* Services */}
         <div className="px-4 mt-6 pb-2" ref={servicesRef}>
           {hasServices ? (
             <>
               <h2 className="text-sm font-semibold text-bridge-muted uppercase tracking-widest mb-4">
-                {featuredService ? 'Or explore other services' : 'Our Services'}
+                {featuredServices.length ? 'Or explore other services' : 'Our Services'}
               </h2>
               <div className="space-y-3">
                 {otherServices.map((service, i) => (
-                  <ServiceCard key={service.id} service={service} onBook={setActiveService} isPopular={i === 0 && !featuredService} />
+                  <ServiceCard key={service.id} service={service} onBook={setActiveService} isPopular={i === 0 && !featuredServices.length} />
                 ))}
               </div>
             </>
@@ -1413,8 +1544,8 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
         {showServicePicker && (
           <>
             <div className="fixed inset-0 bg-black/40 z-40 animate-fade-in" onClick={() => setShowServicePicker(false)} />
-            <div className="fixed bottom-0 left-0 right-0 z-50 max-w-2xl mx-auto animate-slide-up">
-              <div className="bg-bridge-card rounded-t-3xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto">
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+              <div className="w-full max-w-2xl bg-bridge-card rounded-3xl shadow-2xl overflow-hidden max-h-[80vh] overflow-y-auto animate-scale-in pointer-events-auto">
                 <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-bridge-border/60">
                   <h2 className="font-bold text-bridge-heading text-lg">Pick a service</h2>
                   <button
@@ -1454,6 +1585,7 @@ export default function ShopBookingPage({ business, creator, link, affiliations,
             business={business}
             creator={creator}
             linkId={link?.id}
+            deepLinkContentId={deepLinkContentId}
             onClose={() => setActiveService(null)}
           />
         )}

@@ -5,7 +5,7 @@ import type { ContentStatus, MediaKind, AspectRatio, Provider, PosterSource } fr
 const READ_SELECT = `
   id, link_id, creator_id, business_id, provider, content_url, external_id,
   media_kind, aspect_ratio, poster_source, poster_path, caption, author_name,
-  fetch_status, status, sort_order, created_at,
+  fetch_status, status, sort_order, click_count, created_at,
   creators ( slug, handle, display_name )
 `
 
@@ -74,6 +74,26 @@ export const CreatorContentRepo = {
     const db = createServerClient()
     const { data } = await db.from('creator_content').select('*').eq('id', id).maybeSingle()
     return data
+  },
+
+  /** Minimal read for click recording: gate on status, carry link_id for the event. */
+  async findForClick(id: string) {
+    const db = createServerClient()
+    const { data } = await db
+      .from('creator_content')
+      .select('id, status, click_count, link_id')
+      .eq('id', id)
+      .maybeSingle()
+    return data
+  },
+
+  /** Bump the per-video tap counter (read-then-write, mirrors LinkRepo). */
+  async incrementClickCount(id: string, currentCount: number) {
+    const db = createServerClient()
+    await db
+      .from('creator_content')
+      .update({ click_count: currentCount + 1 })
+      .eq('id', id)
   },
 
   /**

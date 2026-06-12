@@ -1,6 +1,7 @@
 import type {
   Business,
   Creator,
+  Location,
   Service,
   Social,
   Link,
@@ -55,6 +56,27 @@ function rowToService(r: any): Service {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function rowToLocation(r: any): Location {
+  const photos: string[] = Array.isArray(r.photos)
+    ? r.photos.filter((p: unknown) => typeof p === 'string')
+    : []
+  return {
+    id: r.id,
+    businessId: r.business_id,
+    name: r.name ?? null,
+    address: r.address,
+    openingHours: r.opening_hours ?? null,
+    contactPhone: r.contact_phone ?? null,
+    contactWhatsapp: r.contact_whatsapp ?? null,
+    contactLine: r.contact_line ?? null,
+    photos,
+    isPrimary: r.is_primary ?? false,
+    isActive: r.is_active ?? true,
+    sortOrder: r.sort_order ?? 0,
+  }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function rowToBusiness(r: any): Business {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const all: Service[] = (r.services ?? [])
@@ -73,23 +95,38 @@ export function rowToBusiness(r: any): Business {
     ? r.photos.filter((p: unknown) => typeof p === 'string')
     : []
 
+  // Locations (if joined). Active only, primary first, then by sort_order.
+  const locations: Location[] = Array.isArray(r.locations)
+    ? r.locations
+        .filter((l: { is_active?: boolean }) => l.is_active !== false)
+        .map(rowToLocation)
+        .sort((a: Location, b: Location) =>
+          a.isPrimary === b.isPrimary ? a.sortOrder - b.sortOrder : a.isPrimary ? -1 : 1,
+        )
+    : []
+
+  // The primary location is the source of truth for the business's headline
+  // address / hours / contacts; fall back to the legacy business columns.
+  const primary = locations.find((l) => l.isPrimary) ?? locations[0] ?? null
+
   return {
     id: r.id,
     slug: r.slug,
     name: r.name,
     category: r.category,
-    location: r.location,
+    location: primary?.address ?? r.location,
     description: r.description ?? '',
     coverGradient: gradientForCategory(r.category),
     coverPhotoUrl: r.cover_photo_url ?? null,
     photos,
-    openingHours: r.opening_hours ?? null,
-    contactPhone: r.contact_phone ?? null,
-    contactWhatsapp: r.contact_whatsapp ?? null,
-    contactLine: r.contact_line ?? null,
+    openingHours: primary?.openingHours ?? r.opening_hours ?? null,
+    contactPhone: primary?.contactPhone ?? r.contact_phone ?? null,
+    contactWhatsapp: primary?.contactWhatsapp ?? r.contact_whatsapp ?? null,
+    contactLine: primary?.contactLine ?? r.contact_line ?? null,
     rating: Number(r.rating ?? 0),
     reviewCount: r.review_count ?? 0,
     services,
+    locations,
   }
 }
 
@@ -138,6 +175,7 @@ export function rowToCreatorContent(r: any): CreatorContent {
     posterExpiresAt: r.poster_expires_at ?? null,
     status: (r.status ?? 'pending') as ContentStatus,
     sortOrder: r.sort_order ?? 0,
+    clickCount: r.click_count ?? 0,
     createdAt: r.created_at ?? null,
   }
 }
@@ -172,6 +210,11 @@ export function rowToLink(r: any, creatorSlug: string, businessSlug: string): Li
     contentThumbnailUrl: r.content_thumbnail_url ?? null,
     status: (r.status ?? 'pending') as LinkStatus,
     clickCount: r.click_count ?? 0,
-    featuredServiceId: r.featured_service_id ?? null,
+    featuredServiceIds:
+      Array.isArray(r.featured_service_ids) && r.featured_service_ids.length > 0
+        ? r.featured_service_ids
+        : r.featured_service_id
+          ? [r.featured_service_id]
+          : [],
   }
 }

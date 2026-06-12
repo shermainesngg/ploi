@@ -3,11 +3,12 @@
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useState, useEffect, useTransition } from 'react'
-import { Search, Menu, X, LogOut, LayoutDashboard, Calendar, Sun, Moon, Check, Megaphone, Store } from 'lucide-react'
+import { Search, Menu, X, LogOut, LayoutDashboard, Calendar, Sun, Moon, Check, Megaphone, Store, Bookmark, Heart } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import type { AppUser, UserRole } from '@/lib/auth'
 import { setActiveRole } from '@/actions/auth.actions'
 import { PloiLogo } from '@/components/ui/Logo'
+import NotificationBell from '@/components/NotificationBell'
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
@@ -37,14 +38,30 @@ export default function NavBar({ user }: { user: AppUser | null }) {
   const [open, setOpen] = useState(false)
   const [switching, startSwitch] = useTransition()
 
+  // Warm the router cache for the owner's dashboard routes as soon as the NavBar
+  // mounts. The dashboard Link lives inside the slide-in drawer, so it only gets
+  // a chance to prefetch once the drawer is open — too late for a quick click.
+  // Prefetching here caches each route's loading.tsx shell up front, so opening
+  // the menu and tapping Dashboard paints the skeleton immediately.
+  const businessSlug = user?.businessSlug
+  const creatorSlug = user?.creatorSlug
+  useEffect(() => {
+    if (businessSlug) router.prefetch('/business')
+    if (creatorSlug) router.prefetch(`/dashboard/creator/${creatorSlug}`)
+  }, [businessSlug, creatorSlug, router])
+
   const HIDE_ON = ['/login', '/signup', '/auth/callback']
   if (HIDE_ON.some((p) => pathname?.startsWith(p))) return null
 
   async function signOut() {
     await fetch('/api/auth/signout', { method: 'POST' })
     setOpen(false)
-    router.refresh()
+    // Navigate first, then refresh — refresh re-fetches server components
+    // (root layout included) for the destination, so the NavBar re-renders
+    // with the cleared session. The old order refreshed the page being left
+    // and then served '/' from the stale client router cache.
     router.push('/')
+    router.refresh()
   }
 
   // Dashboard-backed roles the user can switch between (creator / business).
@@ -53,7 +70,7 @@ export default function NavBar({ user }: { user: AppUser | null }) {
     roleTargets.push({ role: 'creator', label: 'Creator dashboard', href: `/dashboard/creator/${user.creatorSlug}`, icon: <Megaphone size={15} /> })
   }
   if (user?.businessSlug) {
-    roleTargets.push({ role: 'business', label: 'Business dashboard', href: `/dashboard/business/${user.businessSlug}`, icon: <Store size={15} /> })
+    roleTargets.push({ role: 'business', label: 'Business dashboard', href: '/business', icon: <Store size={15} /> })
   }
   const showSwitcher = roleTargets.length > 1
 
@@ -70,10 +87,15 @@ export default function NavBar({ user }: { user: AppUser | null }) {
     })
   }
 
-  const dashHref =
-    user?.role === 'creator' && user.creatorSlug ? `/dashboard/creator/${user.creatorSlug}` :
-    user?.role === 'business' && user.businessSlug ? `/dashboard/business/${user.businessSlug}` :
-    '/bookings'
+  // The consumer-style section (bookings, saved items) shows for everyone who
+  // owns a non-business identity. A business-only account never sees it.
+  const showRegular = !!user && user.roles.some((r) => r !== 'business')
+
+  // Onboarding links. Identities are exclusive — an account that already owns
+  // a creator profile or a business gets neither link (mirrors the guards on
+  // the /onboard/* pages, which redirect those accounts away).
+  const showJoinCreator = !user?.creatorSlug && !user?.businessSlug
+  const showListBusiness = !user?.creatorSlug && !user?.businessSlug
 
   return (
     <>
@@ -87,14 +109,16 @@ export default function NavBar({ user }: { user: AppUser | null }) {
           </Link>
 
           <div className="flex items-center gap-1">
-            <button
-              type="button"
+            <Link
+              href="/search"
+              prefetch
               className="w-9 h-9 flex items-center justify-center text-bridge-muted hover:text-bridge-text transition-colors rounded-full hover:bg-bridge-surface"
               aria-label="Search"
-              onClick={() => router.push('/')}
             >
               <Search size={17} />
-            </button>
+            </Link>
+
+            {user && <NotificationBell />}
 
             <ThemeToggle />
 
@@ -196,24 +220,55 @@ export default function NavBar({ user }: { user: AppUser | null }) {
             )}
 
             <div className="flex-1 overflow-y-auto px-2 py-3">
-              <NavLink href="/" label="Home" onClick={() => setOpen(false)} />
-
-              {user && user.role !== 'consumer' && (
-                <NavLink
-                  href={dashHref}
-                  label="Dashboard"
-                  icon={<LayoutDashboard size={15} />}
-                  onClick={() => setOpen(false)}
-                />
+              {user?.creatorSlug && (
+                <div className="pb-1">
+                  <p className="px-3 pb-1.5 text-micro text-bridge-muted uppercase tracking-wide">Creator</p>
+                  <NavLink
+                    href={`/dashboard/creator/${user.creatorSlug}`}
+                    label="Dashboard"
+                    icon={<LayoutDashboard size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                </div>
               )}
 
-              {user && (
-                <NavLink
-                  href="/bookings"
-                  label="My bookings"
-                  icon={<Calendar size={15} />}
-                  onClick={() => setOpen(false)}
-                />
+              {user?.businessSlug && (
+                <div className="pb-1">
+                  <p className="px-3 pb-1.5 text-micro text-bridge-muted uppercase tracking-wide">Business</p>
+                  <NavLink
+                    href="/business"
+                    label="Dashboard"
+                    icon={<LayoutDashboard size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                </div>
+              )}
+
+              {showRegular && (user?.creatorSlug || user?.businessSlug) && (
+                <div className="my-2 border-t border-bridge-border/40" />
+              )}
+
+              {showRegular && (
+                <div className="pb-1">
+                  <NavLink
+                    href="/bookings"
+                    label="My bookings"
+                    icon={<Calendar size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                  <NavLink
+                    href="/saved/content"
+                    label="Saved content"
+                    icon={<Bookmark size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                  <NavLink
+                    href="/saved/businesses"
+                    label="Saved businesses"
+                    icon={<Heart size={15} />}
+                    onClick={() => setOpen(false)}
+                  />
+                </div>
               )}
 
               {!user && (
@@ -223,10 +278,16 @@ export default function NavBar({ user }: { user: AppUser | null }) {
                 </>
               )}
 
-              <div className="my-2 border-t border-bridge-border/40" />
+              {(showJoinCreator || showListBusiness) && (
+                <div className="my-2 border-t border-bridge-border/40" />
+              )}
 
-              <NavLink href="/onboard/creator" label="Join as creator" onClick={() => setOpen(false)} />
-              <NavLink href="/onboard/business" label="List your business" onClick={() => setOpen(false)} />
+              {showJoinCreator && (
+                <NavLink href="/onboard/creator" label="Join as creator" onClick={() => setOpen(false)} />
+              )}
+              {showListBusiness && (
+                <NavLink href="/onboard/business" label="List your business" onClick={() => setOpen(false)} />
+              )}
             </div>
 
             {user && (

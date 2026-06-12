@@ -22,8 +22,8 @@ const spaceMono = Space_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'PLOI — Commerce infrastructure for creator-driven discovery',
-  description: 'PLOI is the invisible layer that turns recommendations into bookings and rewards creators for the value they drive.',
+  title: 'PLOI — Book Bangkok’s best beauty & wellness',
+  description: 'Discover and book top-rated salons, spas, and studios in Bangkok. Sign up free, book in seconds, and find the spots creators actually love.',
 }
 
 export default async function RootLayout({

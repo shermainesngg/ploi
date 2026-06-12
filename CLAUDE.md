@@ -139,31 +139,95 @@ Schema in `packages/db/schema.sql`. Migrations run in order in Supabase SQL Edit
 - `migration_003` — Auth user IDs, Stripe account IDs, consumers, payment fields
 - `migration_004` — Staff, availability, business hours, time slots, booking actions
 - `migration_005` — Featured service on links, customer acquisitions for repeat attribution
+- `migration_006_pre_launch` — Payout ledger, currency (THB/SGD), consumer↔booking FK, `updated_at` triggers, cancellation metadata, Google Calendar prep, **Row Level Security**
+- `migration_007`–`009` — Creator content embeds + backfill, avatars storage bucket
+- `migration_010_multi_featured` — Multiple featured services per link (`featured_service_ids uuid[]`); supersedes the single `featured_service_id` from 005, kept for back-compat
+- `migration_011_business_photos_bucket` — Public `business-photos` Storage bucket for dashboard Settings photo uploads (already created in staging; run in prod)
+- `migration_012`–`013` — Per-video creator attribution + booking↔video link
+- `migration_014_multi_location` — Multi-location businesses (branches); per-location staff/bookings/time_blocks
+- `migration_015_calendar_sync` — Google Calendar sync: per-booking `google_sync_status`/`google_synced_at` + `businesses.google_calendar_timezone` (additive to the dormant 006 Google columns)
+- `migration_016_reschedule_proposals` — Business-proposed reschedule for pending bookings: `bookings.reschedule_proposed_date`/`_time`/`_at` + `reschedule_token` (tokenised customer accept/decline link). Booking stays `pending` while a proposal is outstanding.
+
+`packages/db/setup.sql` is the **consolidated schema** (core tables + all migrations in one file) — run it for a fresh project instead of applying migrations one by one.
+
+## Environments
+
+Two separate Supabase projects, each with its own URL + keys:
+
+- **Staging** — what local dev points at via `.env.local`. Safe to seed with demo data.
+- **Production** — its own project; **never seed with demo data**. Always confirm which project `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` resolves to before running any write/seed.
+
+> Network note: the direct Postgres host (`db.<ref>.supabase.co`) is **IPv6-only** and unreachable from some networks. Use the **session pooler** connection string (`aws-0-<region>.pooler.supabase.com`, IPv4) for `psql`/CLI access, or the REST-based seed runner below (HTTPS, always reachable).
+
+## Seeding
+
+- **Canonical SQL seed**: `packages/db/seed.sql` — idempotent (safe to re-run; never deletes FK-referenced rows). Run it in the Supabase **SQL Editor** after `setup.sql`. This is the source of truth for demo data.
+- **REST seed runner**: `apps/web/scripts/seed-staging.mjs` — seeds the same demo businesses/creators/links over the REST API using `SUPABASE_SERVICE_ROLE_KEY` (bypasses RLS), for when Postgres isn't directly reachable. Idempotent (upsert by id / `(creator_id, business_id)`; services insert-if-missing). Run from repo root:
+  ```bash
+  node apps/web/scripts/seed-staging.mjs   # reads .env.local — confirm it points at STAGING first
+  ```
+  Keep `seed.sql` and the runner in sync when adding demo data so both paths produce the same result.
 
 ## Environment Variables
 
 ```
-NEXT_PUBLIC_SUPABASE_URL        # Supabase project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY   # Supabase public key
-SUPABASE_SERVICE_ROLE_KEY       # Supabase server-side key (bypasses RLS)
-STRIPE_SECRET_KEY               # Stripe test secret key (sk_test_...)
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY  # Stripe test publishable key (pk_test_...)
-STRIPE_WEBHOOK_SECRET           # From Stripe CLI (whsec_...)
-NEXT_PUBLIC_SITE_URL            # http://localhost:3000 (update for production)
+NEXT_PUBLIC_SUPABASE_URL             # Supabase project URL (determines staging vs prod)
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY # Supabase public key. The code also accepts the legacy
+                                     #   name NEXT_PUBLIC_SUPABASE_ANON_KEY (publishable preferred).
+SUPABASE_SERVICE_ROLE_KEY            # Server-side secret key (sb_secret_...), bypasses RLS — never expose to browser
+                                     #   (SUPABASE_SECRET_KEY is also accepted as an alias)
+SUPABASE_DB_URL                      # Postgres connection string (use the session-pooler host for IPv4 access)
+STRIPE_SECRET_KEY                    # Stripe secret key (sk_test_... / sk_live_...)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY   # Stripe publishable key (pk_test_... / pk_live_...)
+STRIPE_WEBHOOK_SECRET                # From Stripe CLI / webhook endpoint (whsec_...)
+NEXT_PUBLIC_SITE_URL                 # http://localhost:3000 (update for production)
+RESEND_API_KEY                       # Resend API key (re_...) for booking notification emails.
+                                     #   Optional — without it emails are silent no-ops.
+EMAIL_FROM                           # Sender, e.g. "PLOI <bookings@ploi.app>" (domain must be
+                                     #   verified in Resend). Defaults to Resend's test sender,
+                                     #   which only delivers to the Resend account owner.
+GOOGLE_CLIENT_ID                     # Google OAuth client id (Web application) for Calendar sync.
+GOOGLE_CLIENT_SECRET                 # Google OAuth client secret. Optional — without these (and
+                                     #   GCAL_TOKEN_ENC_KEY) calendar sync is a silent no-op.
+GCAL_TOKEN_ENC_KEY                   # AES-256-GCM key encrypting the stored Google refresh token at
+                                     #   rest. Base64-encoded 32 bytes: `openssl rand -base64 32`.
+                                     #   Server-only — never expose to browser.
 ```
+
+> **Key-name tolerance.** `lib/supabase.ts` / `supabase-server.ts` / `middleware.ts` resolve the public key from `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` **or** `NEXT_PUBLIC_SUPABASE_ANON_KEY`, and the secret key from `SUPABASE_SERVICE_ROLE_KEY` **or** `SUPABASE_SECRET_KEY`. If neither public key is set, `isSupabaseConfigured()` is false and the app **silently falls back to the in-memory `seed-data.ts`** (one demo business/creator) instead of the real DB — the usual cause of "I don't see my seeded data" on a deployment.
+
+### Env files & where each is loaded
+
+| File | Loaded by | Points at |
+|---|---|---|
+| `apps/web/.env.local` | the Next app (`next dev/build/start`, cwd is `apps/web`) | **staging** |
+| `.env.local` (repo root) | the seed runner `scripts/seed-staging.mjs` (run from root) | **staging** |
+| `.env.prod` (repo root) | nothing automatically — reference for Vercel **Production** vars / deliberate prod scripts (`node --env-file=.env.prod …`) | **prod** |
+
+All `.env*` files are gitignored. Production app config lives in **Vercel env vars**, not a file. On Vercel, **staging deploys are Preview deployments** — their env vars must be set under the **Preview** scope (pointing at the staging Supabase project); Production-scope vars don't apply to them. After changing Vercel env vars, **redeploy** — existing deployments don't pick them up.
 
 ## Key Routes
 
 | Route | Purpose |
 |---|---|
 | `/[creator]/[shop]` | Shop Booking Page via creator link (most important page) |
-| `/[creator]` | Creator Profile Page |
-| `/dashboard/business/[slug]` | Business dashboard |
-| `/dashboard/creator/[slug]` | Creator dashboard |
+| `/[creator]` | **Shared `/[slug]` namespace** — resolves creator-first, falls back to a standalone business page (see below) |
+| `/shop/[slug]` | Standalone business booking page — direct/organic discovery, no creator attribution |
+| `/search` | Site-wide search (separate Creators / Businesses tabs) |
+| `/business` | Business home — signed-in owners see their dashboard (post-login landing for businesses); visitors see the marketing landing page |
+| `/dashboard/business/[slug]` | Business dashboard (canonical slugged URL; renders the same `BusinessDashboardScreen` as `/business`) |
+| `/dashboard/creator/[slug]` | Creator dashboard (Overview + Requests tabs) |
 | `/onboard/business` | Business signup |
 | `/onboard/creator` | Creator signup |
 | `/bookings` | Customer booking history |
 | `/staff/[id]/schedule` | Staff schedule (shareable) |
+
+### Discovery & Search
+
+- **Shared `/[slug]` namespace.** A single segment resolves to a creator profile if one exists, otherwise to a standalone business booking page (`creator: null` → direct booking, no attribution). Because creators and businesses share one URL namespace, **slugs must be globally unique across both** — `BusinessService.create` and `CreatorService.create` each reject a slug already claimed by the other type. `/shop/[slug]` is the dedicated, unambiguous direct-booking route (used by home/search links and `BusinessService.getBySlug`); the bare `/[slug]` fallback also resolves businesses. Reserved static routes (`/search`, `/login`, `/bookings`, `/dashboard`, etc.) shadow `/[slug]`, so they can't be valid slugs.
+- **Search.** `/search` is a client page with two separate searches toggled by tab. Backed by `GET /api/businesses/search` and `GET /api/creators/search`, which call `BusinessService.search` / `CreatorService.search` (name/handle/slug `ilike`, seed-data fallback). Business results link to `/shop/[slug]`, creator results to `/[creator]`. The NavBar search icon opens `/search`.
+- **Home page.** `components/HomeExperiences.tsx` owns the hero + explore. Hero is a large, copy-forward landing band that states what PLOI is. Explore is Fresha-style: a "Browse by category" image-tile row (tap to filter), then three curated horizontal carousels — **Recommended** (top rated), **Newly added** (newest from `BusinessService.list()`, which is `created_at desc`), **Trending** (most-reviewed, a popularity proxy until real engagement is tracked). Searching or selecting a category swaps the carousels for a results grid.
+- **NavBar menu** (`components/NavBar.tsx`) is role-aware: a **Creator** and/or **Business** section (each linking that dashboard, shown per owned slug), a **regular** section for any non-business identity (My bookings, Saved content, Saved businesses), and onboarding links only shown to visitors who don't already own that role. Note: **Saved content / Saved businesses are nav placeholders** (`/saved/content`, `/saved/businesses`) — the pages and underlying save/bookmark model are not built yet.
 
 ## Design Direction
 

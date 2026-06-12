@@ -2,9 +2,20 @@
 
 import { createCreatorSchema } from '@/validation/creator.schema'
 import { CreatorService } from '@/services/creator.service'
+import { isReservedSlug } from '@/lib/constants'
+import { ownsBusiness } from '@/lib/auth'
+import { createAuthServerClient } from '@/lib/supabase-server'
 import type { Social, SocialPlatform } from '@/lib/types'
 
 export async function createCreator(formData: FormData) {
+  // Business identities are exclusive — a business account can never also
+  // join as a creator.
+  const supabase = await createAuthServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user && (await ownsBusiness(user.id, user.email))) {
+    return { error: 'A business account can’t also join as a creator.' }
+  }
+
   const raw = Object.fromEntries(formData)
 
   let socials: Social[] = []
@@ -25,6 +36,14 @@ export async function createCreator(formData: FormData) {
   const { handle, displayName, bio, email } = parsed.data
 
   const slug = handle.replace(/^@/, '').toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30)
+
+  if (!slug) {
+    return { error: { handle: ['Please choose a handle with at least one letter or number.'] } }
+  }
+  if (isReservedSlug(slug)) {
+    return { error: { handle: ['That handle is reserved. Please choose a different one.'] } }
+  }
+
   const cleanHandle = `@${slug}`
 
   const validPlatforms: SocialPlatform[] = ['tiktok', 'instagram', 'youtube', 'x', 'other']

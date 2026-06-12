@@ -31,6 +31,30 @@ export const businesses: Record<string, Business> = {
     contactLine: '@glowstudiobkk',
     rating: 4.9,
     reviewCount: 127,
+    locations: [
+      {
+        id: 'loc_001',
+        businessId: 'biz_001',
+        name: null,
+        address: 'Sukhumvit Soi 24, Bangkok',
+        openingHours: {
+          mon: '10:00-20:00',
+          tue: '10:00-20:00',
+          wed: '10:00-20:00',
+          thu: '10:00-20:00',
+          fri: '10:00-21:00',
+          sat: '09:00-21:00',
+          sun: '10:00-19:00',
+        },
+        contactPhone: '+66 2 123 4567',
+        contactWhatsapp: '+66891234567',
+        contactLine: '@glowstudiobkk',
+        photos: [],
+        isPrimary: true,
+        isActive: true,
+        sortOrder: 0,
+      },
+    ],
     services: [
       {
         id: 'svc_001',
@@ -104,7 +128,7 @@ export const links: Link[] = [
     contentThumbnailUrl: 'https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=400',
     status: 'active',
     clickCount: 1247,
-    featuredServiceId: 'svc_001',
+    featuredServiceIds: ['svc_001'],
   },
 ]
 

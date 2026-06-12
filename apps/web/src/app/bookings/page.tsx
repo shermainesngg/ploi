@@ -26,6 +26,7 @@ export default async function BookingsPage() {
     .from('bookings')
     .select(`
       id, customer_name, booking_date, booking_time, status, payment_status, service_id,
+      reschedule_proposed_date, reschedule_proposed_time, reschedule_proposed_at, reschedule_token,
       services ( name, price ),
       businesses ( slug, name, category, location )
     `)

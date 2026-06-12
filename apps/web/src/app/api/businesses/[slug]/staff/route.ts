@@ -11,13 +11,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   try {
     const { slug } = await params
     const body = await req.json()
-    const { name, role, photoUrl, serviceIds } = body
+    const { name, role, photoUrl, serviceIds, locationId } = body
     if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 })
     const staff = await StaffService.create(slug, {
       name,
       role: typeof role === 'string' ? role : undefined,
       photoUrl: typeof photoUrl === 'string' ? photoUrl : undefined,
       serviceIds: Array.isArray(serviceIds) ? serviceIds : [],
+      locationId: typeof locationId === 'string' ? locationId : undefined,
     })
     return NextResponse.json(staff, { status: 201 })
   } catch (err) {

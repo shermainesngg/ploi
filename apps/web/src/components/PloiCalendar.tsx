@@ -149,7 +149,9 @@ export default function PloiCalendar({ events, selectedDate, onEventClick, onSlo
   const calendar = useNextCalendarApp(
     {
       views: [createViewDay(), createViewWeek(), createViewMonthGrid(), createViewMonthAgenda()],
-      defaultView: createViewWeek().name,
+      // Open on the month grid so the whole schedule is visible at a glance;
+      // users can drill into week/day via Schedule-X's own view switcher.
+      defaultView: createViewMonthGrid().name,
       selectedDate,
       events,
       calendars,

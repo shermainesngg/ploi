@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { X, ChevronRight, ArrowLeft, Check } from 'lucide-react'
+import { X, ChevronRight, ArrowLeft, Check, Info } from 'lucide-react'
 
 interface AvailabilityResult {
   date: string
@@ -33,6 +33,7 @@ export default function RescheduleModal({
   currentDate,
   currentTime,
   onClose,
+  mode = 'direct',
 }: {
   bookingId: string
   businessSlug: string
@@ -41,8 +42,14 @@ export default function RescheduleModal({
   currentDate: string
   currentTime: string
   onClose: () => void
+  /**
+   * 'direct'  — apply the new slot immediately (confirmed bookings).
+   * 'propose' — send the slot to the customer to accept/decline (pending bookings).
+   */
+  mode?: 'direct' | 'propose'
 }) {
   const router = useRouter()
+  const isPropose = mode === 'propose'
   const [step, setStep] = useState<'date' | 'time'>('date')
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
@@ -72,17 +79,23 @@ export default function RescheduleModal({
     setError(null)
     try {
       const dateStr = selectedDate.toISOString().split('T')[0]
-      const res = await fetch(`/api/bookings/${bookingId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bookingDate: dateStr, bookingTime: selectedTime }),
-      })
+      const res = isPropose
+        ? await fetch(`/api/bookings/${bookingId}/propose-reschedule`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingDate: dateStr, bookingTime: selectedTime }),
+          })
+        : await fetch(`/api/bookings/${bookingId}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ bookingDate: dateStr, bookingTime: selectedTime }),
+          })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Could not reschedule')
+      if (!res.ok) throw new Error(data.error ?? (isPropose ? 'Could not send proposal' : 'Could not reschedule'))
       router.refresh()
       onClose()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not reschedule')
+      setError(err instanceof Error ? err.message : (isPropose ? 'Could not send proposal' : 'Could not reschedule'))
     } finally {
       setSubmitting(false)
     }
@@ -103,7 +116,9 @@ export default function RescheduleModal({
                   <ArrowLeft size={14} /> Back
                 </button>
               )}
-              <h2 className="font-bold text-bridge-heading text-lg leading-tight">Reschedule</h2>
+              <h2 className="font-bold text-bridge-heading text-lg leading-tight">
+                {isPropose ? 'Propose new time' : 'Reschedule'}
+              </h2>
               <p className="text-bridge-muted text-sm">{serviceName}</p>
               <p className="text-bridge-border-strong text-xs">
                 Currently: {currentDate} at {currentTime}
@@ -155,6 +170,15 @@ export default function RescheduleModal({
                   New Time {selectedDate && `· ${DAY_NAMES[selectedDate.getDay()]} ${selectedDate.getDate()} ${MONTH_NAMES[selectedDate.getMonth()]}`}
                 </p>
 
+                {/* Disclaimer — the proposed slot is the business's responsibility to honour */}
+                <div className="flex items-start gap-2 bg-bridge-surface border border-bridge-border/60 rounded-xl p-3 mb-4">
+                  <Info size={14} className="text-bridge-muted flex-shrink-0 mt-0.5" />
+                  <p className="text-bridge-secondary text-xs leading-relaxed">
+                    Please ensure that this slot is available.
+                    {isPropose && ' The customer will be asked to accept it before the booking moves.'}
+                  </p>
+                </div>
+
                 {loading && <p className="text-bridge-muted text-sm py-8 text-center">Checking availability…</p>}
 
                 {!loading && availability?.closed && (
@@ -203,7 +227,9 @@ export default function RescheduleModal({
                   onClick={submit}
                   className="w-full mt-2 py-4 rounded-2xl bg-bridge-accent text-white font-semibold text-base disabled:opacity-30 disabled:cursor-not-allowed hover:bg-bridge-accent-dark active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                 >
-                  <Check size={16} /> {submitting ? 'Saving…' : 'Confirm reschedule'}
+                  <Check size={16} /> {submitting
+                    ? (isPropose ? 'Sending…' : 'Saving…')
+                    : (isPropose ? 'Send proposal to customer' : 'Confirm reschedule')}
                 </button>
               </div>
             )}

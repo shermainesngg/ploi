@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { createServerClient, isSupabaseConfigured } from './supabase'
 import { createAuthServerClient } from './supabase-server'
@@ -54,8 +55,13 @@ export async function getActiveRoleCookie(): Promise<UserRole | null> {
 /**
  * Get the current authenticated user, all the roles they own, and the active role.
  * Returns null if not logged in or Supabase not configured.
+ *
+ * Wrapped in React `cache()` so repeated calls within a single server render
+ * (middleware aside — e.g. a page + its `generateMetadata` + nested components)
+ * share one auth round-trip + DB lookup instead of re-querying Supabase each
+ * time. This is a major navigation-latency win on auth-gated pages.
  */
-export async function getCurrentUser(): Promise<AppUser | null> {
+export const getCurrentUser = cache(async function getCurrentUser(): Promise<AppUser | null> {
   if (!isSupabaseConfigured()) return null
 
   const auth = await createAuthServerClient()
@@ -145,7 +151,7 @@ export async function getCurrentUser(): Promise<AppUser | null> {
   }
 
   return base
-}
+})
 
 /**
  * Decide which dashboard a freshly-authenticated user lands on, based purely on the

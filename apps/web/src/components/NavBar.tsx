@@ -8,6 +8,7 @@ import { useTheme } from 'next-themes'
 import type { AppUser, UserRole } from '@/lib/auth'
 import { setActiveRole } from '@/actions/auth.actions'
 import { PloiLogo } from '@/components/ui/Logo'
+import NotificationBell from '@/components/NotificationBell'
 
 function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme()
@@ -36,6 +37,18 @@ export default function NavBar({ user }: { user: AppUser | null }) {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
   const [switching, startSwitch] = useTransition()
+
+  // Warm the router cache for the owner's dashboard routes as soon as the NavBar
+  // mounts. The dashboard Link lives inside the slide-in drawer, so it only gets
+  // a chance to prefetch once the drawer is open — too late for a quick click.
+  // Prefetching here caches each route's loading.tsx shell up front, so opening
+  // the menu and tapping Dashboard paints the skeleton immediately.
+  const businessSlug = user?.businessSlug
+  const creatorSlug = user?.creatorSlug
+  useEffect(() => {
+    if (businessSlug) router.prefetch('/business')
+    if (creatorSlug) router.prefetch(`/dashboard/creator/${creatorSlug}`)
+  }, [businessSlug, creatorSlug, router])
 
   const HIDE_ON = ['/login', '/signup', '/auth/callback']
   if (HIDE_ON.some((p) => pathname?.startsWith(p))) return null
@@ -96,14 +109,16 @@ export default function NavBar({ user }: { user: AppUser | null }) {
           </Link>
 
           <div className="flex items-center gap-1">
-            <button
-              type="button"
+            <Link
+              href="/search"
+              prefetch
               className="w-9 h-9 flex items-center justify-center text-bridge-muted hover:text-bridge-text transition-colors rounded-full hover:bg-bridge-surface"
               aria-label="Search"
-              onClick={() => router.push('/search')}
             >
               <Search size={17} />
-            </button>
+            </Link>
+
+            {user && <NotificationBell />}
 
             <ThemeToggle />
 

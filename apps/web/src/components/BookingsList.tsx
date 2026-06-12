@@ -3,8 +3,10 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { Calendar, Clock, MapPin, Repeat, X } from 'lucide-react'
+import { Calendar, CalendarClock, Clock, MapPin, Repeat, X } from 'lucide-react'
 import RescheduleModal from './RescheduleModal'
+import RescheduleResponse from './RescheduleResponse'
+import { isProposalLive } from '@/lib/reschedule'
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -62,6 +64,11 @@ function BookingRow({ booking, canChange }: { booking: RawBooking; canChange: bo
   const paid = booking.payment_status === 'paid'
   const isCancellable = canChange && status !== 'cancelled' && status !== 'declined' && status !== 'completed' && status !== 'no_show'
 
+  // The business proposed a new time for this (still-pending) booking. Show an
+  // in-app accept/decline banner — the same capability the email link carries.
+  const proposalLive = isProposalLive(booking)
+  const proposedTime = (booking.reschedule_proposed_time as string)?.slice(0, 5)
+
   const [reschedOpen, setReschedOpen] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -82,6 +89,29 @@ function BookingRow({ booking, canChange }: { booking: RawBooking; canChange: bo
 
   return (
     <>
+      {proposalLive && (
+        <div className="bg-bridge-accent-soft border border-bridge-accent/30 rounded-2xl p-4 mb-2">
+          <p className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-bridge-accent mb-2">
+            <CalendarClock size={13} /> New time proposed
+          </p>
+          <p className="text-sm text-bridge-secondary">
+            {biz?.name ?? 'The business'} suggested a new time for your {svc?.name ?? 'booking'}.
+          </p>
+          <div className="mt-3 space-y-0.5">
+            <p className="text-xs text-bridge-muted line-through">
+              {DAY_NAMES[date.getDay()]} {date.getDate()} {MONTH_NAMES[date.getMonth()]} at {time}
+            </p>
+            <p className="text-sm font-bold text-bridge-heading">
+              {(() => {
+                const pd = new Date(`${booking.reschedule_proposed_date}T00:00:00`)
+                return `${DAY_NAMES[pd.getDay()]} ${pd.getDate()} ${MONTH_NAMES[pd.getMonth()]} at ${proposedTime}`
+              })()}
+            </p>
+          </div>
+          <RescheduleResponse bookingId={booking.id} token={booking.reschedule_token} />
+        </div>
+      )}
+
       <div className="bg-bridge-card rounded-2xl border border-bridge-border/60 shadow-sm overflow-hidden">
         <Link href={`/booking-confirmed/${booking.id}`} className="block p-4 hover:bg-bridge-surface/50 transition-colors">
           <div className="flex items-start justify-between gap-3 mb-2">

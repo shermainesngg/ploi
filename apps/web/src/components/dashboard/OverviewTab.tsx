@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { TrendingUp, Wallet, Users, AlertCircle, Sparkles, Repeat, CalendarClock, X, Inbox } from 'lucide-react'
+import { TrendingUp, Wallet, Users, AlertCircle, Sparkles, Repeat, CalendarClock, X, Inbox, Calendar, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import type { BusinessDashboardData } from '@/lib/types'
 import type { AgendaBooking } from '@/services/dashboard.service'
@@ -37,8 +37,67 @@ export default function OverviewTab({
     setStaffIntroDismissed(true)
   }
 
+  // Post-onboarding setup nudges. They self-dismiss as each step is completed.
+  const hours = data.business.openingHours
+  const hasBookableHours = !!hours && Object.values(hours).some((v) => v && v !== 'closed')
+  const needsSchedule = !hasBookableHours
+  const needsGoogleCalendar = !data.googleCalendarConnected
+
   return (
     <div>
+      {/* Setup nudges — surfaced right after onboarding, hide as each is done */}
+      {needsSchedule && (
+        <div className="mb-4 rounded-2xl border border-amber-400/45 bg-amber-400/10 p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-amber-400/20 flex items-center justify-center text-amber-600 flex-shrink-0">
+              <AlertTriangle size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-bridge-heading text-sm">Set your booking hours</p>
+                <span className="text-[10px] font-bold bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full uppercase flex-shrink-0">Action needed</span>
+              </div>
+              <p className="text-bridge-secondary text-xs leading-relaxed mt-0.5">
+                Your page has no open hours yet, so customers can&apos;t book a time. Add your
+                opening hours to start taking bookings.
+              </p>
+              <Link
+                href="?tab=settings"
+                className="inline-block mt-2 text-xs font-semibold text-bridge-heading underline underline-offset-2 hover:text-bridge-secondary"
+              >
+                Set opening hours →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {needsGoogleCalendar && (
+        <div className="mb-4 rounded-2xl border border-bridge-border/60 bg-bridge-card p-4">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg bg-bridge-surface flex items-center justify-center text-bridge-heading flex-shrink-0">
+              <Calendar size={16} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="font-bold text-bridge-heading text-sm">Connect Google Calendar</p>
+                <span className="text-[10px] font-bold bg-bridge-surface text-bridge-secondary px-2 py-0.5 rounded-full uppercase flex-shrink-0">Recommended</span>
+              </div>
+              <p className="text-bridge-secondary text-xs leading-relaxed mt-0.5">
+                Sync confirmed bookings to your calendar automatically — do it now so nothing
+                slips through once the bookings start coming in.
+              </p>
+              <a
+                href={`/api/businesses/${businessSlug}/google-calendar/connect`}
+                className="inline-block mt-2 text-xs font-semibold text-bridge-heading underline underline-offset-2 hover:text-bridge-secondary"
+              >
+                Connect Google Calendar →
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* KPIs */}
       <div className="grid grid-cols-2 gap-3">
         <Kpi label="Today's bookings" value={String(todayActive.length)} icon={<TrendingUp size={14} />} />
@@ -49,7 +108,7 @@ export default function OverviewTab({
           icon={<AlertCircle size={14} />}
           highlight={pendingBookingCount > 0}
           hint={pendingBookingCount > 0 ? 'Tap to review →' : 'All clear'}
-          href="?tab=bookings"
+          href="?tab=bookings&status=pending"
         />
         <Kpi
           label="Creator requests"

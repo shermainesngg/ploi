@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { StaffAvailabilityReason } from '@/services/staff.service'
 import {
   Check, X, MoreHorizontal, CalendarCheck, UserX, Repeat, User as UserIcon,
-  Calendar, Clock, AlertTriangle,
+  Calendar, Clock, AlertTriangle, Phone, Mail,
 } from 'lucide-react'
 import type { AgendaBooking } from '@/services/dashboard.service'
 import RescheduleModal from './RescheduleModal'
@@ -102,6 +102,24 @@ export default function BookingActionCard({
 
   const col = colorForStaff(effectiveStaffId, staff)
   const isFinal = ['completed', 'cancelled', 'declined', 'no_show'].includes(booking.status)
+
+  // A business→customer reschedule proposal exists for this booking. `proposalLive`
+  // (server-computed) is the one that still holds the slot / awaits a response;
+  // an expired-but-not-yet-cleared proposal is `proposalExists && !proposalLive`.
+  const proposalExists = !!booking.rescheduleProposedDate
+  const proposalLive = booking.rescheduleProposalLive
+  // Propose needs a way to reach the customer — without an email there's no
+  // accept/decline link to send, so fall back to calling them.
+  const canEmailCustomer = !!booking.customerEmail
+
+  // "Accept pending bookings within 24h" reminder (display-only). Computed client-side
+  // only (mount guard) so the clock-dependent value can't cause a hydration mismatch.
+  const [mountedNow, setMountedNow] = useState<number | null>(null)
+  useEffect(() => { setMountedNow(Date.now()) }, [])
+  const hoursLeft =
+    booking.status === 'pending' && !proposalExists && booking.createdAt && mountedNow !== null
+      ? 24 - (mountedNow - new Date(booking.createdAt).getTime()) / 3_600_000
+      : null
 
   const eligibleStaff = staff
 
@@ -203,6 +221,31 @@ export default function BookingActionCard({
                     <AlertTriangle size={11} /> Sync
                   </span>
                 )}
+                {proposalExists && proposalLive && (
+                  <span
+                    title="Waiting for the customer to accept the proposed time"
+                    className="text-[9px] font-bold uppercase bg-bridge-accent-wash text-bridge-accent px-1.5 py-0.5 rounded-full"
+                  >
+                    Reschedule sent
+                  </span>
+                )}
+                {proposalExists && !proposalLive && (
+                  <span
+                    title="The proposed time lapsed without a response — the slot was released"
+                    className="text-[9px] font-bold uppercase bg-bridge-surface text-bridge-muted px-1.5 py-0.5 rounded-full"
+                  >
+                    Proposal expired
+                  </span>
+                )}
+                {hoursLeft !== null && (
+                  <span
+                    className={`text-[9px] font-bold uppercase px-1.5 py-0.5 rounded-full ${
+                      hoursLeft > 0 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-600'
+                    }`}
+                  >
+                    {hoursLeft > 0 ? `${Math.ceil(hoursLeft)}h to respond` : 'Overdue'}
+                  </span>
+                )}
               </div>
               {booking.isRepeat && booking.acquiredBy && (
                 <p className="text-micro text-bridge-accent mt-0.5">
@@ -239,10 +282,30 @@ export default function BookingActionCard({
 
         {expanded && (
           <div className="border-t border-bridge-border/40 bg-bridge-surface/50 p-3 space-y-3">
-            {booking.customerEmail && (
-              <p className="text-bridge-muted text-caption px-1">
-                <span className="text-bridge-muted/70">Email:</span> {booking.customerEmail}
-              </p>
+            {/* Customer contact details */}
+            {(booking.customerPhone || booking.customerEmail) ? (
+              <div className="flex flex-wrap gap-2">
+                {booking.customerPhone && (
+                  <a
+                    href={`tel:${booking.customerPhone}`}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-button bg-bridge-card border border-bridge-border text-bridge-secondary hover:border-bridge-border-strong hover:text-bridge-heading text-micro font-medium transition-colors"
+                  >
+                    <Phone size={12} className="text-bridge-muted" />
+                    <span className="font-data tracking-tight">{booking.customerPhone}</span>
+                  </a>
+                )}
+                {booking.customerEmail && (
+                  <a
+                    href={`mailto:${booking.customerEmail}`}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-button bg-bridge-card border border-bridge-border text-bridge-secondary hover:border-bridge-border-strong hover:text-bridge-heading text-micro font-medium transition-colors max-w-full"
+                  >
+                    <Mail size={12} className="text-bridge-muted flex-shrink-0" />
+                    <span className="truncate">{booking.customerEmail}</span>
+                  </a>
+                )}
+              </div>
+            ) : (
+              <p className="text-bridge-muted/70 text-caption px-1 italic">No contact details on file</p>
             )}
 
             {staff.length > 0 && !isFinal && (
@@ -300,13 +363,21 @@ export default function BookingActionCard({
 
             {!isFinal && (
               <div className="grid grid-cols-2 gap-2">
-                <Btn
-                  onClick={() => setReschedOpen(true)}
-                  icon={<Repeat size={13} />}
-                  label="Reschedule"
-                  busy={busy}
-                  variant="ghost"
-                />
+                {booking.status === 'pending' && !canEmailCustomer ? (
+                  // No email → no accept/decline link to send. Point the business at
+                  // the phone chip above instead of offering a propose they can't deliver.
+                  <p className="flex items-center text-micro text-bridge-muted px-1 leading-snug">
+                    No email on file — call the customer to rearrange.
+                  </p>
+                ) : (
+                  <Btn
+                    onClick={() => setReschedOpen(true)}
+                    icon={<Repeat size={13} />}
+                    label={booking.status === 'pending' ? (proposalExists ? 'Re-propose time' : 'Propose new time') : 'Reschedule'}
+                    busy={busy}
+                    variant="ghost"
+                  />
+                )}
                 <Btn
                   onClick={() => setStatus('cancelled')}
                   icon={<X size={13} />}
@@ -329,6 +400,7 @@ export default function BookingActionCard({
           currentDate={booking.date}
           currentTime={booking.time}
           onClose={() => setReschedOpen(false)}
+          mode={booking.status === 'pending' ? 'propose' : 'direct'}
         />
       )}
     </>

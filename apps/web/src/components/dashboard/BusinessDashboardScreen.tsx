@@ -75,6 +75,9 @@ export default async function BusinessDashboardScreen({
   let rangeData: AgendaBooking[] = []
   let viewStartDate = baseDate
   let bookingsList: AgendaBooking[] = []
+  // Broad window feeding the desktop Schedule-X grid — independent of the mobile
+  // day/week/month view, so the grid is populated whatever the mobile view is.
+  let calendarGrid: AgendaBooking[] = []
 
   if (tab === 'calendar') {
     if (view === 'day') {
@@ -86,6 +89,13 @@ export default async function BusinessDashboardScreen({
       viewStartDate = startOfMonth(baseDate)
       rangeData = await DashboardService.getBookingsForRange(slug, viewStartDate, endOfMonth(viewStartDate))
     }
+    // Cover the full month grid (weeks can spill into adjacent months) so the
+    // desktop calendar's default week view AND month view both have events.
+    calendarGrid = await DashboardService.getBookingsForRange(
+      slug,
+      startOfWeek(startOfMonth(baseDate)),
+      endOfWeek(endOfMonth(baseDate)),
+    )
   } else if (tab === 'bookings') {
     bookingsList = await DashboardService.listBusinessBookings(slug, {
       status: status === 'all' ? undefined : (status as AgendaBooking['status']),
@@ -109,6 +119,7 @@ export default async function BusinessDashboardScreen({
       viewDate={tab === 'calendar' && view === 'day' ? baseDate : viewStartDate}
       agenda={agenda}
       rangeBookings={rangeData}
+      calendarGrid={calendarGrid}
       todayAgenda={todayAgenda}
       bookingsList={bookingsList}
       bookingsStatus={status}

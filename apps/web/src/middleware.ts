@@ -8,6 +8,16 @@ import { createServerClient } from '@supabase/ssr'
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request })
 
+  // Prefetch requests (Next.js router warming a Link's loading shell) don't need
+  // a session refresh — they never render authed content, only the loading.tsx
+  // boundary. Skipping the Supabase Auth round-trip here keeps prefetch cheap, so
+  // the destination's skeleton is cached and clicking it paints instantly instead
+  // of stalling on the previous page. The next real navigation refreshes the session.
+  const purpose = request.headers.get('sec-purpose') ?? request.headers.get('purpose')
+  const isPrefetch =
+    request.headers.get('next-router-prefetch') === '1' || purpose?.includes('prefetch')
+  if (isPrefetch) return response
+
   // Accept either the newer publishable key name or the legacy anon key name.
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key =

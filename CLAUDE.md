@@ -146,6 +146,7 @@ Schema in `packages/db/schema.sql`. Migrations run in order in Supabase SQL Edit
 - `migration_012`–`013` — Per-video creator attribution + booking↔video link
 - `migration_014_multi_location` — Multi-location businesses (branches); per-location staff/bookings/time_blocks
 - `migration_015_calendar_sync` — Google Calendar sync: per-booking `google_sync_status`/`google_synced_at` + `businesses.google_calendar_timezone` (additive to the dormant 006 Google columns)
+- `migration_016_reschedule_proposals` — Business-proposed reschedule for pending bookings: `bookings.reschedule_proposed_date`/`_time`/`_at` + `reschedule_token` (tokenised customer accept/decline link). Booking stays `pending` while a proposal is outstanding.
 
 `packages/db/setup.sql` is the **consolidated schema** (core tables + all migrations in one file) — run it for a fresh project instead of applying migrations one by one.
 

@@ -83,6 +83,14 @@ export async function PATCH(
       }
       update.status = status as BookingStatus
       if (status === 'completed') update.completed_at = new Date().toISOString()
+      // A direct status decision supersedes any outstanding reschedule proposal —
+      // clear it so a stale "awaiting customer" link can't still be acted on.
+      if (['confirmed', 'declined', 'cancelled'].includes(status)) {
+        update.reschedule_proposed_date = null
+        update.reschedule_proposed_time = null
+        update.reschedule_proposed_at = null
+        update.reschedule_token = null
+      }
     }
 
     if (staffId !== undefined) {

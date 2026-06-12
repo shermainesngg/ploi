@@ -52,6 +52,7 @@ export const BookingRepo = {
       .select(`
         id, customer_name, customer_email, booking_date, booking_time,
         status, payment_status, is_walkin,
+        reschedule_proposed_date, reschedule_proposed_time, reschedule_token,
         services ( name, price ),
         businesses ( name, slug, email, location ),
         locations ( name, address )

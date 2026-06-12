@@ -217,6 +217,117 @@ export const NotificationService = {
     }
   },
 
+  /**
+   * Email the customer when the business proposes a new time for their pending
+   * booking. Links to the tokenised accept/decline page.
+   */
+  async notifyCustomerRescheduleProposed(bookingId: string): Promise<void> {
+    if (!isEmailConfigured()) return
+    try {
+      const loaded = await loadBooking(bookingId)
+      if (!loaded || !loaded.row.customer_email) return
+      const { row, service, business, location } = loaded
+      if (!row.reschedule_proposed_date || !row.reschedule_token) return
+
+      const link = `${siteUrl()}/booking/${row.id}/reschedule?token=${encodeURIComponent(row.reschedule_token)}`
+
+      await sendEmail({
+        to: row.customer_email,
+        subject: `New time proposed — ${business.name}`,
+        html: renderEmail({
+          heading: 'A new time was proposed',
+          intro: `${escapeHtml(business.name)} proposed a new time for your booking. Review it and let them know if it works — your original request is held until you respond.`,
+          rows: [
+            { label: 'Service', value: escapeHtml(service.name) },
+            { label: 'You requested', value: `${formatDate(row.booking_date)} · ${formatTime(row.booking_time)}` },
+            { label: 'Proposed', value: `${formatDate(row.reschedule_proposed_date)} · ${formatTime(row.reschedule_proposed_time)}` },
+            ...(locationLabel(location, business) ? [{ label: 'Location', value: escapeHtml(locationLabel(location, business)!) }] : []),
+          ],
+          cta: { label: 'Review proposed time', url: link },
+        }),
+      })
+    } catch (err) {
+      console.error(`[notification] customer reschedule-proposed email failed for ${bookingId}:`, err)
+    }
+  },
+
+  /** Email the business when the customer accepts or declines a proposed reschedule. */
+  async notifyBusinessRescheduleResponse(bookingId: string, accepted: boolean): Promise<void> {
+    if (!isEmailConfigured()) return
+    try {
+      const loaded = await loadBooking(bookingId)
+      if (!loaded || !loaded.business.email) return
+      const { row, service, business, location } = loaded
+
+      await sendEmail({
+        to: business.email,
+        subject: accepted
+          ? `Reschedule accepted — ${row.customer_name} · ${formatDate(row.booking_date)} ${formatTime(row.booking_time)}`
+          : `Reschedule declined — ${row.customer_name}`,
+        html: renderEmail({
+          heading: accepted ? 'Reschedule accepted' : 'Reschedule declined',
+          intro: accepted
+            ? `${escapeHtml(row.customer_name)} accepted your proposed time. The booking is confirmed for the new slot.`
+            : `${escapeHtml(row.customer_name)} declined your proposed time. Their booking is still pending at the original time — confirm, decline, or propose another slot.`,
+          rows: bookingRows({
+            serviceName: service.name,
+            date: row.booking_date,
+            time: row.booking_time,
+            price: service.price,
+            location: locationLabel(location, business),
+            customerName: row.customer_name,
+            customerEmail: row.customer_email,
+          }),
+          cta: {
+            label: 'Open bookings',
+            url: `${siteUrl()}/dashboard/business/${business.slug}?tab=bookings&status=pending`,
+          },
+        }),
+      })
+    } catch (err) {
+      console.error(`[notification] business reschedule-response email failed for ${bookingId}:`, err)
+    }
+  },
+
+  /**
+   * Email the business when a customer tried to accept a proposed reschedule but
+   * the proposed slot had already been taken. The proposal is cleared and the
+   * booking stays pending at its original time — the business should propose
+   * another slot or confirm the original.
+   */
+  async notifyBusinessProposedSlotTaken(bookingId: string): Promise<void> {
+    if (!isEmailConfigured()) return
+    try {
+      const loaded = await loadBooking(bookingId)
+      if (!loaded || !loaded.business.email) return
+      const { row, service, business, location } = loaded
+
+      await sendEmail({
+        to: business.email,
+        subject: `Proposed slot no longer free — ${row.customer_name}`,
+        html: renderEmail({
+          heading: 'Proposed time was taken',
+          intro: `${escapeHtml(row.customer_name)} tried to accept your proposed time, but that slot had already been booked. Their request is still pending at the original time — propose another slot or confirm the original.`,
+          rows: bookingRows({
+            serviceName: service.name,
+            date: row.booking_date,
+            time: row.booking_time,
+            price: service.price,
+            location: locationLabel(location, business),
+            customerName: row.customer_name,
+            customerEmail: row.customer_email,
+          }),
+          cta: {
+            label: 'Open bookings',
+            url: `${siteUrl()}/dashboard/business/${business.slug}?tab=bookings&status=pending`,
+          },
+        }),
+      })
+    } catch (err) {
+      console.error(`[notification] business proposed-slot-taken email failed for ${bookingId}:`, err)
+    }
+  },
+
   /** Email the business when the customer cancels their booking. */
   async notifyBusinessCancellation(bookingId: string): Promise<void> {
     if (!isEmailConfigured()) return

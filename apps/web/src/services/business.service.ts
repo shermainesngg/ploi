@@ -109,6 +109,8 @@ export const BusinessService = {
     name: string
     category: string
     location: string
+    /** Extra branch addresses captured at onboarding (beyond the primary). */
+    additionalLocations?: string[]
     description: string
     email?: string
     coverPhotoUrl?: string
@@ -229,17 +231,37 @@ export const BusinessService = {
 
     // Every business starts with one primary location, mirrored from the
     // headline fields above. Secondary branches are added from the dashboard.
-    const { error: locErr } = await db.from('locations').insert({
-      business_id: biz.id,
-      name: null,
-      address: data.location,
-      opening_hours: data.openingHours ?? null,
-      contact_phone: data.contactPhone ?? null,
-      contact_whatsapp: data.contactWhatsapp ?? null,
-      contact_line: data.contactLine ?? null,
-      is_primary: true,
-      sort_order: 0,
-    })
+    const locationRows = [
+      {
+        business_id: biz.id,
+        name: null,
+        address: data.location,
+        opening_hours: data.openingHours ?? null,
+        contact_phone: data.contactPhone ?? null,
+        contact_whatsapp: data.contactWhatsapp ?? null,
+        contact_line: data.contactLine ?? null,
+        is_primary: true,
+        sort_order: 0,
+      },
+      // Extra branches captured at onboarding — addresses only; the owner can
+      // flesh out per-branch hours/contacts from the dashboard Locations tab.
+      ...(data.additionalLocations ?? [])
+        .map((a) => a.trim())
+        .filter((a) => a.length > 0)
+        .map((address, i) => ({
+          business_id: biz.id,
+          name: null,
+          address,
+          opening_hours: null,
+          contact_phone: null,
+          contact_whatsapp: null,
+          contact_line: null,
+          is_primary: false,
+          sort_order: i + 1,
+        })),
+    ]
+
+    const { error: locErr } = await db.from('locations').insert(locationRows)
     if (locErr) throw new Error(locErr.message)
 
     return { slug: biz.slug, id: biz.id }

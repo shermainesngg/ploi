@@ -10,6 +10,7 @@ function booking(overrides: Partial<AgendaBooking> = {}): AgendaBooking {
     serviceDuration: 60,
     customerName: 'May K.',
     customerEmail: null,
+    customerPhone: null,
     date: '2026-06-10',
     time: '14:30:00',
     endTime: '15:30',
@@ -22,6 +23,10 @@ function booking(overrides: Partial<AgendaBooking> = {}): AgendaBooking {
     isRepeat: false,
     acquiredBy: null,
     googleSyncStatus: null,
+    createdAt: null,
+    rescheduleProposedDate: null,
+    rescheduleProposedTime: null,
+    rescheduleProposalLive: false,
     ...overrides,
   }
 }

@@ -16,6 +16,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       name, category, location, description, email, services,
+      additionalLocations,
       openingHours, contactPhone, contactWhatsapp, contactLine, photos,
     } = body
 
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
 
     const result = await BusinessService.create({
       slug, name, category, location, description, services,
+      additionalLocations: Array.isArray(additionalLocations) ? additionalLocations : undefined,
       email: resolvedEmail,
       authUserId: user?.id,
       openingHours, contactPhone, contactWhatsapp, contactLine,

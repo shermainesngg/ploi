@@ -570,6 +570,13 @@ alter table bookings
     check (google_sync_status in ('pending', 'synced', 'failed')),
   add column if not exists google_synced_at   timestamptz;
 
+-- migration_016: business-proposed reschedule for pending bookings.
+alter table bookings
+  add column if not exists reschedule_proposed_date date,
+  add column if not exists reschedule_proposed_time time,
+  add column if not exists reschedule_proposed_at   timestamptz,
+  add column if not exists reschedule_token         text;
+
 
 -- ══════════════════════════════════════════════════════════════════════════════
 -- 8. ROW LEVEL SECURITY

@@ -38,6 +38,7 @@ interface Props {
   viewDate: string
   agenda: AgendaBooking[]
   rangeBookings: AgendaBooking[]
+  calendarGrid: AgendaBooking[]
   todayAgenda: AgendaBooking[]
   bookingsList: AgendaBooking[]
   bookingsStatus: string
@@ -68,7 +69,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 export default function BusinessDashboard(props: Props) {
   const {
     tab, data, pendingRequests, myCreators, pendingContent, activeContent, stripeConnected,
-    view, viewDate, agenda, rangeBookings, todayAgenda,
+    view, viewDate, agenda, rangeBookings, calendarGrid, todayAgenda,
     bookingsList, bookingsStatus, services, staff,
   } = props
   const { business } = data
@@ -81,13 +82,15 @@ export default function BusinessDashboard(props: Props) {
   const [walkinSlot, setWalkinSlot] = useState<{ date: string; time: string } | null>(null)
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null)
 
-  // The grid is fed by whatever the server loaded for the current view; merge the
-  // day + range + today sets (deduped) so it has the widest coverage available.
+  // The desktop grid is fed by the dedicated broad `calendarGrid` window (full
+  // month-grid span), so confirmed bookings on any day of the visible weeks show
+  // up regardless of the mobile day/week/month view. Merge in the day/today sets
+  // as a fallback for the initial render.
   const calendarBookings = useMemo(() => {
     const byId = new Map<string, AgendaBooking>()
-    for (const b of [...rangeBookings, ...agenda, ...todayAgenda]) byId.set(b.id, b)
+    for (const b of [...calendarGrid, ...rangeBookings, ...agenda, ...todayAgenda]) byId.set(b.id, b)
     return Array.from(byId.values())
-  }, [rangeBookings, agenda, todayAgenda])
+  }, [calendarGrid, rangeBookings, agenda, todayAgenda])
   const sxEvents = useMemo(() => agendaToScheduleXEvents(calendarBookings), [calendarBookings])
   const selectedBooking = selectedEventId
     ? calendarBookings.find((b) => b.id === selectedEventId) ?? null

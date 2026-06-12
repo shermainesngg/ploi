@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createServerClient, isSupabaseConfigured } from './supabase'
 
 /** The minimal identity needed for ownership checks (no role lookups). */
@@ -32,8 +33,13 @@ export function decideAccess(
   return user.id === record.auth_user_id ? 'granted' : 'forbidden'
 }
 
-/** Current auth user (id + email only) from the session cookie, or null. */
-export async function getAuthIdentity(): Promise<AuthIdentity | null> {
+/**
+ * Current auth user (id + email only) from the session cookie, or null.
+ * Request-deduped via React `cache()` — every ownership guard in a single
+ * render shares one `auth.getUser()` round-trip instead of re-validating
+ * the session per call.
+ */
+export const getAuthIdentity = cache(async function getAuthIdentity(): Promise<AuthIdentity | null> {
   if (!isSupabaseConfigured()) return null
   // Lazy import: supabase-server pulls in `server-only`, which would break
   // importing the pure `decideAccess` from unit tests.
@@ -42,7 +48,7 @@ export async function getAuthIdentity(): Promise<AuthIdentity | null> {
   const { data: { user } } = await auth.auth.getUser()
   if (!user) return null
   return { id: user.id, email: user.email ?? null }
-}
+})
 
 async function authorizeBySlug(
   table: 'businesses' | 'creators',

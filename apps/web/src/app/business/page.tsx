@@ -22,11 +22,11 @@ export default async function Page({ searchParams }: PageProps) {
   return <BusinessLanding />
 }
 
-export async function generateMetadata() {
-  const user = await getCurrentUser()
-  if (user?.businessSlug) {
-    return { title: `${user.businessSlug} dashboard — PLOI` }
-  }
+// Intentionally static — no auth lookup here. `generateMetadata` resolves before
+// the response streams, so doing the heavy `getCurrentUser()` round-trip here
+// would delay first paint (and the loading skeleton) on every navigation to
+// /business. The page component does the auth work behind the Suspense boundary.
+export function generateMetadata() {
   return {
     title: 'PLOI for businesses — bookings that know who sent the customer',
     description:

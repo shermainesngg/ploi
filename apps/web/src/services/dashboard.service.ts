@@ -6,6 +6,7 @@ import {
 } from '@/lib/seed-data'
 import { rowToBusiness, rowToCreator, gradientForCategory } from '@/lib/mappers'
 import { calculateCreatorEarnings, calculatePlatformFee } from '@/lib/constants'
+import { isProposalLive } from '@/lib/reschedule'
 import { CalendarSyncService } from './calendar-sync.service'
 import type {
   Business,
@@ -58,6 +59,7 @@ export interface AgendaBooking {
   serviceDuration: number
   customerName: string
   customerEmail: string | null
+  customerPhone: string | null
   date: string
   time: string
   endTime: string
@@ -71,6 +73,17 @@ export interface AgendaBooking {
   acquiredBy: { slug: string; handle: string } | null
   /** Google Calendar push state for the per-booking sync indicator. */
   googleSyncStatus: GoogleSyncStatus | null
+  /** When the booking was created — powers the pending "respond within 24h" reminder. */
+  createdAt: string | null
+  /** Outstanding business→customer reschedule proposal (null when none pending). */
+  rescheduleProposedDate: string | null
+  rescheduleProposedTime: string | null
+  /**
+   * Whether that proposal is still live (within its 24h/appointment-proximity
+   * hold window). Computed server-side via isProposalLive so the card never has
+   * to trust the raw column presence — an expired proposal reads as not live.
+   */
+  rescheduleProposalLive: boolean
 }
 
 function generateMockBookings(business: Business): BookingWithCreator[] {
@@ -173,6 +186,7 @@ function mapAgendaBooking(r: any): AgendaBooking {
     serviceDuration: duration,
     customerName: r.customer_name,
     customerEmail: r.customer_email ?? null,
+    customerPhone: r.customer_phone ?? null,
     date: r.booking_date,
     time: String(r.booking_time).slice(0, 5),
     endTime: formatEndTime(r.booking_time, duration),
@@ -185,6 +199,10 @@ function mapAgendaBooking(r: any): AgendaBooking {
     isRepeat: !!r.is_repeat,
     acquiredBy: acqCre ? { slug: acqCre.slug, handle: acqCre.handle } : null,
     googleSyncStatus: r.google_sync_status ?? null,
+    createdAt: r.created_at ?? null,
+    rescheduleProposedDate: r.reschedule_proposed_date ?? null,
+    rescheduleProposedTime: r.reschedule_proposed_time ?? null,
+    rescheduleProposalLive: isProposalLive(r),
   }
 }
 
@@ -492,7 +510,7 @@ export const DashboardService = {
     const { data: rows } = await db
       .from('bookings')
       .select(`
-        id, service_id, customer_name, customer_email, booking_date, booking_time, status, google_sync_status, is_walkin, staff_id, is_repeat,
+        id, service_id, customer_name, customer_email, customer_phone, booking_date, booking_time, status, google_sync_status, is_walkin, staff_id, is_repeat, created_at, reschedule_proposed_date, reschedule_proposed_time, reschedule_proposed_at,
         services ( name, price, duration ),
         links ( creators ( slug, handle ) ),
         staff ( id, name ),
@@ -517,7 +535,7 @@ export const DashboardService = {
     let query = db
       .from('bookings')
       .select(`
-        id, service_id, customer_name, customer_email, booking_date, booking_time, status, google_sync_status, is_walkin, staff_id, created_at, is_repeat,
+        id, service_id, customer_name, customer_email, customer_phone, booking_date, booking_time, status, google_sync_status, is_walkin, staff_id, created_at, is_repeat, reschedule_proposed_date, reschedule_proposed_time, reschedule_proposed_at,
         services ( name, price, duration ),
         links ( creators ( slug, handle ) ),
         staff ( id, name ),
@@ -661,7 +679,7 @@ export const DashboardService = {
     const { data: rows } = await db
       .from('bookings')
       .select(`
-        id, service_id, customer_name, customer_email, booking_date, booking_time, status, google_sync_status, is_walkin, staff_id,
+        id, service_id, customer_name, customer_email, customer_phone, booking_date, booking_time, status, google_sync_status, is_walkin, staff_id, created_at, reschedule_proposed_date, reschedule_proposed_time, reschedule_proposed_at,
         services ( name, price, duration ),
         links ( creators ( slug, handle ) ),
         staff ( id, name )
@@ -686,6 +704,7 @@ export const DashboardService = {
         serviceDuration: duration,
         customerName: r.customer_name,
         customerEmail: r.customer_email ?? null,
+        customerPhone: r.customer_phone ?? null,
         date: r.booking_date,
         time: String(r.booking_time).slice(0, 5),
         endTime: formatEndTime(r.booking_time, duration),
@@ -698,6 +717,10 @@ export const DashboardService = {
         isRepeat: false,
         acquiredBy: null,
         googleSyncStatus: r.google_sync_status ?? null,
+        createdAt: r.created_at ?? null,
+        rescheduleProposedDate: r.reschedule_proposed_date ?? null,
+        rescheduleProposedTime: r.reschedule_proposed_time ?? null,
+        rescheduleProposalLive: isProposalLive(r),
       }
     })
   },
@@ -708,7 +731,7 @@ export const DashboardService = {
     const { data: rows } = await db
       .from('bookings')
       .select(`
-        id, service_id, customer_name, customer_email, booking_date, booking_time, status, google_sync_status, is_walkin,
+        id, service_id, customer_name, customer_email, customer_phone, booking_date, booking_time, status, google_sync_status, is_walkin, created_at, reschedule_proposed_date, reschedule_proposed_time, reschedule_proposed_at,
         services ( name, price, duration ),
         links ( creators ( slug, handle ) )
       `)
@@ -729,6 +752,7 @@ export const DashboardService = {
         serviceDuration: duration,
         customerName: r.customer_name,
         customerEmail: r.customer_email ?? null,
+        customerPhone: r.customer_phone ?? null,
         date: r.booking_date,
         time: String(r.booking_time).slice(0, 5),
         endTime: formatEndTime(r.booking_time, duration),
@@ -741,6 +765,10 @@ export const DashboardService = {
         isRepeat: false,
         acquiredBy: null,
         googleSyncStatus: r.google_sync_status ?? null,
+        createdAt: r.created_at ?? null,
+        rescheduleProposedDate: r.reschedule_proposed_date ?? null,
+        rescheduleProposedTime: r.reschedule_proposed_time ?? null,
+        rescheduleProposalLive: isProposalLive(r),
       }
     })
   },

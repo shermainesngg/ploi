@@ -8,8 +8,8 @@ export function Skeleton({ className }: SkeletonProps) {
   return (
     <div
       className={cn(
-        'rounded-card bg-bridge-border/60 animate-shimmer',
-        'bg-gradient-to-r from-bridge-border/60 via-bridge-surface/60 to-bridge-border/60 bg-[length:200%_100%]',
+        'rounded-card bg-bridge-border-strong animate-shimmer',
+        'bg-gradient-to-r from-bridge-border-strong via-bridge-border to-bridge-border-strong bg-[length:200%_100%]',
         className,
       )}
     />

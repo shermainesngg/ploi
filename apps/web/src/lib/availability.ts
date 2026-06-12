@@ -14,6 +14,7 @@
  */
 
 import { createServerClient, isSupabaseConfigured } from './supabase'
+import { isProposalLive } from './reschedule'
 import type { DayKey } from './types'
 
 const SLOT_INTERVAL_MIN = 30
@@ -83,6 +84,9 @@ export async function getAvailableSlots(
   serviceId?: string,
   staffId?: string,
   locationId?: string,
+  // Exclude one booking from occupancy — used when re-validating a booking's own
+  // proposed reschedule slot, so its live proposal doesn't self-conflict.
+  excludeBookingId?: string,
 ): Promise<AvailabilityResult | null> {
   if (!isSupabaseConfigured()) {
     return buildMockAvailability(dateISO, 60)
@@ -182,24 +186,42 @@ export async function getAvailableSlots(
 
   if (staffMembers.length > 0) {
     const ids = staffMembers.map((s) => s.id)
+
+    let staffBookingQuery = db
+      .from('bookings')
+      .select('id, staff_id, booking_time, services(duration, buffer_minutes)')
+      .in('staff_id', ids)
+      .eq('booking_date', dateISO)
+      .in('status', ['pending', 'confirmed'])
+    if (excludeBookingId) staffBookingQuery = staffBookingQuery.neq('id', excludeBookingId)
+
+    // Live business→customer reschedule proposals hold the proposed slot too
+    // (same as Booking.com). Expired ones are filtered out in code via
+    // isProposalLive — the lazy-expiry mechanism, so they stop blocking.
+    let staffProposedQuery = db
+      .from('bookings')
+      .select('id, staff_id, reschedule_proposed_date, reschedule_proposed_time, reschedule_proposed_at, services(duration, buffer_minutes)')
+      .in('staff_id', ids)
+      .eq('reschedule_proposed_date', dateISO)
+      .eq('status', 'pending')
+    if (excludeBookingId) staffProposedQuery = staffProposedQuery.neq('id', excludeBookingId)
+
     const [
       { data: schedules },
       { data: staffBookings },
       { data: staffBlocks },
+      { data: staffProposed },
     ] = await Promise.all([
       db.from('staff_schedules')
         .select('staff_id, day_of_week, start_time, end_time, is_available')
         .in('staff_id', ids)
         .eq('day_of_week', dowNum),
-      db.from('bookings')
-        .select('staff_id, booking_time, services(duration, buffer_minutes)')
-        .in('staff_id', ids)
-        .eq('booking_date', dateISO)
-        .in('status', ['pending', 'confirmed']),
+      staffBookingQuery,
       db.from('time_blocks')
         .select('staff_id, block_date, recurring_dow, start_time, end_time')
         .in('staff_id', ids)
         .or(`block_date.eq.${dateISO},recurring_dow.eq.${dowNum}`),
+      staffProposedQuery,
     ])
 
     for (const s of staffMembers) {
@@ -226,6 +248,16 @@ export async function getAvailableSlots(
         return { startMin: start, endMin: end }
       })
 
+      // Hold this staff's live proposed-reschedule slots (expired ones ignored).
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const myProposed = (staffProposed ?? []).filter((b: any) => b.staff_id === s.id && isProposalLive(b))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const p of myProposed as any[]) {
+        const sv = Array.isArray(p.services) ? p.services[0] : p.services
+        const start = timeToMinutes(p.reschedule_proposed_time)
+        bookings.push({ startMin: start, endMin: start + (sv?.duration ?? 60) + (sv?.buffer_minutes ?? 0) })
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const myBlocks = (staffBlocks ?? []).filter((b: any) => b.staff_id === s.id)
       const blocks: Interval[] = myBlocks.map((b: { start_time: string; end_time: string }) => ({
@@ -243,11 +275,12 @@ export async function getAvailableSlots(
   if (!businessHasStaff) {
     let bookingQuery = db
       .from('bookings')
-      .select('booking_time, services(duration, buffer_minutes)')
+      .select('id, booking_time, services(duration, buffer_minutes)')
       .eq('business_id', business.id)
       .eq('booking_date', dateISO)
       .in('status', ['pending', 'confirmed'])
     if (locationId) bookingQuery = bookingQuery.eq('location_id', locationId)
+    if (excludeBookingId) bookingQuery = bookingQuery.neq('id', excludeBookingId)
     const { data: bookingRows } = await bookingQuery
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     bookedIntervals = (bookingRows ?? []).map((b: any) => {
@@ -256,6 +289,24 @@ export async function getAvailableSlots(
       const end = start + (sv?.duration ?? 60) + (sv?.buffer_minutes ?? 0)
       return { startMin: start, endMin: end }
     })
+
+    // Hold live proposed-reschedule slots (same lazy-expiry as the staff path).
+    let proposedQuery = db
+      .from('bookings')
+      .select('id, reschedule_proposed_date, reschedule_proposed_time, reschedule_proposed_at, services(duration, buffer_minutes)')
+      .eq('business_id', business.id)
+      .eq('reschedule_proposed_date', dateISO)
+      .eq('status', 'pending')
+    if (locationId) proposedQuery = proposedQuery.eq('location_id', locationId)
+    if (excludeBookingId) proposedQuery = proposedQuery.neq('id', excludeBookingId)
+    const { data: proposedRows } = await proposedQuery
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const p of (proposedRows ?? []) as any[]) {
+      if (!isProposalLive(p)) continue
+      const sv = Array.isArray(p.services) ? p.services[0] : p.services
+      const start = timeToMinutes(p.reschedule_proposed_time)
+      bookedIntervals.push({ startMin: start, endMin: start + (sv?.duration ?? 60) + (sv?.buffer_minutes ?? 0) })
+    }
 
     const { data: blockRows } = await db
       .from('time_blocks')
